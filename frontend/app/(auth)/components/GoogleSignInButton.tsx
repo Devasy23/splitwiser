@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import * as Google from 'expo-auth-session/providers/google';
 import { router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -19,10 +20,10 @@ export default function GoogleSignInButton() {
   const [isLoading, setIsLoading] = useState(false);
 
   const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: GOOGLE_EXPO_CLIENT_ID,
-    iosClientId: GOOGLE_CLIENT_ID,
-    androidClientId: GOOGLE_CLIENT_ID,
-    webClientId: GOOGLE_CLIENT_ID,
+    expoClientId: '323312632683-cgj2g17fgaucfclbsvm8gfgo3c2hohpf.apps.googleusercontent.com',
+    iosClientId: '323312632683-dqv5ag5l03ms82q0lqs94uecetfrshnf.apps.googleusercontent.com',
+    androidClientId: '323312632683-qj3n1dhq3gr18khd6dl5iamdh00qt6j3.apps.googleusercontent.com',
+    webClientId: '323312632683-cgj2g17fgaucfclbsvm8gfgo3c2hohpf.apps.googleusercontent.com',
   });
 
   React.useEffect(() => {
@@ -40,9 +41,9 @@ export default function GoogleSignInButton() {
         id_token: idToken
       });
       
-      // Store the tokens
-      await AsyncStorage.setItem('access_token', response.data.access_token);
-      await AsyncStorage.setItem('refresh_token', response.data.refresh_token);
+      // Store the tokens securely
+      await SecureStore.setItemAsync('access_token', response.data.access_token);
+      await SecureStore.setItemAsync('refresh_token', response.data.refresh_token);
       await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
       
       // Navigate to home page

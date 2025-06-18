@@ -5,17 +5,18 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
-    ActivityIndicator,
-    Alert,
-    StyleSheet,
-    Text,
-    TextInput,
-    TextStyle,
-    TouchableOpacity,
-    View,
-    ViewStyle
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TextStyle,
+  TouchableOpacity,
+  View,
+  ViewStyle
 } from 'react-native';
 import { z } from 'zod';
+import GoogleSignInButton from './components/GoogleSignInButton';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -159,6 +160,9 @@ export default function Login() {
           <Text style={styles.buttonText}>Login</Text>
         )}
       </TouchableOpacity>
+
+      {/* Google Sign-In Button */}
+      <GoogleSignInButton />
 
       <TouchableOpacity onPress={() => router.push('/signup')}>
         <Text style={styles.linkText}>Don't have an account? Sign up</Text>
