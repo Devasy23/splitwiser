@@ -1,13 +1,17 @@
 import pytest
 import mongomock
+import sys
+import os
 from fastapi.testclient import TestClient
 from unittest.mock import patch
 
+# Make sure we can access the main app module
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 # Import necessary modules from your application
-# Adjust these imports based on your actual project structure
-from app.main import app  # Assuming your FastAPI app instance is here
+from main import app  # The FastAPI app is in backend/main.py
 from app.auth.service import AuthService
-from app.database import get_database, close_mongo_connection # Assuming you have a close connection function
+from app.database import get_database, close_mongo_connection
 from app.config import settings
 
 # Fixture for a mock MongoDB client

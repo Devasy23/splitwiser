@@ -37,9 +37,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         # pytest is already in requirements.txt
-
     - name: Run tests with pytest
       env:
-        PYTHONPATH: .  # Add current directory (backend/) to PYTHONPATH
+        PYTHONPATH: ${{ github.workspace }}/backend  # Ensure absolute path to backend directory
       run: |
-        pytest tests/ # Pytest will discover tests in the tests directory
+        # Print directory structure for debugging
+        ls -la
+        # Run the tests using pytest.ini configuration
+        python -m pytest -v # Will use pytest.ini for configuration
