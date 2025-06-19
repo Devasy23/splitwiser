@@ -66,6 +66,60 @@ def client(mock_db_client): # Ensures mock_db_client is initialized for the sess
     # if you have a close_mongo_connection function.
     # Example: close_mongo_connection() # Call your app's actual close function if applicable
 
+# Add Firebase mocking for tests
+@pytest.fixture(scope="session", autouse=True)
+def mock_firebase():
+    """Mock Firebase initialization for all tests"""
+    with patch('firebase_admin.initialize_app') as mock_init, \
+         patch('firebase_admin._apps', []):  # Mock empty apps list
+        # Mock Firebase initialization to prevent real Firebase calls
+        mock_init.return_value = None
+        yield mock_init
+
+@pytest.fixture(scope="function")
+def mock_firebase_auth():
+    """Mock Firebase auth operations for individual tests"""
+    with patch('firebase_admin.auth.verify_id_token') as mock_verify:
+        # Default mock response for Google auth tests
+        mock_verify.return_value = {
+            'uid': 'test_firebase_uid',
+            'email': 'test@example.com',
+            'name': 'Test User',
+            'picture': 'https://example.com/avatar.jpg'
+        }
+        yield mock_verify
+
+# Configure test environment variables
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_environment():
+    """Set up test environment variables"""
+    import os
+    
+    # Set test environment variables if not already set
+    test_env_vars = {
+        'SECRET_KEY': 'test-secret-key-for-testing-32-characters-long',
+        'ALGORITHM': 'HS256',
+        'ACCESS_TOKEN_EXPIRE_MINUTES': '15',
+        'REFRESH_TOKEN_EXPIRE_DAYS': '30',
+        'MONGODB_URL': 'mongodb://localhost:27017',
+        'DATABASE_NAME': 'splitwiser_test',
+        'DEBUG': 'true',
+        'FIREBASE_PROJECT_ID': 'test-project',
+        'FIREBASE_TYPE': 'service_account',
+        'ALLOWED_ORIGINS': 'http://localhost:3000'
+    }
+    
+    for key, value in test_env_vars.items():
+        if not os.getenv(key):
+            os.environ[key] = value
+    
+    yield
+    
+    # Cleanup - remove test env vars if we set them
+    for key in test_env_vars:
+        if os.environ.get(key) == test_env_vars[key]:
+            os.environ.pop(key, None)
+
 # It's also good practice to ensure any global resources are cleaned up.
 # For example, if Firebase is initialized, you might want to mock or control its initialization for tests.
 # For now, we'll assume Firebase interactions will be mocked directly in tests where needed.

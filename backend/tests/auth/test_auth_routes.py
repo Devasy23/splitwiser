@@ -780,3 +780,209 @@ async def test_confirm_password_reset_invalid_input(client: TestClient):
     # Password too short
     response_short_password = client.post("/auth/password/reset/confirm", json={"reset_token": "sometoken", "new_password": "123"}) # min_length=6
     assert response_short_password.status_code == 422
+
+
+# Additional integration and edge case tests for comprehensive coverage
+
+@pytest.mark.asyncio
+async def test_full_authentication_flow_integration(client: TestClient, db):
+    """Integration test covering complete authentication flow"""
+    email = "integration_test@example.com"
+    password = "integration123"
+    name = "Integration Test User"
+    
+    # 1. Signup
+    signup_data = {"email": email, "password": password, "name": name}
+    signup_response = client.post("/auth/signup/email", json=signup_data)
+    assert signup_response.status_code == 200
+    signup_data_response = signup_response.json()
+    
+    access_token = signup_data_response["access_token"]
+    refresh_token = signup_data_response["refresh_token"]
+    user_id = signup_data_response["user"]["id"]
+    
+    # 2. Verify token works
+    verify_response = client.post("/auth/token/verify", json={"access_token": access_token})
+    assert verify_response.status_code == 200
+    assert verify_response.json()["id"] == user_id
+    
+    # 3. Refresh token
+    refresh_response = client.post("/auth/refresh", json={"refresh_token": refresh_token})
+    assert refresh_response.status_code == 200
+    new_access_token = refresh_response.json()["access_token"]
+    new_refresh_token = refresh_response.json()["refresh_token"]
+    
+    # 4. Verify new token works
+    verify_new_response = client.post("/auth/token/verify", json={"access_token": new_access_token})
+    assert verify_new_response.status_code == 200
+    
+    # 5. Test password reset flow
+    reset_request_response = client.post("/auth/password/reset/request", json={"email": email})
+    assert reset_request_response.status_code == 200
+    
+    # Get reset token from database
+    user_obj_id = ObjectId(user_id)
+    reset_record = await db.password_resets.find_one({"user_id": user_obj_id})
+    assert reset_record is not None
+    
+    # Confirm password reset
+    new_password = "newintegration456"
+    confirm_response = client.post("/auth/password/reset/confirm", json={
+        "reset_token": reset_record["token"],
+        "new_password": new_password
+    })
+    assert confirm_response.status_code == 200
+    
+    # 6. Login with new password
+    login_response = client.post("/auth/login/email", json={"email": email, "password": new_password})
+    assert login_response.status_code == 200
+    
+    # 7. Verify old refresh token is revoked
+    old_refresh_response = client.post("/auth/refresh", json={"refresh_token": new_refresh_token})
+    assert old_refresh_response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_concurrent_refresh_token_usage(client: TestClient, db):
+    """Test refresh token rotation with potential race conditions"""
+    # Setup user
+    signup_response = client.post("/auth/signup/email", json={
+        "email": "concurrent_test@example.com",
+        "password": "password123",
+        "name": "Concurrent Test User"
+    })
+    refresh_token = signup_response.json()["refresh_token"]
+    
+    # Try to use the same refresh token twice (simulating race condition)
+    response1 = client.post("/auth/refresh", json={"refresh_token": refresh_token})
+    response2 = client.post("/auth/refresh", json={"refresh_token": refresh_token})
+    
+    # One should succeed, one should fail
+    success_count = sum(1 for r in [response1, response2] if r.status_code == 200)
+    failure_count = sum(1 for r in [response1, response2] if r.status_code == 401)
+    
+    assert success_count == 1, "Exactly one refresh should succeed"
+    assert failure_count == 1, "Exactly one refresh should fail (token rotation)"
+
+
+@pytest.mark.asyncio 
+async def test_authentication_error_responses_consistency(client: TestClient, db):
+    """Test that error responses are consistent across endpoints"""
+    
+    # Test invalid token format consistency
+    invalid_tokens = ["", "invalid", "bearer token", "malformed.jwt.token"]
+    
+    for invalid_token in invalid_tokens:
+        verify_response = client.post("/auth/token/verify", json={"access_token": invalid_token})
+        assert verify_response.status_code == 401
+        assert "detail" in verify_response.json()
+        
+        refresh_response = client.post("/auth/refresh", json={"refresh_token": invalid_token})
+        assert refresh_response.status_code == 401
+        assert "detail" in refresh_response.json()
+
+
+@pytest.mark.asyncio
+async def test_authentication_security_headers(client: TestClient, db):
+    """Test that authentication endpoints handle security properly"""
+    
+    # Test all auth endpoints return proper error structure
+    endpoints_and_data = [
+        ("/auth/signup/email", {"email": "test@test.com", "password": "short", "name": "Test"}),
+        ("/auth/login/email", {"email": "nonexistent@test.com", "password": "wrong"}),
+        ("/auth/refresh", {"refresh_token": "invalid"}),
+        ("/auth/token/verify", {"access_token": "invalid"}),
+        ("/auth/password/reset/request", {"email": "invalid-email"}),
+        ("/auth/password/reset/confirm", {"reset_token": "invalid", "new_password": "short"})
+    ]
+    
+    for endpoint, data in endpoints_and_data:
+        response = client.post(endpoint, json=data)
+        
+        # Should not expose internal server details
+        if response.status_code >= 400:
+            response_data = response.json()
+            assert "detail" in response_data
+            # Should not contain stack traces or internal paths
+            detail_str = str(response_data["detail"]).lower()
+            assert "traceback" not in detail_str
+            assert "exception" not in detail_str
+            assert "/app/" not in detail_str
+
+
+@pytest.mark.asyncio
+async def test_authentication_rate_limiting_simulation(client: TestClient):
+    """Simulate rate limiting scenarios"""
+    
+    # Test multiple failed login attempts
+    login_data = {"email": "nonexistent@example.com", "password": "wrongpassword"}
+    
+    failed_attempts = []
+    for i in range(5):
+        response = client.post("/auth/login/email", json=login_data)
+        failed_attempts.append(response.status_code)
+    
+    # All should fail with 401 (no actual rate limiting implemented yet)
+    assert all(status == 401 for status in failed_attempts)
+
+
+@pytest.mark.asyncio
+async def test_user_data_consistency_across_endpoints(client: TestClient, db):
+    """Test that user data is consistent across different auth endpoints"""
+    
+    # Create user
+    signup_data = {
+        "email": "consistency_test@example.com",
+        "password": "password123", 
+        "name": "Consistency Test User"
+    }
+    signup_response = client.post("/auth/signup/email", json=signup_data)
+    signup_user = signup_response.json()["user"]
+    
+    # Login and check user data consistency
+    login_response = client.post("/auth/login/email", json={
+        "email": signup_data["email"],
+        "password": signup_data["password"]
+    })
+    login_user = login_response.json()["user"]
+    
+    # Verify token and check user data consistency
+    access_token = login_response.json()["access_token"]
+    verify_response = client.post("/auth/token/verify", json={"access_token": access_token})
+    verify_user = verify_response.json()
+    
+    # All user data should be identical
+    assert signup_user["id"] == login_user["id"] == verify_user["id"]
+    assert signup_user["email"] == login_user["email"] == verify_user["email"] 
+    assert signup_user["name"] == login_user["name"] == verify_user["name"]
+
+
+@pytest.mark.asyncio
+async def test_token_expiration_edge_cases(client: TestClient, db):
+    """Test edge cases around token expiration"""
+    
+    # Create user and get tokens
+    signup_response = client.post("/auth/signup/email", json={
+        "email": "token_expiry_test@example.com",
+        "password": "password123",
+        "name": "Token Expiry Test"
+    })
+    access_token = signup_response.json()["access_token"]
+    
+    # Verify token is initially valid
+    verify_response = client.post("/auth/token/verify", json={"access_token": access_token})
+    assert verify_response.status_code == 200
+    
+    # Test with a manually crafted expired token
+    from app.auth.security import create_access_token
+    from datetime import timedelta
+    
+    # Create an expired token (expired 1 second ago)
+    expired_token = create_access_token(
+        data={"sub": signup_response.json()["user"]["id"]},
+        expires_delta=timedelta(seconds=-1)
+    )
+    
+    expired_verify_response = client.post("/auth/token/verify", json={"access_token": expired_token})
+    assert expired_verify_response.status_code == 401
+    assert "expired" in expired_verify_response.json()["detail"].lower()

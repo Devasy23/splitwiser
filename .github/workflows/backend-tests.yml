@@ -36,12 +36,27 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        # pytest is already in requirements.txt
+        # pytest is already in requirements.txt    
     - name: Run tests with pytest
       env:
         PYTHONPATH: ${{ github.workspace }}/backend  # Ensure absolute path to backend directory
+        # Application Configuration
+        SECRET_KEY: ${{ secrets.SECRET_KEY || 'test-secret-key-for-github-actions-32-characters-long' }}
+        ALGORITHM: HS256
+        ACCESS_TOKEN_EXPIRE_MINUTES: 15
+        REFRESH_TOKEN_EXPIRE_DAYS: 30
+        # Database Configuration (using mock, so these are dummy values)
+        MONGODB_URL: mongodb://localhost:27017
+        DATABASE_NAME: splitwiser_test
+        # Debug mode for tests
+        DEBUG: true
+        # Firebase Configuration (optional for tests)
+        FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID || 'test-project' }}
+        FIREBASE_TYPE: service_account
+        # CORS (not needed for tests)
+        ALLOWED_ORIGINS: http://localhost:3000
       run: |
         # Print directory structure for debugging
         ls -la
         # Run the tests using pytest.ini configuration
-        python -m pytest -v # Will use pytest.ini for configuration
+        python -m pytest -v --tb=short

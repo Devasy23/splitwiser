@@ -669,3 +669,224 @@ async def test_authenticate_user_with_email_non_existent_user(auth_service_mocke
 
     assert excinfo.value.status_code == 401
     assert "incorrect email or password" in str(excinfo.value.detail).lower()
+
+# Additional service-level tests for edge cases and optimization
+
+@pytest.mark.asyncio
+async def test_create_user_with_email_edge_cases(auth_service_mocked: AuthService, db):
+    """Test edge cases for user creation"""
+    
+    # Test with special characters in name
+    result = await auth_service_mocked.create_user_with_email(
+        "special_char@example.com", 
+        "password123", 
+        "José María O'Connor-Smith"
+    )
+    assert result["user"]["name"] == "José María O'Connor-Smith"
+    
+    # Test with very long name (within reasonable limits)
+    long_name = "A" * 100
+    result = await auth_service_mocked.create_user_with_email(
+        "long_name@example.com",
+        "password123",
+        long_name
+    )
+    assert result["user"]["name"] == long_name
+    
+    # Test email case insensitivity
+    await auth_service_mocked.create_user_with_email(
+        "CaseTest@Example.COM",
+        "password123", 
+        "Case Test"
+    )
+    
+    # Should fail if we try to create with different case
+    with pytest.raises(HTTPException) as exc_info:
+        await auth_service_mocked.create_user_with_email(
+            "casetest@example.com",  # Different case
+            "password456",
+            "Another Case Test"
+        )
+    assert exc_info.value.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_authenticate_user_password_edge_cases(auth_service_mocked: AuthService, db):
+    """Test password authentication edge cases"""
+    
+    # Create user with complex password
+    complex_password = "P@$$w0rd!@#$%^&*()_+-={}[]|\\:;\"'<>,.?/~`"
+    await auth_service_mocked.create_user_with_email(
+        "complex_pass@example.com",
+        complex_password,
+        "Complex Password User"
+    )
+    
+    # Should authenticate with exact password
+    result = await auth_service_mocked.authenticate_user_with_email(
+        "complex_pass@example.com",
+        complex_password
+    )
+    assert result["user"]["email"] == "complex_pass@example.com"
+    
+    # Should fail with slightly different password
+    with pytest.raises(HTTPException) as exc_info:
+        await auth_service_mocked.authenticate_user_with_email(
+            "complex_pass@example.com",
+            complex_password[:-1]  # Missing last character
+        )
+    assert exc_info.value.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_refresh_token_cleanup_and_rotation(auth_service_mocked: AuthService, db):
+    """Test refresh token cleanup and rotation behavior"""
+    
+    # Create user and multiple refresh tokens
+    user_result = await auth_service_mocked.create_user_with_email(
+        "rotation_test@example.com",
+        "password123",
+        "Rotation Test User"
+    )
+    user_id = str(user_result["user"]["_id"])
+    
+    # Create multiple refresh tokens for the same user (simulating multiple devices)
+    token1 = await auth_service_mocked._create_refresh_token_record(user_id)
+    token2 = await auth_service_mocked._create_refresh_token_record(user_id)
+    token3 = await auth_service_mocked._create_refresh_token_record(user_id)
+    
+    # All tokens should be valid initially
+    user_obj_id = ObjectId(user_id)
+    active_tokens = await db.refresh_tokens.find({"user_id": user_obj_id, "revoked": False}).to_list(length=None)
+    assert len(active_tokens) >= 3  # At least the 3 we created (plus the one from user creation)
+    
+    # Refresh one token - should create new token and revoke old one
+    new_token = await auth_service_mocked.refresh_access_token(token1)
+    
+    # Verify old token is revoked
+    revoked_token = await db.refresh_tokens.find_one({"token": token1})
+    assert revoked_token["revoked"] is True
+    
+    # Verify new token is active
+    new_token_doc = await db.refresh_tokens.find_one({"token": new_token})
+    assert new_token_doc["revoked"] is False
+    
+    # Other tokens should still be active
+    token2_doc = await db.refresh_tokens.find_one({"token": token2})
+    token3_doc = await db.refresh_tokens.find_one({"token": token3})
+    assert token2_doc["revoked"] is False
+    assert token3_doc["revoked"] is False
+
+
+@pytest.mark.asyncio  
+async def test_password_reset_token_uniqueness(auth_service_mocked: AuthService, db):
+    """Test that password reset tokens are unique and properly handled"""
+    
+    # Create user
+    user_result = await auth_service_mocked.create_user_with_email(
+        "reset_unique@example.com",
+        "password123", 
+        "Reset Unique User"
+    )
+    email = user_result["user"]["email"]
+    
+    # Request multiple password resets
+    await auth_service_mocked.request_password_reset(email)
+    await auth_service_mocked.request_password_reset(email)
+    await auth_service_mocked.request_password_reset(email)
+    
+    # Should have multiple reset tokens for the user
+    user_obj_id = ObjectId(str(user_result["user"]["_id"]))
+    reset_tokens = await db.password_resets.find({"user_id": user_obj_id}).to_list(length=None)
+    assert len(reset_tokens) == 3
+    
+    # All tokens should be unique
+    token_values = [token["token"] for token in reset_tokens]
+    assert len(set(token_values)) == 3, "All reset tokens should be unique"
+    
+    # Use one token to reset password
+    reset_token = reset_tokens[0]["token"]
+    result = await auth_service_mocked.confirm_password_reset(reset_token, "newpassword123")
+    assert result is True
+    
+    # Used token should be marked as used
+    used_token = await db.password_resets.find_one({"token": reset_token})
+    assert used_token["used"] is True
+    
+    # Other tokens should still be usable (not used)
+    unused_tokens = await db.password_resets.find({"user_id": user_obj_id, "used": False}).to_list(length=None)
+    assert len(unused_tokens) == 2
+
+
+@pytest.mark.asyncio
+async def test_verify_access_token_payload_variations(auth_service_mocked: AuthService, db):
+    """Test access token verification with various payload scenarios"""
+    
+    # Create user
+    user_result = await auth_service_mocked.create_user_with_email(
+        "token_payload@example.com",
+        "password123",
+        "Token Payload User"
+    )
+    user_id = str(user_result["user"]["_id"])
+    
+    # Test token with minimal payload
+    from app.auth.security import create_access_token
+    from datetime import timedelta
+    
+    minimal_token = create_access_token(
+        data={"sub": user_id},
+        expires_delta=timedelta(minutes=15)
+    )
+    
+    result = await auth_service_mocked.verify_access_token(minimal_token)
+    assert result["_id"] == ObjectId(user_id)
+    
+    # Test token with extra claims (should still work)
+    extra_claims_token = create_access_token(
+        data={"sub": user_id, "extra": "data", "role": "user"},
+        expires_delta=timedelta(minutes=15)
+    )
+    
+    result = await auth_service_mocked.verify_access_token(extra_claims_token)
+    assert result["_id"] == ObjectId(user_id)
+
+
+@pytest.mark.asyncio
+async def test_database_connection_error_handling(auth_service_mocked: AuthService):
+    """Test service behavior when database operations fail"""
+    
+    # Mock database to raise exceptions
+    with patch.object(auth_service_mocked, 'get_db') as mock_get_db:
+        mock_db = AsyncMock()
+        mock_db.users.find_one.side_effect = Exception("Database connection failed")
+        mock_get_db.return_value = mock_db
+        
+        # Should handle database errors gracefully
+        with pytest.raises(Exception):
+            await auth_service_mocked.authenticate_user_with_email(
+                "test@example.com",
+                "password123"
+            )
+
+
+@pytest.mark.asyncio
+async def test_service_method_input_validation(auth_service_mocked: AuthService):
+    """Test service methods with invalid inputs"""
+    
+    # Test with None values
+    with pytest.raises((TypeError, AttributeError, HTTPException)):
+        await auth_service_mocked.create_user_with_email(None, "password", "name")
+    
+    with pytest.raises((TypeError, AttributeError, HTTPException)):
+        await auth_service_mocked.create_user_with_email("email@test.com", None, "name")
+    
+    with pytest.raises((TypeError, AttributeError, HTTPException)):
+        await auth_service_mocked.create_user_with_email("email@test.com", "password", None)
+    
+    # Test with empty strings
+    with pytest.raises(HTTPException):
+        await auth_service_mocked.create_user_with_email("", "password", "name")
+    
+    with pytest.raises(HTTPException):
+        await auth_service_mocked.create_user_with_email("email@test.com", "", "name")
