@@ -7,7 +7,7 @@ on:
       - 'backend/**'
       - '.github/workflows/backend-tests.yml'
   pull_request:
-    branches: [ main , feature/auth-service-workflow]
+    branches: [ main ]
     paths:
       - 'backend/**'
       - '.github/workflows/backend-tests.yml'
@@ -39,5 +39,7 @@ jobs:
         # pytest is already in requirements.txt
 
     - name: Run tests with pytest
+      env:
+        PYTHONPATH: .  # Add current directory (backend/) to PYTHONPATH
       run: |
         pytest # Pytest will discover tests in app/tests
