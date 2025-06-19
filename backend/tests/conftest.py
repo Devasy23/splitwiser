@@ -25,10 +25,9 @@ def mock_db_client():
 
 # Fixture to override the get_database dependency with the mock_db_client
 @pytest.fixture(scope="function") # Use function scope to get a fresh db for each test
-def db(mock_db_client):
-    # Get a specific database from the client, e.g., 'testdb'
+def db(mock_db_client):    # Get a specific database from the client, e.g., 'testdb'
     # This name can be arbitrary for mongomock
-    test_db = mock_db_client[settings.mongodb_db_name if settings.mongodb_db_name else "testdb"]
+    test_db = mock_db_client[settings.database_name if settings.database_name else "testdb"]
 
     # Override the get_database dependency for the duration of the test
     # This uses FastAPI's dependency overrides
