@@ -1,0 +1,43 @@
+name: Backend Tests
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-tests.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9'] # You can specify other versions or a single one
+
+    defaults:
+      run:
+        working-directory: ./backend # Set working directory for all run steps
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        # pytest is already in requirements.txt
+
+    - name: Run tests with pytest
+      run: |
+        pytest # Pytest will discover tests in app/tests

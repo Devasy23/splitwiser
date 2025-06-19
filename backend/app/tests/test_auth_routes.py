@@ -570,3 +570,213 @@ async def test_verify_token_user_not_found(client: TestClient, db):
 async def test_verify_token_missing_input(client: TestClient):
     response = client.post("/auth/token/verify", json={}) # Missing access_token
     assert response.status_code == 422 # FastAPI validation error
+
+
+@pytest.mark.asyncio
+async def test_request_password_reset_existing_email(client: TestClient, db):
+    # 1. Create a user
+    signup_data = {
+        "email": "reset_request_route@example.com",
+        "password": "password123",
+        "name": "Reset Request Route User"
+    }
+    signup_response = client.post("/auth/signup/email", json=signup_data)
+    assert signup_response.status_code == 200
+    user_id_str = signup_response.json()["user"]["id"]
+    user_id_obj = ObjectId(user_id_str)
+
+    # 2. Make the password reset request
+    # Patch 'print' in the service layer to avoid console output and to verify calls
+    with patch('app.auth.service.print') as mock_print:
+        request_data = {"email": signup_data["email"]}
+        response = client.post("/auth/password/reset/request", json=request_data)
+
+    assert response.status_code == 200
+    response_data = response.json()
+    assert response_data["success"] is True
+    assert "if the email exists, a reset link has been sent" in response_data["message"].lower()
+
+    # 3. Verify a password reset token was created in the DB for the user
+    reset_record = await db.password_resets.find_one({"user_id": user_id_obj})
+    assert reset_record is not None
+    assert "token" in reset_record
+    assert "expires_at" in reset_record
+    assert not reset_record["used"]
+
+    # 4. Verify that the print function in the service was called (as user exists)
+    assert mock_print.call_count >= 1 # Service prints token and link
+
+@pytest.mark.asyncio
+async def test_request_password_reset_non_existent_email(client: TestClient, db):
+    non_existent_email = "i_do_not_exist_for_reset@example.com"
+
+    with patch('app.auth.service.print') as mock_print:
+        request_data = {"email": non_existent_email}
+        response = client.post("/auth/password/reset/request", json=request_data)
+
+    assert response.status_code == 200 # Should still be 200
+    response_data = response.json()
+    assert response_data["success"] is True
+    assert "if the email exists, a reset link has been sent" in response_data["message"].lower()
+
+    # Verify no password reset token was created in the DB
+    # (as no user_id would be found for this email)
+    # This check is a bit indirect; we are checking that no new records appeared.
+    # Since the db fixture cleans up, password_resets should be empty.
+    count = await db.password_resets.count_documents({})
+    assert count == 0
+
+    # Verify that print was NOT called in the service (as user does not exist)
+    assert mock_print.call_count == 0
+
+
+@pytest.mark.asyncio
+async def test_request_password_reset_invalid_email_format(client: TestClient):
+    request_data = {"email": "not-a-valid-email"}
+    response = client.post("/auth/password/reset/request", json=request_data)
+
+    assert response.status_code == 422 # FastAPI validation error
+    # No need to check print or DB as it fails at validation layer
+
+
+@pytest.mark.asyncio
+async def test_confirm_password_reset_success(client: TestClient, db):
+    # 1. Create a user
+    email = "confirm_reset_route@example.com"
+    old_password = "oldPasswordRoute123"
+    new_password = "newPasswordRoute456"
+    signup_data = {"email": email, "password": old_password, "name": "Confirm Reset Route User"}
+    signup_response = client.post("/auth/signup/email", json=signup_data)
+    assert signup_response.status_code == 200
+    user_id_str = signup_response.json()["user"]["id"]
+    user_id_obj = ObjectId(user_id_str)
+
+    # 2. Manually create a valid password reset token in the DB (as if /request was called)
+    reset_token_value = "valid_reset_token_for_route_confirm"
+    await db.password_resets.insert_one({
+        "user_id": user_id_obj,
+        "token": reset_token_value,
+        "expires_at": datetime.utcnow() + timedelta(hours=1),
+        "used": False,
+        "created_at": datetime.utcnow()
+    })
+
+    # 3. Create a refresh token for the user (as if they logged in once)
+    # We can get one by actually logging in the user before password reset.
+    login_data = {"email": email, "password": old_password}
+    login_response = client.post("/auth/login/email", json=login_data)
+    assert login_response.status_code == 200
+    initial_refresh_token = login_response.json()["refresh_token"]
+
+    # Verify this initial refresh token is valid and not revoked
+    initial_rt_doc = await db.refresh_tokens.find_one({"token": initial_refresh_token, "user_id": user_id_obj})
+    assert initial_rt_doc is not None and not initial_rt_doc["revoked"]
+
+    # 4. Make the password reset confirm request
+    confirm_request_data = {"reset_token": reset_token_value, "new_password": new_password}
+    confirm_response = client.post("/auth/password/reset/confirm", json=confirm_request_data)
+
+    assert confirm_response.status_code == 200
+    confirm_response_data = confirm_response.json()
+    assert confirm_response_data["success"] is True
+    assert "password has been reset successfully" in confirm_response_data["message"].lower()
+
+    # 5. Verify password was changed by trying to login with the new password
+    new_login_data = {"email": email, "password": new_password}
+    new_login_response = client.post("/auth/login/email", json=new_login_data)
+    assert new_login_response.status_code == 200, f"Login with new password failed: {new_login_response.json()}"
+
+    # 6. Verify old password no longer works
+    old_login_data = {"email": email, "password": old_password}
+    old_login_response = client.post("/auth/login/email", json=old_login_data)
+    assert old_login_response.status_code == 401 # Incorrect email or password
+
+    # 7. Verify the reset token was marked as used in DB
+    reset_record_used = await db.password_resets.find_one({"token": reset_token_value})
+    assert reset_record_used is not None
+    assert reset_record_used["used"] is True
+
+    # 8. Verify all previous refresh tokens for the user were revoked
+    # The initial_refresh_token should now be revoked.
+    revoked_rt_doc = await db.refresh_tokens.find_one({"token": initial_refresh_token, "user_id": user_id_obj})
+    assert revoked_rt_doc is not None and revoked_rt_doc["revoked"]
+
+    # Check if any non-revoked refresh tokens exist for this user (there shouldn't be)
+    active_refresh_tokens_count = await db.refresh_tokens.count_documents({"user_id": user_id_obj, "revoked": False})
+    assert active_refresh_tokens_count == 0
+
+
+@pytest.mark.asyncio
+async def test_confirm_password_reset_invalid_token(client: TestClient, db):
+    request_data = {"reset_token": "this_is_a_bad_token", "new_password": "someNewPassword123"}
+    response = client.post("/auth/password/reset/confirm", json=request_data)
+
+    assert response.status_code == 400 # Bad Request
+    response_data = response.json()
+    assert "invalid or expired reset token" in str(response_data["detail"]).lower()
+
+@pytest.mark.asyncio
+async def test_confirm_password_reset_expired_token(client: TestClient, db):
+    # 1. Create user
+    email = "confirm_expired_route@example.com"
+    signup_data = {"email": email, "password": "password123", "name": "Confirm Expired Route"}
+    signup_response = client.post("/auth/signup/email", json=signup_data)
+    assert signup_response.status_code == 200
+    user_id_obj = ObjectId(signup_response.json()["user"]["id"])
+
+    # 2. Manually create an expired password reset token
+    expired_token_value = "expired_reset_token_for_route"
+    await db.password_resets.insert_one({
+        "user_id": user_id_obj,
+        "token": expired_token_value,
+        "expires_at": datetime.utcnow() - timedelta(hours=1), # Expired
+        "used": False, "created_at": datetime.utcnow() - timedelta(hours=2)
+    })
+
+    request_data = {"reset_token": expired_token_value, "new_password": "someNewPassword123"}
+    response = client.post("/auth/password/reset/confirm", json=request_data)
+
+    assert response.status_code == 400
+    response_data = response.json()
+    assert "invalid or expired reset token" in str(response_data["detail"]).lower()
+
+@pytest.mark.asyncio
+async def test_confirm_password_reset_token_already_used(client: TestClient, db):
+    # 1. Create user
+    email = "confirm_used_route@example.com"
+    signup_data = {"email": email, "password": "password123", "name": "Confirm Used Route"}
+    signup_response = client.post("/auth/signup/email", json=signup_data)
+    assert signup_response.status_code == 200
+    user_id_obj = ObjectId(signup_response.json()["user"]["id"])
+
+    # 2. Manually create a used password reset token
+    used_token_value = "used_reset_token_for_route"
+    await db.password_resets.insert_one({
+        "user_id": user_id_obj,
+        "token": used_token_value,
+        "expires_at": datetime.utcnow() + timedelta(hours=1), # Not expired
+        "used": True, # Already used
+        "created_at": datetime.utcnow()
+    })
+
+    request_data = {"reset_token": used_token_value, "new_password": "someNewPassword123"}
+    response = client.post("/auth/password/reset/confirm", json=request_data)
+
+    assert response.status_code == 400
+    response_data = response.json()
+    assert "invalid or expired reset token" in str(response_data["detail"]).lower()
+
+
+@pytest.mark.asyncio
+async def test_confirm_password_reset_invalid_input(client: TestClient):
+    # Missing reset_token
+    response_missing_token = client.post("/auth/password/reset/confirm", json={"new_password": "someNewPassword123"})
+    assert response_missing_token.status_code == 422
+
+    # Missing new_password
+    response_missing_password = client.post("/auth/password/reset/confirm", json={"reset_token": "sometoken"})
+    assert response_missing_password.status_code == 422
+
+    # Password too short
+    response_short_password = client.post("/auth/password/reset/confirm", json={"reset_token": "sometoken", "new_password": "123"}) # min_length=6
+    assert response_short_password.status_code == 422
