@@ -31,7 +31,7 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
-
+        
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -42,4 +42,4 @@ jobs:
       env:
         PYTHONPATH: .  # Add current directory (backend/) to PYTHONPATH
       run: |
-        pytest # Pytest will discover tests in app/tests
+        pytest tests/ # Pytest will discover tests in the tests directory
