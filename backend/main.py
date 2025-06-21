@@ -15,7 +15,12 @@ app = FastAPI(
 
 # CORS middleware - Enhanced configuration for production
 allowed_origins = []
-if settings.allowed_origins:
+if settings.allow_all_origins:
+    # Allow all origins in development mode
+    allowed_origins = ["*"]
+    print("Development mode: CORS configured to allow all origins")
+elif settings.allowed_origins:
+    # Use specified origins in production mode
     allowed_origins = [origin.strip() for origin in settings.allowed_origins.split(",") if origin.strip()]
 else:
     # Fallback to allow all origins if not specified (not recommended for production)
