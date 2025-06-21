@@ -1,5 +1,21 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+# Python
+*.pyc
+__pycache__/
+venv/
+.venv/
+.vscode/
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Firebase
+firebase-service-account.json
+google-services.json
+
 # dependencies
 node_modules/
 
@@ -37,3 +53,27 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+# Additional Security
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+private/
+config/production.json
+
+# Firebase Admin SDK (Backend)
+firebase-service-account*.json
+firebase-adminsdk*.json
+service-account*.json
+
+# IDE
+.vscode/settings.json
+.idea/
+.vscode/
+
+# Logs
+*.log
+logs/

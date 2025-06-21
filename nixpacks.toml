@@ -1,0 +1,34 @@
+[phases.setup]
+nixPkgs = ["python312", "pip"]
+
+# Completely override the install command to avoid duplicate processes
+[phases.install]
+cmds = [
+    "python -m pip install --upgrade pip",
+    "pip install -r requirements.txt"
+]
+
+# Skip Python's default install phase entirely
+[phases.python:install]
+dependsOn = ["install"] 
+cmds = []
+
+[phases.build]
+cmds = [
+    "echo 'Build phase complete'",
+    # Copy backend files to the root for simpler execution
+    "cp -r backend/* ."
+]
+
+[start]
+# Run directly from the root directory since we copied the files there
+cmd = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+
+[variables]
+PYTHONPATH = "/app"
+PYTHONUNBUFFERED = "1"
+
+# Specify we're using plain pip without a venv
+[nixpacks]
+plan-path = "disabled"
+create-venv = false

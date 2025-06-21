@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Config files that shouldn't be in image
+.env
+.env.local
+.env.example
+
+# Build files
+dist/
+build/
+
+# Node modules (if any)
+node_modules/
+
+# Logs
+*.log
+
+# Firebase
+firebase-service-account.json
