@@ -1,50 +1,79 @@
-# Welcome to your Expo app 👋
+# Splitwiser Frontend
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native (Expo) application for the Splitwiser bill-splitting app.
 
-## Get started
+## Features
 
-1. Install dependencies
+- User authentication (email/password and Google Sign-in)
+- Login and signup screens
+- JWT authentication with refresh token mechanism
+- Secure token storage
 
-   ```bash
-   npm install
-   ```
+## Getting Started
 
-2. Start the app
+### Prerequisites
 
-   ```bash
-   npx expo start
-   ```
+- Node.js (v14 or later)
+- npm or yarn
+- Expo CLI (`npm install -g expo-cli`)
 
-In the output, you'll find options to open the app in a
+### Installation
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+1. Install dependencies:
 
 ```bash
-npm run reset-project
+cd frontend
+npm install
+# or
+yarn install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Configure environment variables:
+   
+   - Update the API_URL in `contexts/AuthContext.tsx` with your backend URL.
+   - Update the `WEB_CLIENT_ID` in `config/firebase.tsx` with your Firebase Web Client ID.
 
-## Learn more
+3. Start the development server:
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npm start
+# or 
+yarn start
+# or
+npx expo start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Running on Physical Device
 
-## Join the community
+1. Install Expo Go app on your iOS or Android device
+2. Scan the QR code shown in the terminal after running `npm start`
 
-Join our community of developers creating universal apps.
+### Running on Emulator
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- For Android: Press 'a' in the terminal after starting the development server
+- For iOS: Press 'i' in the terminal (requires macOS and Xcode)
+
+## Authentication Flow
+
+This app follows the authentication flow as described in [auth-service.md](../docs/auth-service.md):
+
+1. **Email/Password Authentication**
+   - Sign up with email, password, and name
+   - Login with email and password
+   
+2. **Google Authentication**
+   - Uses Firebase for Google authentication
+   - Sends the ID token to the backend for verification
+   
+3. **Token Management**
+   - Stores access tokens in memory
+   - Stores refresh tokens securely using Expo SecureStore
+   - Auto-refreshes expired tokens
+   - Handles token rotation
+
+## Project Structure
+
+- `/screens` - React Native screens (LoginScreen, HomeScreen)
+- `/contexts` - React Context for global state management (AuthContext)
+- `/config` - Configuration files (Firebase)
+- `/assets` - Images and other static assets
