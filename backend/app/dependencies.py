@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.auth.security import verify_token
 from app.database import get_database
+from bson import ObjectId
 from typing import Dict, Any
 
 security = HTTPBearer()
@@ -20,7 +21,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         payload = verify_token(credentials.credentials)
         user_id = payload.get("sub")
         
-        if not user_id:
+        if not user_id:            
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authentication credentials",
@@ -29,7 +30,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         
         # Get user from database
         db = get_database()
-        user = await db.users.find_one({"_id": user_id})
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
         
         if not user:
             raise HTTPException(
@@ -38,9 +39,11 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
+        # Create a copy of the user document to avoid mutating the original
+        user_copy = dict(user)
         # Convert ObjectId to string
-        user["_id"] = str(user["_id"])
-        return user
+        user_copy["_id"] = str(user_copy["_id"])
+        return user_copy
         
     except HTTPException:
         raise

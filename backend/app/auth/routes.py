@@ -148,10 +148,9 @@ async def refresh_token(request: RefreshTokenRequest):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Failed to create new tokens"
             )
-        
-        # Create new access token
+          # Create new access token
         access_token = create_access_token(
-            data={"sub": token_record["user_id"]},
+            data={"sub": str(token_record["user_id"])},
             expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
         )
         

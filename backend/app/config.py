@@ -12,13 +12,11 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 30
-    
-    # Firebase
-    firebase_project_id: str = ""
+      # Firebase
+    firebase_project_id: Optional[str] = None
     firebase_service_account_path: str = "./firebase-service-account.json"
     # Firebase service account credentials as environment variables
     firebase_type: Optional[str] = None
-    firebase_project_id: Optional[str] = None
     firebase_private_key_id: Optional[str] = None
     firebase_private_key: Optional[str] = None
     firebase_client_email: Optional[str] = None
@@ -27,9 +25,11 @@ class Settings(BaseSettings):
     firebase_token_uri: Optional[str] = None
     firebase_auth_provider_x509_cert_url: Optional[str] = None
     firebase_client_x509_cert_url: Optional[str] = None
-      # App
+    
+    # App
     debug: bool = False
-      # CORS - Add your frontend domain here for production
+    
+    # CORS - Add your frontend domain here for production
     allowed_origins: str = "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://localhost:8081"
     allow_all_origins: bool = False
 
