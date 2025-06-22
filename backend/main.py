@@ -52,7 +52,16 @@ app.add_middleware(
 # Add a catch-all OPTIONS handler that should work for any path
 @app.options("/{path:path}")
 async def options_handler(request: Request, path: str):
-    """Handle all OPTIONS requests"""
+    """
+    Handles all OPTIONS requests for any path, returning a 200 OK response with appropriate CORS headers based on the request origin and allowed origins.
+    
+    Parameters:
+        request (Request): The incoming HTTP request.
+        path (str): The requested path segment.
+    
+    Returns:
+        Response: An HTTP response with CORS headers set according to the allowed origins configuration.
+    """
     print(f"OPTIONS request received for path: /{path}")
     print(f"Origin: {request.headers.get('origin', 'No origin header')}")
     
@@ -78,14 +87,14 @@ async def options_handler(request: Request, path: str):
 @app.on_event("startup")
 async def startup_event():
     """
-    Initializes the MongoDB connection when the application starts.
+    Establishes a connection to MongoDB when the FastAPI application starts.
     """
     await connect_to_mongo()
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """
-    Closes the MongoDB connection when the application shuts down.
+    Close the MongoDB connection during application shutdown.
     """
     await close_mongo_connection()
 
@@ -93,9 +102,10 @@ async def shutdown_event():
 @app.get("/health")
 async def health_check():
     """
-    Returns the health status of the Splitwiser API service.
+    Return the health status of the Splitwiser API service.
     
-    This endpoint can be used for health checks and monitoring.
+    Returns:
+        dict: A JSON object indicating the service is healthy and specifying the service name.
     """
     return {"status": "healthy", "service": "Splitwiser API"}
 

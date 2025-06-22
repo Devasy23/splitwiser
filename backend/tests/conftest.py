@@ -13,6 +13,11 @@ def mock_firebase_admin(request):
 
     # Mock firebase_admin.credentials.Certificate
     # Create a mock object that can be called and returns another mock
+    """
+    Session-scoped pytest fixture that mocks Firebase Admin SDK components for testing.
+    
+    This fixture patches key parts of the `firebase_admin` module, including credentials, app initialization, and authentication, so that tests can run without real Firebase credentials or network access. The mocked `verify_id_token` method returns a dummy decoded token. The fixture is applied automatically to all tests in the session.
+    """
     mock_certificate = MagicMock()
     # When firebase_admin.credentials.Certificate(path) is called, it returns a dummy object
     mock_certificate.return_value = MagicMock()
@@ -51,6 +56,14 @@ def mock_firebase_admin(request):
 
 @pytest_asyncio.fixture(scope="function", autouse=True)
 async def mock_db():
+    """
+    Asynchronous pytest fixture that provides a mocked MongoDB database instance for testing.
+    
+    This fixture creates a new `AsyncMongoMockClient` for each test function, retrieves a mock database named "test_db", and patches the `get_database` function in `app.auth.service` to return this mock database. Tests using this fixture interact with the mock database transparently, ensuring isolation from real database operations.
+    
+    Yields:
+        The mock database instance for use within tests.
+    """
     print("mock_db fixture: Creating AsyncMongoMockClient")
     mock_mongo_client = AsyncMongoMockClient()
     print(f"mock_db fixture: mock_mongo_client type: {type(mock_mongo_client)}")

@@ -53,30 +53,30 @@ if not firebase_admin._apps:
 class AuthService:
     def __init__(self):
         # Initializes the AuthService instance.
+        """
+        Initialize a new instance of the AuthService class.
+        """
         pass
     
     def get_db(self):
         """
-        Returns a database connection instance from the application's database module.
+        Retrieve a database connection instance from the application's database module.
         """
         return get_database()
 
     async def create_user_with_email(self, email: str, password: str, name: str) -> Dict[str, Any]:
         """
-        Creates a new user account with the provided email, password, and name.
+        Create a new user account with the specified email, password, and name.
         
-        Checks for existing users with the same email and raises an error if found. Stores the user with a hashed password and default profile fields, then generates and returns a refresh token along with the user data.
+        Checks for an existing user with the given email and raises an HTTP 400 error if found. Stores the user with a hashed password and default profile fields, then generates and returns a refresh token along with the user data.
         
-        Args:
-            email: The user's email address.
-            password: The user's plaintext password.
-            name: The user's display name.
+        Parameters:
+            email (str): The user's email address.
+            password (str): The user's plaintext password.
+            name (str): The user's display name.
         
         Returns:
-            A dictionary containing the created user document and a refresh token.
-        
-        Raises:
-            HTTPException: If a user with the given email already exists.
+            Dict[str, Any]: A dictionary containing the created user document and a refresh token.
         """
         db = self.get_db()
         
@@ -119,12 +119,12 @@ class AuthService:
 
     async def authenticate_user_with_email(self, email: str, password: str) -> Dict[str, Any]:
         """
-        Authenticates a user using email and password credentials.
+        Authenticate a user by verifying email and password credentials.
         
-        Verifies the provided email and password against stored user data. If authentication succeeds, returns the user information and a new refresh token. Raises an HTTP 401 error if credentials are invalid.
+        If authentication is successful, returns a dictionary containing the user document and a new refresh token. Raises an HTTP 401 error if the credentials are invalid.
         
         Returns:
-            A dictionary containing the authenticated user and a new refresh token.
+            dict: Contains the authenticated user and a new refresh token.
         """
         db = self.get_db()
         
@@ -145,15 +145,15 @@ class AuthService:
 
     async def authenticate_with_google(self, id_token: str) -> Dict[str, Any]:
         """
-        Authenticates a user using a Google OAuth ID token, creating a new user if necessary.
+        Authenticate a user using a Google OAuth ID token, creating or updating the user as needed.
         
-        Verifies the provided Firebase ID token, retrieves or creates the corresponding user in the database, updates user information if needed, and issues a new refresh token. Raises an HTTP 400 error if the email is missing or if authentication fails, and HTTP 401 if the token is invalid.
+        Verifies the provided Firebase ID token, retrieves or creates the corresponding user in the database, updates user information if necessary, and issues a new refresh token. Raises an HTTP 400 error if the email is missing or authentication fails, and HTTP 401 if the token is invalid.
         
-        Args:
-            id_token: The Firebase ID token obtained from Google OAuth.
+        Parameters:
+            id_token (str): The Firebase ID token obtained from Google OAuth.
         
         Returns:
-            A dictionary containing the user data and a new refresh token.
+            Dict[str, Any]: A dictionary containing the user data and a new refresh token.
         """
         try:
             # Verify the Firebase ID token
@@ -229,15 +229,15 @@ class AuthService:
 
     async def refresh_access_token(self, refresh_token: str) -> str:
         """
-        Refreshes an access token by validating and rotating the provided refresh token.
+        Refreshes the access token by validating and rotating the provided refresh token.
         
         If the refresh token is valid and not expired, issues a new refresh token and revokes the old one. Raises an HTTP 401 error if the token is invalid, expired, or the associated user does not exist.
         
-        Args:
-            refresh_token: The refresh token string to validate and rotate.
+        Parameters:
+            refresh_token (str): The refresh token to validate and rotate.
         
         Returns:
-            A new refresh token string.
+            str: A new refresh token string.
         """
         db = self.get_db()
         
@@ -274,13 +274,13 @@ class AuthService:
         return new_refresh_token    
     async def verify_access_token(self, token: str) -> Dict[str, Any]:
         """
-        Verifies an access token and retrieves the associated user.
+        Verify a JWT access token and return the associated user document.
         
-        Args:
-            token: The JWT access token to verify.
+        Parameters:
+            token (str): The JWT access token to verify.
         
         Returns:
-            The user document corresponding to the token's subject.
+            Dict[str, Any]: The user document corresponding to the token's subject.
         
         Raises:
             HTTPException: If the token is invalid or the user does not exist.
@@ -309,9 +309,9 @@ class AuthService:
 
     async def request_password_reset(self, email: str) -> bool:
         """
-        Initiates a password reset process for the specified email address.
+        Initiates a password reset process for the given email address.
         
-        If the user exists, generates a password reset token with a 1-hour expiration and stores it in the database. The reset token and link are logged for development purposes. Always returns True to avoid revealing whether the email is registered.
+        If the user exists, generates and stores a password reset token with a 1-hour expiration. Always returns True to prevent email enumeration.
         """
         db = self.get_db()
         
@@ -342,16 +342,16 @@ class AuthService:
 
     async def confirm_password_reset(self, reset_token: str, new_password: str) -> bool:
         """
-        Confirms a password reset using a valid reset token and updates the user's password.
+        Reset a user's password using a valid reset token and revoke all existing refresh tokens.
         
-        Validates the reset token, updates the user's password, marks the token as used, and revokes all existing refresh tokens for the user to require re-authentication.
+        Validates the provided reset token, updates the user's password, marks the token as used, and revokes all refresh tokens for the user to require re-authentication.
         
-        Args:
-            reset_token: The password reset token to validate.
-            new_password: The new password to set for the user.
+        Parameters:
+            reset_token (str): The password reset token to validate and consume.
+            new_password (str): The new password to set for the user.
         
         Returns:
-            True if the password reset is successful.
+            bool: True if the password reset is successful.
         
         Raises:
             HTTPException: If the reset token is invalid or expired.
@@ -393,15 +393,15 @@ class AuthService:
         return True    
     async def _create_refresh_token_record(self, user_id: str) -> str:
         """
-        Generates and stores a new refresh token for the specified user.
+        Generate and store a new refresh token for a user, returning the token string.
         
-        Creates a refresh token with an expiration date and saves it in the database for token management and rotation.
+        A refresh token with an expiration date is created and saved in the database for the specified user. The token is used for session management and token rotation.
         
-        Args:
-            user_id: The unique identifier of the user for whom the refresh token is created.
+        Parameters:
+            user_id (str): Unique identifier of the user for whom the refresh token is generated.
         
         Returns:
-            The generated refresh token string.
+            str: The generated refresh token.
         """
         db = self.get_db()
         

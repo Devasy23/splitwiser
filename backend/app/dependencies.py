@@ -9,12 +9,12 @@ security = HTTPBearer()
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
     """
-    Retrieves the currently authenticated user based on a JWT token from the HTTP Authorization header.
+    Retrieve the authenticated user based on a JWT token from the HTTP Authorization header.
     
-    Verifies the provided JWT token, extracts the user ID, and fetches the corresponding user document from the database. Raises an HTTP 401 Unauthorized error if the token is invalid, the user ID is missing, or the user does not exist.
+    Verifies the JWT token, extracts the user ID, and fetches the corresponding user document from the database. Raises an HTTP 401 Unauthorized error if authentication fails or the user does not exist.
     
     Returns:
-        A dictionary representing the authenticated user, with the `_id` field as a string.
+        dict: The authenticated user's data with the `_id` field as a string.
     """
     try:
         # Verify token

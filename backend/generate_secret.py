@@ -3,12 +3,12 @@ import string
 
 def generate_jwt_secret():
     """
-    Generates a cryptographically secure 64-character secret key for JWT authentication.
+    Generate a cryptographically secure 64-character secret key for JWT authentication.
     
-    The key consists of uppercase and lowercase letters, digits, and the special characters "!@#$%^&*".
+    The generated key includes uppercase and lowercase letters, digits, and the special characters "!@#$%^&*".
     
     Returns:
-        A randomly generated 64-character string suitable for use as a JWT secret key.
+        str: A randomly generated 64-character string suitable for use as a JWT secret key.
     """
     # Generate a 64-character secret key
     alphabet = string.ascii_letters + string.digits + "!@#$%^&*"

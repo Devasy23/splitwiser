@@ -8,6 +8,11 @@ import LoginScreen from './screens/LoginScreen';
 
 const Stack = createNativeStackNavigator();
 
+/**
+ * Renders the navigation stack based on authentication status.
+ *
+ * Displays the Home screen if the user is authenticated, or the Login screen if not.
+ */
 function AppNavigator() {
   const { isAuthenticated } = useAuth();
 
@@ -30,6 +35,11 @@ function AppNavigator() {
   );
 }
 
+/**
+ * The main entry point of the React Native app, providing authentication context and navigation.
+ *
+ * Wraps the application in an authentication provider and navigation container, rendering the appropriate screens based on authentication state.
+ */
 export default function App() {
   return (
     <AuthProvider>

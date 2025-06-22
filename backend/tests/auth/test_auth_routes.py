@@ -17,6 +17,11 @@ from bson import ObjectId
 
 @pytest.mark.asyncio
 async def test_signup_with_email_success(mock_db): # mock_db fixture is auto-used
+    """
+    Test successful user signup via email, verifying response tokens and user creation.
+    
+    Sends a valid signup request to the email signup endpoint and asserts that the response contains access and refresh tokens, as well as correct user data. Confirms that the user is created in the mock database with a hashed password and that a corresponding refresh token is stored and not revoked.
+    """
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         signup_data = {
             "email": "testuser@example.com",
@@ -51,6 +56,11 @@ async def test_signup_with_email_success(mock_db): # mock_db fixture is auto-use
 @pytest.mark.asyncio
 async def test_signup_with_existing_email(mock_db):
     # Pre-populate with a user
+    """
+    Test that signing up with an existing email returns a 400 error and appropriate error message.
+    
+    Ensures the API rejects duplicate email registrations and provides a clear error response.
+    """
     existing_email = "existing@example.com"
     await mock_db.users.insert_one({
         "email": existing_email,
@@ -84,6 +94,11 @@ async def test_signup_with_existing_email(mock_db):
     ]
 )
 async def test_signup_invalid_input_refined(mock_db, payload_modifier, affected_field, description):
+    """
+    Test that the signup endpoint returns appropriate validation errors for various invalid input payloads.
+    
+    This parameterized test modifies the signup payload to simulate different invalid input scenarios (such as missing fields, short passwords, or invalid email formats), sends a POST request to the signup endpoint, and asserts that the response contains a 422 status code with a validation error corresponding to the affected field and error type.
+    """
     base_payload = {
         "email": "testuser@example.com",
         "password": "securepassword123",
@@ -118,6 +133,11 @@ async def test_signup_invalid_input_refined(mock_db, payload_modifier, affected_
 
 @pytest.mark.asyncio
 async def test_login_with_email_success(mock_db):
+    """
+    Test successful login with email and password, verifying token issuance and user data.
+    
+    This test ensures that a user can log in with valid credentials, receives access and refresh tokens, and that the returned user data matches the database. It also confirms that a refresh token is created in the database, is not revoked, and matches the token in the response.
+    """
     user_email = "loginuser@example.com"
     user_password = "loginpassword123"
     hashed_password = get_password_hash(user_password)
@@ -164,6 +184,9 @@ async def test_login_with_email_success(mock_db):
 
 @pytest.mark.asyncio
 async def test_login_with_incorrect_password(mock_db):
+    """
+    Test that logging in with an incorrect password returns a 401 Unauthorized error and an appropriate error message.
+    """
     user_email = "wrongpass@example.com"
     correct_password = "correctpassword"
     incorrect_password = "incorrectpassword"
@@ -190,6 +213,9 @@ async def test_login_with_incorrect_password(mock_db):
 
 @pytest.mark.asyncio
 async def test_login_with_non_existent_email(mock_db):
+    """
+    Test that logging in with a non-existent email returns a 401 Unauthorized error with a generic credentials message.
+    """
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         login_data = {
             "email": "nosuchuser@example.com",
@@ -212,6 +238,11 @@ async def test_login_with_non_existent_email(mock_db):
     ]
 )
 async def test_login_invalid_input(mock_db, payload_modifier, affected_field, description):
+    """
+    Test that the login endpoint returns appropriate validation errors for invalid input payloads.
+    
+    This parameterized test modifies the login payload to simulate various invalid input scenarios (such as missing fields or invalid email format), sends a POST request to the login endpoint, and asserts that the response contains the expected validation error for the affected field.
+    """
     base_payload = {
         "email": "validuser@example.com",
         "password": "validpassword123"
