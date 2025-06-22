@@ -1,18 +1,17 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { useGoogleAuth } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 
 const LoginScreen: React.FC = () => {
@@ -21,10 +20,8 @@ const LoginScreen: React.FC = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
-  
-  // Get auth functions
+    // Get auth functions
   const { login, signup, loading } = useAuth();
-  const { promptAsync, loading: googleLoading, error: googleError, request } = useGoogleAuth();
 
   // Handle form submission
   const handleSubmit = async () => {
@@ -43,21 +40,6 @@ const LoginScreen: React.FC = () => {
     }
   };
 
-  // Handle Google sign in
-  const handleGoogleSignIn = async () => {
-    if (request) {
-      await promptAsync();
-    } else {
-      Alert.alert('Error', 'Google sign-in is not available');
-    }
-  };
-
-  // Show Google sign-in error if any
-  React.useEffect(() => {
-    if (googleError) {
-      Alert.alert('Google Sign-In Error', googleError);
-    }
-  }, [googleError]);
 
   return (
     <KeyboardAvoidingView 
@@ -101,11 +83,10 @@ const LoginScreen: React.FC = () => {
             onChangeText={setPassword}
             secureTextEntry
           />
-          
-          <TouchableOpacity 
+            <TouchableOpacity 
             style={styles.button}
             onPress={handleSubmit}
-            disabled={loading || googleLoading}
+            disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
@@ -114,28 +95,7 @@ const LoginScreen: React.FC = () => {
                 {isSignUp ? 'Sign Up' : 'Login'}
               </Text>
             )}
-          </TouchableOpacity>
-          
-          <View style={styles.divider}>
-            <View style={styles.line} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.line} />
-          </View>
-          
-          <TouchableOpacity 
-            style={styles.googleButton}
-            onPress={handleGoogleSignIn}
-            disabled={loading || googleLoading || !request}
-          >
-            {googleLoading ? (
-              <ActivityIndicator color="#4285F4" />
-            ) : (
-              <>
-                <Text style={styles.googleButtonText}>Continue with Google</Text>
-              </>
-            )}
-          </TouchableOpacity>
-          
+          </TouchableOpacity>          
           <TouchableOpacity 
             style={styles.switchMode}
             onPress={() => setIsSignUp(!isSignUp)}
@@ -203,8 +163,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     fontSize: 16,
     backgroundColor: '#f5f5f5',
-  },
-  button: {
+  },  button: {
     backgroundColor: '#2e7d32', // Green color
     height: 50,
     borderRadius: 8,
@@ -216,35 +175,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: '600',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#ddd',
-  },
-  dividerText: {
-    marginHorizontal: 10,
-    color: '#888',
-  },
-  googleButton: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    height: 50,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  googleButtonText: {
-    fontSize: 16,
-    color: '#444',
-    marginLeft: 10,
   },
   switchMode: {
     marginTop: 20,

@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-const API_URL = 'YOUR_BACKEND_URL'; // Replace with your actual backend URL
+const API_URL = 'https://splitwiser-production.up.railway.app'; // Replace with your actual backend URL
 
 // Define the shape of our authentication context
 type AuthContextType = {
@@ -11,7 +11,6 @@ type AuthContextType = {
   accessToken: string | null;
   refreshToken: string | null;
   login: (credentials: { email: string; password: string }) => Promise<void>;
-  googleLogin: (idToken: string) => Promise<void>;
   signup: (userData: { email: string; password: string; name: string }) => Promise<void>;
   logout: () => void;
   loading: boolean;
@@ -139,24 +138,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Google login
-  const googleLogin = async (idToken: string) => {
-    setLoading(true);
-    try {
-      const response = await axios.post('/auth/login/google', { id_token: idToken });
-      
-      // Store tokens and user data
-      setAccessToken(response.data.access_token);
-      setRefreshToken(response.data.refresh_token);
-      setUser(response.data.user);
-      setIsAuthenticated(true);
-      
-      // Save refresh token securely
-      await SecureStore.setItemAsync('refreshToken', response.data.refresh_token);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Email/Password signup
   const signup = async (userData: { email: string; password: string; name: string }) => {
@@ -188,7 +169,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Clear secure storage
     await SecureStore.deleteItemAsync('refreshToken');
   };
-
   // Provide auth context to children
   return (
     <AuthContext.Provider
@@ -198,7 +178,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         accessToken,
         refreshToken,
         login,
-        googleLogin,
         signup,
         logout,
         loading,

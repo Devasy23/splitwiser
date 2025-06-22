@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "scheme": "splitwiser",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -16,13 +17,13 @@
     ],
     "ios": {
       "supportsTablet": true
-    },
-    "android": {
+    },    "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "googleServicesFile": "../google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "package": "splitwiser.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
