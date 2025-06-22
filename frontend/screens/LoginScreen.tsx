@@ -21,10 +21,26 @@ const LoginScreen: React.FC = () => {
   const [name, setName] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
     // Get auth functions
-  const { login, signup, loading } = useAuth();
-
-  // Handle form submission
+  const { login, signup, loading } = useAuth();  // Handle form submission
   const handleSubmit = async () => {
+    // Basic form validation
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email');
+      return;
+    }
+    
+    if (!password.trim()) {
+      Alert.alert('Error', 'Please enter your password');
+      return;
+    }
+    
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+    
     try {
       if (isSignUp) {
         if (!name.trim()) {
@@ -36,7 +52,20 @@ const LoginScreen: React.FC = () => {
         await login({ email, password });
       }
     } catch (error: any) {
-      Alert.alert('Authentication Error', error.response?.data?.message || 'Failed to authenticate');
+      console.error('Authentication error:', error);
+      
+      // Extract error message from different possible error structures
+      let errorMessage = 'Failed to authenticate';
+      
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Authentication Error', errorMessage);
     }
   };
 

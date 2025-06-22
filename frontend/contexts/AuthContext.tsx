@@ -117,9 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     loadTokens();
-  }, []);
-
-  // Email/Password login
+  }, []);  // Email/Password login
   const login = async (credentials: { email: string; password: string }) => {
     setLoading(true);
     try {
@@ -133,13 +131,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Save refresh token securely
       await SecureStore.setItemAsync('refreshToken', response.data.refresh_token);
+    } catch (error) {
+      // Re-throw the error so the UI can handle it
+      throw error;
     } finally {
       setLoading(false);
     }
-  };
-
-
-  // Email/Password signup
+  };  // Email/Password signup
   const signup = async (userData: { email: string; password: string; name: string }) => {
     setLoading(true);
     try {
@@ -153,6 +151,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Save refresh token securely
       await SecureStore.setItemAsync('refreshToken', response.data.refresh_token);
+    } catch (error) {
+      // Re-throw the error so the UI can handle it
+      throw error;
     } finally {
       setLoading(false);
     }
