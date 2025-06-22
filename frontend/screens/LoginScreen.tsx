@@ -18,10 +18,38 @@ const LoginScreen: React.FC = () => {
   // States for form input and mode
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
     // Get auth functions
-  const { login, signup, loading } = useAuth();  // Handle form submission
+  const { login, signup, loading } = useAuth();
+
+  // Password validation function
+  const validatePassword = (password: string): { isValid: boolean; message: string } => {
+    if (!password.trim()) {
+      return { isValid: false, message: 'Please enter your password' };
+    }
+    
+    if (password.length < 8) {
+      return { isValid: false, message: 'Password must be at least 8 characters long' };
+    }
+    
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    
+    if (!hasUppercase || !hasLowercase || !hasNumbers || !hasSpecialChar) {
+      return { 
+        isValid: false, 
+        message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character' 
+      };
+    }
+    
+    return { isValid: true, message: '' };
+  };
+
+  // Handle form submission
   const handleSubmit = async () => {
     // Basic form validation
     if (!email.trim()) {
@@ -29,8 +57,10 @@ const LoginScreen: React.FC = () => {
       return;
     }
     
-    if (!password.trim()) {
-      Alert.alert('Error', 'Please enter your password');
+    // Enhanced password validation
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      Alert.alert('Error', passwordValidation.message);
       return;
     }
     
@@ -38,6 +68,12 @@ const LoginScreen: React.FC = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    // Password confirmation check for signup
+    if (isSignUp && password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match. Please confirm your password correctly.');
       return;
     }
     
@@ -104,14 +140,23 @@ const LoginScreen: React.FC = () => {
             keyboardType="email-address"
             autoCapitalize="none"
           />
-          
-          <TextInput
+            <TextInput
             style={styles.input}
             placeholder="Password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
           />
+          
+          {isSignUp && (
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+            />
+          )}
             <TouchableOpacity 
             style={styles.button}
             onPress={handleSubmit}
@@ -124,10 +169,13 @@ const LoginScreen: React.FC = () => {
                 {isSignUp ? 'Sign Up' : 'Login'}
               </Text>
             )}
-          </TouchableOpacity>          
-          <TouchableOpacity 
+          </TouchableOpacity>            <TouchableOpacity 
             style={styles.switchMode}
-            onPress={() => setIsSignUp(!isSignUp)}
+            onPress={() => {
+              setIsSignUp(!isSignUp);
+              // Clear password confirmation when switching modes
+              setConfirmPassword('');
+            }}
           >
             <Text style={styles.switchModeText}>
               {isSignUp 
