@@ -144,7 +144,7 @@ class GroupService:
         db = self.get_db()
         
         # Find group by join code
-        group = await db.groups.find_one({"joinCode": join_code})
+        group = await db.groups.find_one({"joinCode": join_code.upper()})
         if not group:
             raise HTTPException(status_code=404, detail="Invalid join code")
 
