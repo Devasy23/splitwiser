@@ -22,7 +22,7 @@ class UserService:
             "_id": user_id,
             "name": user.get("name"),
             "email": user.get("email"),
-            "imageUrl": user.get("imageUrl") or user.get("avatar"),
+            "avatar": user.get("imageUrl") or user.get("avatar"),
             "currency": user.get("currency", "USD"),
             "createdAt": user.get("created_at"),
             "updatedAt": user.get("updated_at") or user.get("created_at"),
