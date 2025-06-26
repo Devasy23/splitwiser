@@ -89,12 +89,11 @@ class TestGroupService:
     @pytest.mark.asyncio
     async def test_get_user_groups(self):
         """Test getting user groups"""
-        mock_db = AsyncMock()
-        mock_collection = AsyncMock()
+        mock_db = MagicMock()  # Use MagicMock instead of AsyncMock
+        mock_collection = MagicMock()  # Use MagicMock instead of AsyncMock
         mock_db.groups = mock_collection
         
-        # Mock cursor
-        mock_cursor = AsyncMock()
+        # Mock groups data
         mock_groups = [{
             "_id": ObjectId("642f1e4a9b3c2d1f6a1b2c3d"),
             "name": "Test Group",
@@ -106,11 +105,14 @@ class TestGroupService:
             "members": []
         }]
         
+        # Create a proper async iterator mock
         async def mock_async_iter():
             for group in mock_groups:
                 yield group
         
-        mock_cursor.__aiter__ = mock_async_iter
+        # Mock cursor with proper __aiter__ method
+        mock_cursor = MagicMock()
+        mock_cursor.__aiter__ = lambda self: mock_async_iter()
         mock_collection.find.return_value = mock_cursor
         
         with patch.object(self.service, 'get_db', return_value=mock_db):

@@ -40,7 +40,7 @@ def mock_firebase_admin(request):
     patches = [
         patch("firebase_admin.credentials.Certificate", mock_certificate),
         patch("firebase_admin.initialize_app", mock_initialize_app),
-        patch("firebase_admin.auth", mock_firebase_auth) # Mock auth module
+        patch("firebase_admin.auth.verify_id_token", mock_firebase_auth.verify_id_token) # Mock specific function
     ]
 
     for p in patches:
@@ -65,16 +65,23 @@ async def mock_db():
     mock_database_instance = mock_mongo_client["test_db"]
     print(f"mock_db fixture: mock_database_instance type: {type(mock_database_instance)}, is None: {mock_database_instance is None}")
 
-    # Ensure we are patching the correct target
-    # 'app.database.get_database' is where the function is defined.
-    # 'app.auth.service.get_database' is where it's imported and looked up by AuthService.
-    # Patching where it's looked up can be more robust.
+    # Patch get_database for all services that use it
+    patches = [
+        patch("app.auth.service.get_database", return_value=mock_database_instance),
+        patch("app.user.service.get_database", return_value=mock_database_instance),
+        patch("app.groups.service.get_database", return_value=mock_database_instance),
+    ]
 
-    with patch("app.auth.service.get_database", return_value=mock_database_instance) as mock_get_database_function:
-        print(f"mock_db fixture: Patching app.auth.service.get_database. Patched object: {mock_get_database_function}")
-        print(f"mock_db fixture: Patched return_value: {mock_get_database_function.return_value}, type: {type(mock_get_database_function.return_value)}")
-        yield mock_database_instance # yield the same instance for direct use if needed
-        print("mock_db fixture: Restoring app.auth.service.get_database")
+    # Start all patches
+    for p in patches:
+        p.start()
+
+    try:
+        yield mock_database_instance
+    finally:
+        # Stop all patches
+        for p in patches:
+            p.stop()
 
     # Optional: clear all collections in the mock_database after each test
     # This ensures test isolation.
