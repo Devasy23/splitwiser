@@ -6,11 +6,42 @@ from app.auth.schemas import (
     UserResponse, ErrorResponse
 )
 from app.auth.service import auth_service
-from app.auth.security import create_access_token
+from app.auth.security import create_access_token, oauth2_scheme # Import oauth2_scheme
+from fastapi.security import OAuth2PasswordRequestForm # Import OAuth2PasswordRequestForm
 from datetime import timedelta
 from app.config import settings
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+@router.post("/token", response_model=TokenResponse, include_in_schema=False) # include_in_schema=False to hide from docs if desired, or True to show
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    """
+    OAuth2 compatible token login, get an access token for future requests.
+    This endpoint is used by Swagger UI for authorization.
+    It expects username (email) and password in form-data.
+    """
+    try:
+        # Note: OAuth2PasswordRequestForm uses 'username' field for the user identifier.
+        # We'll treat it as email here.
+        result = await auth_service.authenticate_user_with_email(
+            email=form_data.username, # form_data.username is the email
+            password=form_data.password
+        )
+
+        access_token = create_access_token(
+            data={"sub": str(result["user"]["_id"])},
+            expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
+        )
+
+        return TokenResponse(access_token=access_token, token_type="bearer")
+    except HTTPException:
+        raise
+    except Exception as e:
+        # It's good practice to log the exception here
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Authentication failed: {str(e)}"
+        )
 
 @router.post("/signup/email", response_model=AuthResponse)
 async def signup_with_email(request: EmailSignupRequest):
