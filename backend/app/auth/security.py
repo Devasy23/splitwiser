@@ -14,7 +14,7 @@ except Exception:
     # Fallback for bcrypt version compatibility issues
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login/email")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token") # Updated tokenUrl
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
