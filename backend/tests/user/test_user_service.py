@@ -2,7 +2,7 @@ import pytest
 from app.user.service import UserService
 from app.database import get_database # To mock the database dependency
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock # For mocking async methods and db client
 
 # Initialize UserService instance for testing
@@ -27,7 +27,7 @@ def mock_get_database(mocker, mock_db_client):
 
 TEST_OBJECT_ID_STR = "60c72b2f9b1e8a3f9c8b4567"
 TEST_OBJECT_ID = ObjectId(TEST_OBJECT_ID_STR)
-NOW = datetime.utcnow()
+NOW = datetime.now(timezone.utc)
 
 RAW_USER_FROM_DB = {
     "_id": TEST_OBJECT_ID,
@@ -75,7 +75,7 @@ def test_transform_user_document_missing_optional_fields():
     assert transformed == expected_transformed_minimal
 
 def test_transform_user_document_with_updated_at_different_from_created_at():
-    later_time = datetime.utcnow()
+    later_time = datetime.now(timezone.utc)
     raw_user_updated = {
         "_id": TEST_OBJECT_ID,
         "name": "Updated User",

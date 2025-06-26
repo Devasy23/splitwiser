@@ -3,6 +3,14 @@ import pytest_asyncio
 from unittest.mock import patch, MagicMock
 import firebase_admin # Added
 import os # Added
+import sys # Added
+from pathlib import Path # Added
+
+# Add project root to sys.path to allow imports from app and main
+# This assumes conftest.py is in backend/tests/
+project_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(project_root))
+
 from mongomock_motor import AsyncMongoMockClient
 
 @pytest.fixture(scope="session", autouse=True)

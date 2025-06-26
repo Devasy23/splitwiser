@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from pymongo.errors import DuplicateKeyError
 from bson import ObjectId
@@ -95,7 +95,7 @@ class AuthService:
             "name": name,
             "avatar": None,
             "currency": "USD",
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(timezone.utc),
             "auth_provider": "email",
             "firebase_uid": None
         }
@@ -198,7 +198,7 @@ class AuthService:
                     "name": name,
                     "avatar": picture,
                     "currency": "USD",
-                    "created_at": datetime.utcnow(),
+                    "created_at": datetime.now(timezone.utc),
                     "auth_provider": "google",
                     "firebase_uid": firebase_uid,
                     "hashed_password": None
@@ -245,7 +245,7 @@ class AuthService:
         token_record = await db.refresh_tokens.find_one({
             "token": refresh_token,
             "revoked": False,
-            "expires_at": {"$gt": datetime.utcnow()}
+            "expires_at": {"$gt": datetime.now(timezone.utc)}
         })
         
         if not token_record:
@@ -322,7 +322,7 @@ class AuthService:
         
         # Generate reset token
         reset_token = generate_reset_token()
-        reset_expires = datetime.utcnow() + timedelta(hours=1)  # 1 hour expiry
+        reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)  # 1 hour expiry
         
         # Store reset token
         await db.password_resets.insert_one({
@@ -362,7 +362,7 @@ class AuthService:
         reset_record = await db.password_resets.find_one({
             "token": reset_token,
             "used": False,
-            "expires_at": {"$gt": datetime.utcnow()}
+            "expires_at": {"$gt": datetime.now(timezone.utc)}
         })
         
         if not reset_record:
@@ -406,14 +406,14 @@ class AuthService:
         db = self.get_db()
         
         refresh_token = create_refresh_token()
-        expires_at = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
         
         await db.refresh_tokens.insert_one({
             "token": refresh_token,
             "user_id": ObjectId(user_id) if isinstance(user_id, str) else user_id,
             "expires_at": expires_at,
             "revoked": False,
-            "created_at": datetime.utcnow()
+            "created_at": datetime.now(timezone.utc)
         })
         
         return refresh_token

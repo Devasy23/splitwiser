@@ -11,8 +11,7 @@ class UserProfileResponse(BaseModel):
     createdAt: datetime
     updatedAt: datetime
 
-    class Config:
-        populate_by_name = True
+    model_config = {"populate_by_name": True}
 
 class UserProfileUpdateRequest(BaseModel):
     name: Optional[str] = None

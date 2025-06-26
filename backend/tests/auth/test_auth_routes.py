@@ -4,7 +4,7 @@ from fastapi import FastAPI, status
 from main import app # Assuming your FastAPI app instance is here
 from app.config import settings # To potentially override settings if needed, or check values
 from app.auth.security import verify_password, get_password_hash # For checking hashed password if necessary
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 
 # It's good practice to set a specific test secret key if not relying on external env vars
@@ -135,7 +135,7 @@ async def test_login_with_email_success(mock_db):
         "name": "Login User",
         "avatar": None,
         "currency": "USD",
-        "created_at": datetime.utcnow(), # Ensure datetime is used
+        "created_at": datetime.now(timezone.utc), # Ensure datetime is used
         "auth_provider": "email",
         "firebase_uid": None
     })
@@ -173,7 +173,7 @@ async def test_login_with_incorrect_password(mock_db):
         "email": user_email,
         "hashed_password": get_password_hash(correct_password),
         "name": "Wrong Pass User",
-        "created_at": datetime.utcnow()
+        "created_at": datetime.now(timezone.utc)
     })
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:

@@ -1,17 +1,31 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from contextlib import asynccontextmanager
 from app.database import connect_to_mongo, close_mongo_connection
 from app.auth.routes import router as auth_router
 from app.user.routes import router as user_router
 from app.config import settings
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    print("Lifespan: Connecting to MongoDB...")
+    await connect_to_mongo()
+    print("Lifespan: MongoDB connected.")
+    yield
+    # Shutdown
+    print("Lifespan: Closing MongoDB connection...")
+    await close_mongo_connection()
+    print("Lifespan: MongoDB connection closed.")
 
 app = FastAPI(
     title="Splitwiser API",
     description="Backend API for Splitwiser expense tracking application",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # CORS middleware - Enhanced configuration for production
@@ -74,21 +88,6 @@ async def options_handler(request: Request, path: str):
         response.headers["Access-Control-Max-Age"] = "3600"
     
     return response
-
-# Database events
-@app.on_event("startup")
-async def startup_event():
-    """
-    Initializes the MongoDB connection when the application starts.
-    """
-    await connect_to_mongo()
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """
-    Closes the MongoDB connection when the application shuts down.
-    """
-    await close_mongo_connection()
 
 # Health check
 @app.get("/health")

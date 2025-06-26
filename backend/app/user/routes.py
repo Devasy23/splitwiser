@@ -18,7 +18,7 @@ async def update_user_profile(
     updates: UserProfileUpdateRequest,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    update_data = updates.dict(exclude_unset=True)
+    update_data = updates.model_dump(exclude_unset=True)
     if not update_data:
         raise HTTPException(status_code=400, detail="No update fields provided.")
     updated_user = await user_service.update_user_profile(current_user["_id"], update_data)

@@ -34,8 +34,8 @@ async def setup_test_user(mocker):
         "email": TEST_USER_EMAIL,
         "avatar": None,
         "currency": "USD",
-        "created_at": datetime.fromisoformat("2023-01-01T00:00:00"), # Changed to datetime object
-        "updated_at": datetime.fromisoformat("2023-01-01T00:00:00")  # Changed to datetime object
+        "createdAt": datetime.fromisoformat("2023-01-01T00:00:00"), # Changed to camelCase
+        "updatedAt": datetime.fromisoformat("2023-01-01T00:00:00")  # Changed to camelCase
     })
     mocker.patch("app.user.service.user_service.update_user_profile", return_value={
         "_id": TEST_USER_ID,
@@ -43,8 +43,8 @@ async def setup_test_user(mocker):
         "email": TEST_USER_EMAIL,
         "avatar": "http://example.com/avatar.png",
         "currency": "EUR",
-        "created_at": datetime.fromisoformat("2023-01-01T00:00:00"), # Changed to datetime object
-        "updated_at": datetime.fromisoformat("2023-01-02T00:00:00")  # Changed to datetime object
+        "createdAt": datetime.fromisoformat("2023-01-01T00:00:00"), # Changed to camelCase
+        "updatedAt": datetime.fromisoformat("2023-01-02T00:00:00")  # Changed to camelCase
     })
     mocker.patch("app.user.service.user_service.delete_user", return_value=True)
 
@@ -113,7 +113,8 @@ def test_update_user_profile_partial_update(client: TestClient, auth_headers: di
     mocker.patch("app.user.service.user_service.update_user_profile", return_value={
         "_id": TEST_USER_ID, "name": "Only Name Updated", "email": TEST_USER_EMAIL,
         "avatar": None, "currency": "USD", # Assuming other fields remain unchanged
-        "created_at": "2023-01-01T00:00:00", "updated_at": "2023-01-03T00:00:00"
+        "createdAt": datetime.fromisoformat("2023-01-01T00:00:00"), # Changed to camelCase and datetime
+        "updatedAt": datetime.fromisoformat("2023-01-03T00:00:00")  # Changed to camelCase and datetime
     })
 
     response = client.patch("/users/me", headers=auth_headers, json=update_payload) # removed await

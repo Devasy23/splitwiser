@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status, Depends
 from app.database import get_database
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 
 class UserService:
@@ -31,7 +31,7 @@ class UserService:
 
     async def update_user_profile(self, user_id: str, updates: dict) -> Optional[dict]:
         db = self.get_db()
-        updates["updated_at"] = datetime.utcnow()
+        updates["updated_at"] = datetime.now(timezone.utc)
         result = await db.users.find_one_and_update(
             {"_id": ObjectId(user_id)},
             {"$set": updates},
