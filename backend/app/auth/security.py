@@ -101,7 +101,7 @@ def generate_reset_token() -> str:
 
 def get_current_user(token: str = Depends(oauth2_scheme)) -> Dict[str, Any]:
     """
-    Retrieves the current user based on the provided JWT token.
+    Retrieves the current user based on the provided JWT token using centralized verification.
     
     Args:
         token: The JWT token from which to extract the user information.
@@ -112,11 +112,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> Dict[str, Any]:
     Raises:
         HTTPException: If the token is invalid or user information cannot be extracted.
     """
-    try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-        user_id = payload.get("sub")
-        if user_id is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
-        return {"_id": user_id}
-    except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
+    payload = verify_token(token)  # Centralized JWT validation and error handling
+    user_id = payload.get("sub")
+    if user_id is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+    return {"_id": user_id}

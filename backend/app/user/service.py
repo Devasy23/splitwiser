@@ -14,11 +14,15 @@ class UserService:
     def transform_user_document(self, user: dict) -> dict:
         if not user:
             return None
+        try:
+            user_id = str(user["_id"])
+        except Exception:
+            return None  # Handle invalid ObjectId gracefully
         return {
-            "_id": str(user["_id"]),
+            "_id": user_id,
             "name": user.get("name"),
             "email": user.get("email"),
-            "avatar": user.get("avatar"),
+            "imageUrl": user.get("imageUrl") or user.get("avatar"),
             "currency": user.get("currency", "USD"),
             "createdAt": user.get("created_at"),
             "updatedAt": user.get("updated_at") or user.get("created_at"),
@@ -26,14 +30,22 @@ class UserService:
 
     async def get_user_by_id(self, user_id: str) -> Optional[dict]:
         db = self.get_db()
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        try:
+            obj_id = ObjectId(user_id)
+        except Exception:
+            return None  # Handle invalid ObjectId gracefully
+        user = await db.users.find_one({"_id": obj_id})
         return self.transform_user_document(user)
 
     async def update_user_profile(self, user_id: str, updates: dict) -> Optional[dict]:
         db = self.get_db()
+        try:
+            obj_id = ObjectId(user_id)
+        except Exception:
+            return None  # Handle invalid ObjectId gracefully
         updates["updated_at"] = datetime.now(timezone.utc)
         result = await db.users.find_one_and_update(
-            {"_id": ObjectId(user_id)},
+            {"_id": obj_id},
             {"$set": updates},
             return_document=True
         )
@@ -41,7 +53,11 @@ class UserService:
 
     async def delete_user(self, user_id: str) -> bool:
         db = self.get_db()
-        result = await db.users.delete_one({"_id": ObjectId(user_id)})
+        try:
+            obj_id = ObjectId(user_id)
+        except Exception:
+            return False  # Handle invalid ObjectId gracefully
+        result = await db.users.delete_one({"_id": obj_id})
         return result.deleted_count == 1
 
 user_service = UserService()
