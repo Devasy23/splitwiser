@@ -1,11 +1,10 @@
 import pytest
-from fastapi.testclient import TestClient
-from app.main import app
+from main import app # Adjusted import - Keep app import for context if needed, but TestClient is removed
 from app.expenses.service import expense_service
 from app.expenses.schemas import ExpenseCreateRequest, ExpenseSplit, SplitType
 import asyncio
 
-client = TestClient(app)
+# client = TestClient(app) # Removed as it's not used
 
 @pytest.mark.asyncio
 async def test_settlement_algorithm_normal():

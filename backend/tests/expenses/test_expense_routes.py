@@ -1,10 +1,14 @@
 import pytest
-from fastapi.testclient import TestClient
+from httpx import AsyncClient, ASGITransport
+from fastapi import status
 from unittest.mock import AsyncMock, patch
-from app.main import app
+from main import app # Adjusted import
 from app.expenses.schemas import ExpenseCreateRequest, ExpenseSplit
 
-client = TestClient(app)
+@pytest.fixture
+async def async_client():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield ac
 
 @pytest.fixture
 def mock_current_user():
@@ -24,9 +28,10 @@ def sample_expense_data():
         "receiptUrls": []
     }
 
+@pytest.mark.asyncio
 @patch("app.expenses.routes.get_current_user")
 @patch("app.expenses.service.expense_service.create_expense")
-def test_create_expense_endpoint(mock_create_expense, mock_get_current_user, sample_expense_data, mock_current_user):
+async def test_create_expense_endpoint(mock_create_expense, mock_get_current_user, sample_expense_data, mock_current_user, async_client: AsyncClient):
     """Test create expense endpoint"""
     
     mock_get_current_user.return_value = mock_current_user
@@ -54,7 +59,7 @@ def test_create_expense_endpoint(mock_create_expense, mock_get_current_user, sam
         }
     }
     
-    response = client.post(
+    response = await async_client.post(
         "/groups/group_123/expenses",
         json=sample_expense_data,
         headers={"Authorization": "Bearer test_token"}
@@ -62,11 +67,12 @@ def test_create_expense_endpoint(mock_create_expense, mock_get_current_user, sam
     
     # This test would need proper authentication mocking to work
     # For now, it demonstrates the structure
-    assert response.status_code in [201, 401, 422]  # Depending on auth setup
+    assert response.status_code in [status.HTTP_201_CREATED, status.HTTP_401_UNAUTHORIZED, status.HTTP_422_UNPROCESSABLE_ENTITY]  # Depending on auth setup
 
+@pytest.mark.asyncio
 @patch("app.expenses.routes.get_current_user")
 @patch("app.expenses.service.expense_service.list_group_expenses")
-def test_list_expenses_endpoint(mock_list_expenses, mock_get_current_user, mock_current_user):
+async def test_list_expenses_endpoint(mock_list_expenses, mock_get_current_user, mock_current_user, async_client: AsyncClient):
     """Test list expenses endpoint"""
     
     mock_get_current_user.return_value = mock_current_user
@@ -87,17 +93,18 @@ def test_list_expenses_endpoint(mock_list_expenses, mock_get_current_user, mock_
         }
     }
     
-    response = client.get(
+    response = await async_client.get(
         "/groups/group_123/expenses",
         headers={"Authorization": "Bearer test_token"}
     )
     
     # This test would need proper authentication mocking to work
-    assert response.status_code in [200, 401]
+    assert response.status_code in [status.HTTP_200_OK, status.HTTP_401_UNAUTHORIZED]
 
+@pytest.mark.asyncio
 @patch("app.expenses.routes.get_current_user")
 @patch("app.expenses.service.expense_service.calculate_optimized_settlements")
-def test_optimized_settlements_endpoint(mock_calculate_settlements, mock_get_current_user, mock_current_user):
+async def test_optimized_settlements_endpoint(mock_calculate_settlements, mock_get_current_user, mock_current_user, async_client: AsyncClient):
     """Test optimized settlements calculation endpoint"""
     
     mock_get_current_user.return_value = mock_current_user
@@ -112,15 +119,16 @@ def test_optimized_settlements_endpoint(mock_calculate_settlements, mock_get_cur
         }
     ]
     
-    response = client.post(
+    response = await async_client.post(
         "/groups/group_123/settlements/optimize",
         headers={"Authorization": "Bearer test_token"}
     )
     
     # This test would need proper authentication mocking to work
-    assert response.status_code in [200, 401]
+    assert response.status_code in [status.HTTP_200_OK, status.HTTP_401_UNAUTHORIZED]
 
-def test_expense_validation():
+@pytest.mark.asyncio
+async def test_expense_validation(async_client: AsyncClient):
     """Test expense data validation"""
     
     # Invalid expense - splits don't sum to total
@@ -134,14 +142,14 @@ def test_expense_validation():
         "splitType": "equal"
     }
     
-    response = client.post(
+    response = await async_client.post(
         "/groups/group_123/expenses",
         json=invalid_data,
         headers={"Authorization": "Bearer test_token"}
     )
     
     # Should return validation error
-    assert response.status_code in [422, 401]  # 422 for validation error, 401 if auth fails first
+    assert response.status_code in [status.HTTP_422_UNPROCESSABLE_ENTITY, status.HTTP_401_UNAUTHORIZED]  # 422 for validation error, 401 if auth fails first
 
 if __name__ == "__main__":
     pytest.main([__file__])
