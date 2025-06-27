@@ -18,6 +18,10 @@ class UserProfileUpdateRequest(BaseModel):
     imageUrl: Optional[str] = None
     currency: Optional[str] = None
 
+    model_config = {"populate_by_name": True}
+
 class DeleteUserResponse(BaseModel):
     success: bool = True
     message: Optional[str] = None
+
+    model_config = {"populate_by_name": True}
