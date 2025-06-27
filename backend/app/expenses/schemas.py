@@ -18,8 +18,6 @@ class ExpenseSplit(BaseModel):
     amount: float = Field(..., gt=0)
     type: SplitType = SplitType.EQUAL
 
-    model_config = {"populate_by_name": True}
-
 class ExpenseCreateRequest(BaseModel):
     description: str = Field(..., min_length=1, max_length=500)
     amount: float = Field(..., gt=0)
@@ -29,22 +27,12 @@ class ExpenseCreateRequest(BaseModel):
     receiptUrls: Optional[List[str]] = []
 
     @validator('splits')
-    def validate_splits_sum(cls, v, values, **kwargs):
-        # Always validate splits if provided
-        if v is not None:
-            # Use the provided amount if present, else try to get from instance (for partial update)
-            amount = values.get('amount')
-            if amount is None:
-                instance = kwargs.get('instance')
-                if instance is not None:
-                    amount = getattr(instance, 'amount', None)
-            if amount is not None:
-                total_split = sum(split.amount for split in v)
-                if abs(total_split - amount) > 0.01:
-                    raise ValueError('Split amounts must sum to total expense amount')
+    def validate_splits_sum(cls, v, values):
+        if 'amount' in values:
+            total_split = sum(split.amount for split in v)
+            if abs(total_split - values['amount']) > 0.01:  # Allow small floating point differences
+                raise ValueError('Split amounts must sum to total expense amount')
         return v
-
-    model_config = {"populate_by_name": True}
 
 class ExpenseUpdateRequest(BaseModel):
     description: Optional[str] = Field(None, min_length=1, max_length=500)
@@ -62,7 +50,9 @@ class ExpenseUpdateRequest(BaseModel):
                 raise ValueError('Split amounts must sum to total expense amount')
         return v
     
-    model_config = {"populate_by_name": True, "validate_assignment": True}
+    class Config:
+        # Allow validation to work with partial updates
+        validate_assignment = True
 
 class ExpenseComment(BaseModel):
     id: str = Field(alias="_id")
@@ -123,28 +113,20 @@ class OptimizedSettlement(BaseModel):
     amount: float
     consolidatedExpenses: Optional[List[str]] = []
 
-    model_config = {"populate_by_name": True}
-
 class GroupSummary(BaseModel):
     totalExpenses: float
     totalSettlements: int
     optimizedSettlements: List[OptimizedSettlement]
-
-    model_config = {"populate_by_name": True}
 
 class ExpenseCreateResponse(BaseModel):
     expense: ExpenseResponse
     settlements: List[Settlement]
     groupSummary: GroupSummary
 
-    model_config = {"populate_by_name": True}
-
 class ExpenseListResponse(BaseModel):
     expenses: List[ExpenseResponse]
     pagination: Dict[str, Any]
     summary: Dict[str, Any]
-
-    model_config = {"populate_by_name": True}
 
 class SettlementCreateRequest(BaseModel):
     payer_id: str
@@ -153,21 +135,15 @@ class SettlementCreateRequest(BaseModel):
     description: Optional[str] = None
     paidAt: Optional[datetime] = None
 
-    model_config = {"populate_by_name": True}
-
 class SettlementUpdateRequest(BaseModel):
     status: SettlementStatus
     paidAt: Optional[datetime] = None
-
-    model_config = {"populate_by_name": True}
 
 class SettlementListResponse(BaseModel):
     settlements: List[Settlement]
     optimizedSettlements: List[OptimizedSettlement]
     summary: Dict[str, Any]
     pagination: Dict[str, Any]
-
-    model_config = {"populate_by_name": True}
 
 class UserBalance(BaseModel):
     userId: str
@@ -179,15 +155,11 @@ class UserBalance(BaseModel):
     pendingSettlements: List[Settlement] = []
     recentExpenses: List[Dict[str, Any]] = []
 
-    model_config = {"populate_by_name": True}
-
 class FriendBalanceBreakdown(BaseModel):
     groupId: str
     groupName: str
     balance: float
     owesYou: bool
-
-    model_config = {"populate_by_name": True}
 
 class FriendBalance(BaseModel):
     userId: str
@@ -198,13 +170,9 @@ class FriendBalance(BaseModel):
     breakdown: List[FriendBalanceBreakdown]
     lastActivity: datetime
 
-    model_config = {"populate_by_name": True}
-
 class FriendsBalanceResponse(BaseModel):
     friendsBalance: List[FriendBalance]
     summary: Dict[str, Any]
-
-    model_config = {"populate_by_name": True}
 
 class BalanceSummaryResponse(BaseModel):
     totalOwedToYou: float
@@ -212,8 +180,6 @@ class BalanceSummaryResponse(BaseModel):
     netBalance: float
     currency: str = "USD"
     groupsSummary: List[Dict[str, Any]]
-
-    model_config = {"populate_by_name": True}
 
 class ExpenseAnalytics(BaseModel):
     period: str
@@ -224,16 +190,10 @@ class ExpenseAnalytics(BaseModel):
     memberContributions: List[Dict[str, Any]]
     expenseTrends: List[Dict[str, Any]]
 
-    model_config = {"populate_by_name": True}
-
 class AttachmentUploadResponse(BaseModel):
     attachment_key: str
     url: str
 
-    model_config = {"populate_by_name": True}
-
 class OptimizedSettlementsResponse(BaseModel):
     optimizedSettlements: List[OptimizedSettlement]
     savings: Dict[str, Any]
-
-    model_config = {"populate_by_name": True}

@@ -8,7 +8,6 @@ from app.expenses.schemas import (
 )
 import asyncio
 from collections import defaultdict, deque
-import logging
 
 class ExpenseService:
     def __init__(self):
@@ -87,16 +86,8 @@ class ExpenseService:
 
         # Get user names for the settlements
         user_ids = [split["userId"] for split in expense_doc["splits"]] + [payer_id]
-        try:
-            users = await self.users_collection.find({"_id": {"$in": [ObjectId(uid) for uid in user_ids]}}).to_list(None)
-        except Exception as e:
-            logging.error(f"Failed to fetch user data for settlements: {e}")
-            users = []
+        users = await self.users_collection.find({"_id": {"$in": [ObjectId(uid) for uid in user_ids]}}).to_list(None)
         user_names = {str(user["_id"]): user.get("name", "Unknown") for user in users}
-        # Ensure all users have names, even if not found in database
-        for user_id in user_ids:
-            if user_id not in user_names:
-                user_names[user_id] = "Unknown User"
 
         for split in expense_doc["splits"]:
             settlement_doc = {
@@ -105,8 +96,8 @@ class ExpenseService:
                 "groupId": group_id,
                 "payerId": payer_id,
                 "payeeId": split["userId"],
-                "payerName": user_names.get(payer_id, "Unknown User"),
-                "payeeName": user_names.get(split["userId"], "Unknown User"),
+                "payerName": user_names.get(payer_id, "Unknown"),
+                "payeeName": user_names.get(split["userId"], "Unknown"),
                 "amount": split["amount"],
                 "status": "completed" if split["userId"] == payer_id else "pending",
                 "description": f"Share for {expense_doc['description']}",
