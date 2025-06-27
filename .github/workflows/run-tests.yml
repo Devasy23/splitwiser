@@ -28,7 +28,7 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE
         export PYTHONPATH=$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/backend
-        python -m pytest --cov=./backend --cov-report=xml:coverage.xml backend/tests/
+        pytest --cov=./backend --cov-report=xml:coverage.xml backend/tests/
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
