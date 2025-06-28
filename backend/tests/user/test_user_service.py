@@ -2,7 +2,7 @@ import pytest
 from app.user.service import UserService
 from app.database import get_database
 from bson import ObjectId
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 # Initialize UserService instance for testing
@@ -101,6 +101,43 @@ def test_transform_user_document_with_updated_at_different_from_created_at():
 
 def test_transform_user_document_none_input():
     assert user_service.transform_user_document(None) is None
+
+def test_transform_user_document_iso_none():
+    user = {"_id": "x", "created_at": None}
+    result = user_service.transform_user_document(user)
+    assert result["createdAt"] is None
+
+def test_transform_user_document_iso_str():
+    user = {"_id": "x", "created_at": "2025-06-28T12:00:00Z"}
+    result = user_service.transform_user_document(user)
+    assert result["createdAt"] == "2025-06-28T12:00:00Z"
+
+def test_transform_user_document_iso_naive_datetime():
+    dt = datetime(2025, 6, 28, 12, 0, 0)
+    user = {"_id": "x", "created_at": dt}
+    result = user_service.transform_user_document(user)
+    assert result["createdAt"].endswith("Z")
+
+def test_transform_user_document_iso_aware_datetime_utc():
+    dt = datetime(2025, 6, 28, 12, 0, 0, tzinfo=timezone.utc)
+    user = {"_id": "x", "created_at": dt}
+    result = user_service.transform_user_document(user)
+    assert result["createdAt"].endswith("Z")
+    assert result["createdAt"].startswith("2025-06-28T12:00:00")
+
+def test_transform_user_document_iso_aware_datetime_non_utc():
+    dt = datetime(2025, 6, 28, 14, 0, 0, tzinfo=timezone(timedelta(hours=2)))
+    user = {"_id": "x", "created_at": dt}
+    result = user_service.transform_user_document(user)
+    assert result["createdAt"].endswith("Z")
+    assert result["createdAt"].startswith("2025-06-28T12:00:00")
+
+def test_transform_user_document_iso_unexpected_type():
+    class Dummy: pass
+    dummy = Dummy()
+    user = {"_id": "x", "created_at": dummy}
+    result = user_service.transform_user_document(user)
+    assert result["createdAt"] == str(dummy)
 
 # --- Tests for get_user_by_id ---
 

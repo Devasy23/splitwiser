@@ -14,17 +14,23 @@ class UserService:
     def transform_user_document(self, user: dict) -> dict:
         if not user:
             return None
-        try:
-            user_id = str(user["_id"])
-        except Exception:
-            return None  # Handle invalid ObjectId gracefully
-        # Ensure ISO 8601 string for dates
+
         def iso(dt):
             if not dt:
                 return None
             if isinstance(dt, str):
                 return dt
-            return dt.isoformat().replace("+00:00", "Z") if dt.tzinfo else dt.isoformat()
+            # Normalize to UTC and append 'Z'
+            try:
+                dt_utc = dt.astimezone(timezone.utc) if getattr(dt, 'tzinfo', None) else dt.replace(tzinfo=timezone.utc)
+                return dt_utc.isoformat().replace("+00:00", "Z")
+            except AttributeError:
+                return str(dt)
+
+        try:
+            user_id = str(user["_id"])
+        except Exception:
+            return None  # Handle invalid ObjectId gracefully
         return {
             "id": user_id,
             "name": user.get("name"),
