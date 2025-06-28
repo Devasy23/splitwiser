@@ -1,17 +1,17 @@
 import pytest
-from fastapi.testclient import TestClient # Changed from httpx import AsyncClient
+from fastapi.testclient import TestClient
 from fastapi import status
-from main import app  # Corrected: Assuming your FastAPI app instance is named 'app' in main.py
-from app.auth.security import create_access_token # Helper to create tokens for testing
-from datetime import datetime, timedelta # Added datetime
+from main import app
+from app.auth.security import create_access_token
+from datetime import datetime, timedelta
 
 # Sample user data for testing
-TEST_USER_ID = "60c72b2f9b1e8a3f9c8b4567" # Example ObjectId string
+TEST_USER_ID = "60c72b2f9b1e8a3f9c8b4567"
 TEST_USER_EMAIL = "testuser@example.com"
 
 @pytest.fixture(scope="module")
-def client(): # Changed to synchronous fixture
-    with TestClient(app) as c: # Changed to TestClient
+def client():
+    with TestClient(app) as c:
         yield c
 
 @pytest.fixture(scope="module")
@@ -22,138 +22,121 @@ def auth_headers():
     )
     return {"Authorization": f"Bearer {token}"}
 
-# Placeholder for database setup/teardown if needed, e.g., creating a test user
 @pytest.fixture(autouse=True, scope="function")
 async def setup_test_user(mocker):
-    # Mock the user service to avoid actual database calls initially
-    # This allows focusing on route logic.
-    # More specific mocks will be needed per test.
+    iso_date = "2023-01-01T00:00:00Z"
+    iso_date2 = "2023-01-02T00:00:00Z"
+    iso_date3 = "2023-01-03T00:00:00Z"
     mocker.patch("app.user.service.user_service.get_user_by_id", return_value={
-        "_id": TEST_USER_ID,
+        "id": TEST_USER_ID,
         "name": "Test User",
         "email": TEST_USER_EMAIL,
-        "avatar": None,
+        "imageUrl": None,
         "currency": "USD",
-        "createdAt": datetime.fromisoformat("2023-01-01T00:00:00"), # Changed to camelCase
-        "updatedAt": datetime.fromisoformat("2023-01-01T00:00:00")  # Changed to camelCase
+        "createdAt": iso_date,
+        "updatedAt": iso_date
     })
     mocker.patch("app.user.service.user_service.update_user_profile", return_value={
-        "_id": TEST_USER_ID,
+        "id": TEST_USER_ID,
         "name": "Updated Test User",
         "email": TEST_USER_EMAIL,
-        "avatar": "http://example.com/avatar.png",
+        "imageUrl": "http://example.com/avatar.png",
         "currency": "EUR",
-        "createdAt": datetime.fromisoformat("2023-01-01T00:00:00"), # Changed to camelCase
-        "updatedAt": datetime.fromisoformat("2023-01-02T00:00:00")  # Changed to camelCase
+        "createdAt": iso_date,
+        "updatedAt": iso_date2
     })
     mocker.patch("app.user.service.user_service.delete_user", return_value=True)
-
-    # If you have a real test database, you'd create a user here.
-    # For now, we rely on mocking the service layer.
-    # Example:
-    # from app.database import get_database
-    # db = get_database()
-    # await db.users.insert_one({
-    #     "_id": ObjectId(TEST_USER_ID),
-    #     "email": TEST_USER_EMAIL,
-    #     "name": "Test User",
-    #     "hashed_password": "fakehashedpassword", # Add other necessary fields
-    #     "created_at": datetime.utcnow(),
-    #     "updated_at": datetime.utcnow()
-    # })
     yield
-    # Teardown: remove the test user
-    # Example:
-    # await db.users.delete_one({"_id": ObjectId(TEST_USER_ID)})
 
 # --- Tests for GET /users/me ---
 
-def test_get_current_user_profile_success(client: TestClient, auth_headers: dict, mocker): # Changed AsyncClient, removed async
+def test_get_current_user_profile_success(client: TestClient, auth_headers: dict, mocker):
     """Test successful retrieval of current user's profile."""
-    # The setup_test_user fixture already mocks get_user_by_id
-    response = client.get("/users/me", headers=auth_headers) # removed await
+    response = client.get("/users/me", headers=auth_headers)
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
-    assert data["_id"] == TEST_USER_ID
+    assert data["id"] == TEST_USER_ID
     assert data["email"] == TEST_USER_EMAIL
     assert "name" in data
     assert "currency" in data
+    assert "createdAt" in data and data["createdAt"].endswith("Z")
+    assert "updatedAt" in data and data["updatedAt"].endswith("Z")
 
-def test_get_current_user_profile_not_found(client: TestClient, auth_headers: dict, mocker): # Changed AsyncClient, removed async
+def test_get_current_user_profile_not_found(client: TestClient, auth_headers: dict, mocker):
     """Test retrieval when user is not found in service layer."""
     mocker.patch("app.user.service.user_service.get_user_by_id", return_value=None)
-
-    response = client.get("/users/me", headers=auth_headers) # removed await
+    response = client.get("/users/me", headers=auth_headers)
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json() == {"detail": "User not found"}
+    assert response.json() == {"detail": {"error": "NotFound", "message": "User not found"}}
 
 # --- Tests for PATCH /users/me ---
 
-def test_update_user_profile_success(client: TestClient, auth_headers: dict, mocker): # Changed AsyncClient, removed async
+def test_update_user_profile_success(client: TestClient, auth_headers: dict, mocker):
     """Test successful update of user profile."""
     update_payload = {
         "name": "Updated Test User",
         "imageUrl": "http://example.com/avatar.png",
         "currency": "EUR"
     }
-    # The setup_test_user fixture already mocks update_user_profile
-    response = client.patch("/users/me", headers=auth_headers, json=update_payload) # removed await
+    response = client.patch("/users/me", headers=auth_headers, json=update_payload)
     assert response.status_code == status.HTTP_200_OK
-    data = response.json()["user"] # Response is {"user": updated_user_data}
+    data = response.json()["user"]
     assert data["name"] == "Updated Test User"
-    assert data["avatar"] == "http://example.com/avatar.png" # Note: schema uses imageUrl, service uses avatar
+    assert data["imageUrl"] == "http://example.com/avatar.png"
     assert data["currency"] == "EUR"
-    assert data["_id"] == TEST_USER_ID
+    assert data["id"] == TEST_USER_ID
+    assert "createdAt" in data and data["createdAt"].endswith("Z")
+    assert "updatedAt" in data and data["updatedAt"].endswith("Z")
 
-def test_update_user_profile_partial_update(client: TestClient, auth_headers: dict, mocker): # Changed AsyncClient, removed async
+def test_update_user_profile_partial_update(client: TestClient, auth_headers: dict, mocker):
     """Test updating only one field of the user profile."""
+    iso_date = "2023-01-01T00:00:00Z"
+    iso_date3 = "2023-01-03T00:00:00Z"
     update_payload = {"name": "Only Name Updated"}
-
-    # Specific mock for this test case if needed, or ensure global mock handles partials
     mocker.patch("app.user.service.user_service.update_user_profile", return_value={
-        "_id": TEST_USER_ID, "name": "Only Name Updated", "email": TEST_USER_EMAIL,
-        "avatar": None, "currency": "USD", # Assuming other fields remain unchanged
-        "createdAt": datetime.fromisoformat("2023-01-01T00:00:00"), # Changed to camelCase and datetime
-        "updatedAt": datetime.fromisoformat("2023-01-03T00:00:00")  # Changed to camelCase and datetime
+        "id": TEST_USER_ID, "name": "Only Name Updated", "email": TEST_USER_EMAIL,
+        "imageUrl": None, "currency": "USD",
+        "createdAt": iso_date, "updatedAt": iso_date3
     })
-
-    response = client.patch("/users/me", headers=auth_headers, json=update_payload) # removed await
+    response = client.patch("/users/me", headers=auth_headers, json=update_payload)
     assert response.status_code == status.HTTP_200_OK
     data = response.json()["user"]
     assert data["name"] == "Only Name Updated"
-    assert data["currency"] == "USD" # Assuming currency wasn't updated
+    assert data["currency"] == "USD"
+    assert data["id"] == TEST_USER_ID
+    assert "createdAt" in data and data["createdAt"].endswith("Z")
+    assert "updatedAt" in data and data["updatedAt"].endswith("Z")
 
-def test_update_user_profile_no_fields(client: TestClient, auth_headers: dict): # Changed AsyncClient, removed async
+def test_update_user_profile_no_fields(client: TestClient, auth_headers: dict):
     """Test updating profile with no fields, expecting a 400 error."""
-    response = client.patch("/users/me", headers=auth_headers, json={}) # removed await
+    response = client.patch("/users/me", headers=auth_headers, json={})
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json() == {"detail": "No update fields provided."}
+    assert response.json() == {"detail": {"error": "InvalidInput", "message": "No update fields provided."}}
 
-def test_update_user_profile_user_not_found(client: TestClient, auth_headers: dict, mocker): # Changed AsyncClient, removed async
+def test_update_user_profile_user_not_found(client: TestClient, auth_headers: dict, mocker):
     """Test updating profile when user is not found by the service."""
     mocker.patch("app.user.service.user_service.update_user_profile", return_value=None)
     update_payload = {"name": "Attempted Update"}
-    response = client.patch("/users/me", headers=auth_headers, json=update_payload) # removed await
+    response = client.patch("/users/me", headers=auth_headers, json=update_payload)
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json() == {"detail": "User not found"}
+    assert response.json() == {"detail": {"error": "NotFound", "message": "User not found"}}
 
 # --- Tests for DELETE /users/me ---
 
-def test_delete_user_account_success(client: TestClient, auth_headers: dict, mocker): # Changed AsyncClient, removed async
+def test_delete_user_account_success(client: TestClient, auth_headers: dict, mocker):
     """Test successful deletion of a user account."""
-    # The setup_test_user fixture already mocks delete_user to return True
-    response = client.delete("/users/me", headers=auth_headers) # removed await
+    response = client.delete("/users/me", headers=auth_headers)
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert data["success"] is True
     assert data["message"] == "User account scheduled for deletion."
 
-def test_delete_user_account_not_found(client: TestClient, auth_headers: dict, mocker): # Changed AsyncClient, removed async
+def test_delete_user_account_not_found(client: TestClient, auth_headers: dict, mocker):
     """Test deleting a user account when the user is not found by the service."""
     mocker.patch("app.user.service.user_service.delete_user", return_value=False)
-    response = client.delete("/users/me", headers=auth_headers) # removed await
+    response = client.delete("/users/me", headers=auth_headers)
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json() == {"detail": "User not found"}
+    assert response.json() == {"detail": {"error": "NotFound", "message": "User not found"}}
 
 # All route tests are in place, removing the placeholder
 # def test_placeholder():

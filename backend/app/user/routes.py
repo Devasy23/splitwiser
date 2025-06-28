@@ -10,7 +10,7 @@ router = APIRouter(prefix="/users", tags=["User"])
 async def get_current_user_profile(current_user: Dict[str, Any] = Depends(get_current_user)):
     user = await user_service.get_user_by_id(current_user["_id"])
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail={"error": "NotFound", "message": "User not found"})
     return user
 
 @router.patch("/me", response_model=Dict[str, Any])
@@ -20,15 +20,15 @@ async def update_user_profile(
 ):
     update_data = updates.model_dump(exclude_unset=True)
     if not update_data:
-        raise HTTPException(status_code=400, detail="No update fields provided.")
+        raise HTTPException(status_code=400, detail={"error": "InvalidInput", "message": "No update fields provided."})
     updated_user = await user_service.update_user_profile(current_user["_id"], update_data)
     if not updated_user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail={"error": "NotFound", "message": "User not found"})
     return {"user": updated_user}
 
 @router.delete("/me", response_model=DeleteUserResponse)
 async def delete_user_account(current_user: Dict[str, Any] = Depends(get_current_user)):
     deleted = await user_service.delete_user(current_user["_id"])
     if not deleted:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail={"error": "NotFound", "message": "User not found"})
     return DeleteUserResponse(success=True, message="User account scheduled for deletion.")

@@ -1,9 +1,9 @@
 import pytest
 from app.user.service import UserService
-from app.database import get_database # To mock the database dependency
+from app.database import get_database
 from bson import ObjectId
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock # For mocking async methods and db client
+from unittest.mock import AsyncMock, MagicMock
 
 # Initialize UserService instance for testing
 user_service = UserService()
@@ -27,26 +27,31 @@ def mock_get_database(mocker, mock_db_client):
 
 TEST_OBJECT_ID_STR = "60c72b2f9b1e8a3f9c8b4567"
 TEST_OBJECT_ID = ObjectId(TEST_OBJECT_ID_STR)
-NOW = datetime.now(timezone.utc)
+NOW = datetime(2023, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+LATER = datetime(2023, 1, 2, 0, 0, 0, tzinfo=timezone.utc)
+LATER3 = datetime(2023, 1, 3, 0, 0, 0, tzinfo=timezone.utc)
+ISO_NOW = NOW.isoformat().replace("+00:00", "Z")
+ISO_LATER = LATER.isoformat().replace("+00:00", "Z")
+ISO_LATER3 = LATER3.isoformat().replace("+00:00", "Z")
 
 RAW_USER_FROM_DB = {
     "_id": TEST_OBJECT_ID,
     "name": "Test User",
     "email": "test@example.com",
-    "avatar": "http://example.com/avatar.jpg",
+    "imageUrl": "http://example.com/avatar.jpg",
     "currency": "EUR",
     "created_at": NOW,
     "updated_at": NOW,
 }
 
 TRANSFORMED_USER_EXPECTED = {
-    "_id": TEST_OBJECT_ID_STR,
+    "id": TEST_OBJECT_ID_STR,
     "name": "Test User",
     "email": "test@example.com",
-    "avatar": "http://example.com/avatar.jpg",
+    "imageUrl": "http://example.com/avatar.jpg",
     "currency": "EUR",
-    "createdAt": NOW,
-    "updatedAt": NOW,
+    "createdAt": ISO_NOW,
+    "updatedAt": ISO_NOW,
 }
 
 # --- Tests for transform_user_document ---
@@ -63,34 +68,33 @@ def test_transform_user_document_missing_optional_fields():
         "created_at": NOW,
     }
     expected_transformed_minimal = {
-        "_id": TEST_OBJECT_ID_STR,
+        "id": TEST_OBJECT_ID_STR,
         "name": "Minimal User",
         "email": "minimal@example.com",
-        "avatar": None, # Expect None if not present
-        "currency": "USD", # Expect default if not present
-        "createdAt": NOW,
-        "updatedAt": NOW, # Expect createdAt if updatedAt not present
+        "imageUrl": None,
+        "currency": "USD",
+        "createdAt": ISO_NOW,
+        "updatedAt": ISO_NOW,
     }
     transformed = user_service.transform_user_document(raw_user_minimal)
     assert transformed == expected_transformed_minimal
 
 def test_transform_user_document_with_updated_at_different_from_created_at():
-    later_time = datetime.now(timezone.utc)
     raw_user_updated = {
         "_id": TEST_OBJECT_ID,
         "name": "Updated User",
         "email": "updated@example.com",
         "created_at": NOW,
-        "updated_at": later_time
+        "updated_at": LATER
     }
     expected_transformed_updated = {
-        "_id": TEST_OBJECT_ID_STR,
+        "id": TEST_OBJECT_ID_STR,
         "name": "Updated User",
         "email": "updated@example.com",
-        "avatar": None,
+        "imageUrl": None,
         "currency": "USD",
-        "createdAt": NOW,
-        "updatedAt": later_time,
+        "createdAt": ISO_NOW,
+        "updatedAt": ISO_LATER,
     }
     transformed = user_service.transform_user_document(raw_user_updated)
     assert transformed == expected_transformed_updated
@@ -127,10 +131,7 @@ async def test_update_user_profile_success(mock_db_client, mock_get_database):
     # The user document that find_one_and_update would return
     updated_user_doc_from_db = RAW_USER_FROM_DB.copy()
     updated_user_doc_from_db.update(update_data)
-    # updated_at will be set by the service method, so we don't put it in update_data
-    # but the mock return value should reflect it.
-    # For simplicity, we'll check its existence rather than exact value in this mock.
-
+    updated_user_doc_from_db["updated_at"] = LATER
     mock_db_client.users.find_one_and_update.return_value = updated_user_doc_from_db
 
     # Expected transformed output
@@ -149,9 +150,8 @@ async def test_update_user_profile_success(mock_db_client, mock_get_database):
     assert updated_user is not None
     assert updated_user["name"] == "New Name"
     assert updated_user["currency"] == "CAD"
-    assert updated_user["_id"] == TEST_OBJECT_ID_STR
-    # Ensure 'updated_at' in the result is more recent or equal to original if not updated by mock
-    assert updated_user["updatedAt"] >= TRANSFORMED_USER_EXPECTED["updatedAt"]
+    assert updated_user["id"] == TEST_OBJECT_ID_STR
+    assert updated_user["updatedAt"] == ISO_LATER
 
 
 @pytest.mark.asyncio

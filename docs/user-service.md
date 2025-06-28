@@ -36,12 +36,15 @@ Retrieves the profile information for the currently authenticated user.
   "id": "usr_123abc",
   "name": "Jane Doe",
   "email": "jane.doe@example.com",
-  "image_url": "https://example.com/profile.jpg",
+  "imageUrl": "https://example.com/profile.jpg",
   "currency": "USD",
-  "created_at": "2024-01-15T10:00:00Z",
-  "updatedAt": "2024-01-16T12:30:00Z"
+  "createdAt": "2024-01-15T10:00:00Z", // ISO 8601 string, but may be parsed as datetime by backend frameworks
+  "updatedAt": "2024-01-16T12:30:00Z" // ISO 8601 string, but may be parsed as datetime by backend frameworks
 }
 ```
+
+> **Note:**
+> - The backend stores and processes `createdAt` and `updatedAt` as `datetime` objects, but they are serialized to ISO 8601 strings in API responses for JSON compatibility. If you use Python or Pydantic, you may use `datetime` types in your models, but the API will always return them as strings.
 
 **PlantUML Diagram:**
 
