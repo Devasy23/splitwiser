@@ -61,7 +61,11 @@ class ExpenseComment(BaseModel):
     content: str
     createdAt: datetime
 
-    model_config = {"populate_by_name": True}
+    model_config = {
+        # "populate_by_name": True,
+        "str_strip_whitespace": True,
+        "validate_assignment": True
+    }
 
 class ExpenseHistoryEntry(BaseModel):
     id: str = Field(alias="_id")
