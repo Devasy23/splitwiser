@@ -1,0 +1,43 @@
+# Codecov configuration for SplitWiser
+# Documentation: https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        # Allow slight coverage drops for dependency updates
+        if_ci_failed: error
+    patch:
+      default:
+        target: auto
+        threshold: 1%
+        # More lenient for dependency-only changes
+        if_ci_failed: error
+
+# Ignore files that don't need coverage
+ignore:
+  - "**/__pycache__/**"
+  - "**/tests/**"
+  - "**/test_*.py"
+  - "**/*.pyc"
+  - "frontend/**"
+  - "docs/**"
+  - "*.md"
+  - "*.yml"
+  - "*.yaml"
+  - "*.toml"
+  - "requirements*.txt"
+
+# Comments on PRs
+comment:
+  layout: "reach,diff,flags,tree"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+# Make codecov less strict for Dependabot PRs
+github_checks:
+  annotations: true

@@ -1,0 +1,36 @@
+# CODEOWNERS file for SplitWiser
+# This file defines code ownership and automatic reviewer assignment
+# Documentation: https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global fallback - all files default to Devasy23
+* @Devasy23
+
+# Backend code ownership
+backend/ @Devasy23
+*.py @Devasy23
+requirements.txt @Devasy23
+runtime.txt @Devasy23
+pytest.ini @Devasy23
+
+# Frontend code ownership
+frontend/ @vrajpatelll
+*.tsx @vrajpatelll
+*.ts @vrajpatelll
+*.js @vrajpatelll
+*.jsx @vrajpatelll
+package.json @vrajpatelll
+package-lock.json @vrajpatelll
+tsconfig.json @vrajpatelll
+app.json @vrajpatelll
+
+# CI/CD and Infrastructure
+.github/ @Devasy23
+*.yml @Devasy23
+*.yaml @Devasy23
+nixpacks.toml @Devasy23
+railway.toml @Devasy23
+DEPLOYMENT.md @Devasy23
+
+# Documentation
+docs/ @Devasy23 @vrajpatelll
+*.md @Devasy23 @vrajpatelll

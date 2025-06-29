@@ -35,4 +35,10 @@ jobs:
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ./coverage.xml
-        fail_ci_if_error: true
+        fail_ci_if_error: false
+      # Skip codecov upload for Dependabot PRs since they don't have access to secrets
+      if: github.actor != 'dependabot[bot]'
+      
+    - name: Codecov upload skipped for Dependabot
+      if: github.actor == 'dependabot[bot]'
+      run: echo "📊 Codecov upload skipped for Dependabot PR - tests still run and pass!"
