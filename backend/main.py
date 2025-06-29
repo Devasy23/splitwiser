@@ -6,6 +6,7 @@ from app.database import connect_to_mongo, close_mongo_connection
 from app.auth.routes import router as auth_router
 from app.user.routes import router as user_router
 from app.groups.routes import router as groups_router
+from app.expenses.routes import router as expenses_router, balance_router
 from app.config import settings
 
 @asynccontextmanager
@@ -104,6 +105,8 @@ async def health_check():
 app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(groups_router)
+app.include_router(expenses_router)
+app.include_router(balance_router)
 
 if __name__ == "__main__":
     import uvicorn

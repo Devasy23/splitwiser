@@ -1,0 +1,73 @@
+name: Bundle Analysis
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+    branches: [ main, master ]
+  push:
+    paths:
+      - 'frontend/**'
+    branches: [ main, master ]
+
+jobs:
+  bundle-analysis:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Install Dependencies
+      run: |
+        cd frontend
+        npm ci
+    
+    - name: Build for Bundle Analysis
+      run: |
+        cd frontend
+        # Create a production build for analysis
+        if npm run build --dry-run 2>/dev/null; then
+          npm run build
+        else
+          # Use Expo's build process
+          npx expo export:web
+        fi
+    
+    - name: Analyze Bundle Size
+      run: |
+        cd frontend
+        # Install bundle analyzer
+        npm install --no-save webpack-bundle-analyzer
+        
+        # Generate bundle stats (adjust path based on your build output)
+        if [ -d "web-build" ]; then
+          # Expo web build
+          npx webpack-bundle-analyzer web-build/static/js/*.js --report --mode static --report-filename bundle-report.html
+        elif [ -d "dist" ]; then
+          # Standard React build
+          npx webpack-bundle-analyzer dist/static/js/*.js --report --mode static --report-filename bundle-report.html
+        else
+          echo "No build output found for bundle analysis"
+        fi
+    
+    - name: Upload Bundle Analysis to Codecov
+      uses: codecov/codecov-action@v4
+      if: github.actor != 'dependabot[bot]'
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        flags: bundle,frontend,javascript
+        name: "Bundle Analysis"
+        fail_ci_if_error: false
+    
+    - name: Bundle Analysis Skipped
+      if: github.actor == 'dependabot[bot]'
+      run: echo "📦 Bundle analysis skipped for Dependabot PR"

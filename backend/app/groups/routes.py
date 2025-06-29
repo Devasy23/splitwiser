@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.groups.schemas import (
     GroupCreateRequest, GroupResponse, GroupListResponse, GroupUpdateRequest,
     JoinGroupRequest, JoinGroupResponse, MemberRoleUpdateRequest,
-    LeaveGroupResponse, DeleteGroupResponse, RemoveMemberResponse
+    LeaveGroupResponse, DeleteGroupResponse, RemoveMemberResponse,
+    GroupMemberWithDetails
 )
 from app.groups.service import group_service
 from app.auth.security import get_current_user
@@ -90,12 +91,12 @@ async def leave_group(
         raise HTTPException(status_code=400, detail="Failed to leave group")
     return LeaveGroupResponse(success=True, message="Successfully left the group")
 
-@router.get("/{group_id}/members", response_model=List[Dict[str, Any]])
+@router.get("/{group_id}/members", response_model=List[GroupMemberWithDetails])
 async def get_group_members(
     group_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    """Get list of group members"""
+    """Get list of group members with detailed user information"""
     members = await group_service.get_group_members(group_id, current_user["_id"])
     return members
 

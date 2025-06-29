@@ -7,6 +7,12 @@ class GroupMember(BaseModel):
     role: str = "member"  # "admin" or "member"
     joinedAt: datetime
 
+class GroupMemberWithDetails(BaseModel):
+    userId: str
+    role: str = "member"  # "admin" or "member"
+    joinedAt: datetime
+    user: Optional[dict] = None  # Contains user details like name, email
+
 class GroupCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     currency: Optional[str] = "USD"
@@ -24,7 +30,7 @@ class GroupResponse(BaseModel):
     createdBy: str
     createdAt: datetime
     imageUrl: Optional[str] = None
-    members: Optional[List[GroupMember]] = []
+    members: Optional[List[GroupMemberWithDetails]] = []
 
     model_config = {"populate_by_name": True}
 

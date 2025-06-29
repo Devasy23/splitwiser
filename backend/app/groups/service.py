@@ -18,6 +18,53 @@ class GroupService:
         characters = string.ascii_uppercase + string.digits
         return ''.join(secrets.choice(characters) for _ in range(length))
 
+    async def _enrich_members_with_user_details(self, members: List[dict]) -> List[dict]:
+        """Private method to enrich member data with user details from users collection"""
+        db = self.get_db()
+        enriched_members = []
+        
+        for member in members:
+            member_user_id = member.get("userId")
+            if member_user_id:
+                try:
+                    # Fetch user details from users collection
+                    user_obj_id = ObjectId(member_user_id)
+                    user = await db.users.find_one({"_id": user_obj_id})
+                    
+                    # Create enriched member object
+                    enriched_member = {
+                        "userId": member_user_id,
+                        "role": member.get("role", "member"),
+                        "joinedAt": member.get("joinedAt"),
+                        "user": {
+                            "name": user.get("name", f"User {member_user_id[-4:]}") if user else f"User {member_user_id[-4:]}",
+                            "email": user.get("email", f"{member_user_id}@example.com") if user else f"{member_user_id}@example.com",
+                            "avatar": user.get("imageUrl") or user.get("avatar") if user else None
+                        } if user else {
+                            "name": f"User {member_user_id[-4:]}",
+                            "email": f"{member_user_id}@example.com",
+                            "avatar": None
+                        }
+                    }
+                    enriched_members.append(enriched_member)
+                except Exception as e:
+                    # If user lookup fails, add member with basic info
+                    enriched_members.append({
+                        "userId": member_user_id,
+                        "role": member.get("role", "member"),
+                        "joinedAt": member.get("joinedAt"),
+                        "user": {
+                            "name": f"User {member_user_id[-4:]}",
+                            "email": f"{member_user_id}@example.com",
+                            "avatar": None
+                        }
+                    })
+            else:
+                # Add member without user details if userId is missing
+                enriched_members.append(member)
+        
+        return enriched_members
+
     def transform_group_document(self, group: dict) -> dict:
         """Transform MongoDB group document to API response format"""
         if not group:
@@ -84,7 +131,7 @@ class GroupService:
         return groups
 
     async def get_group_by_id(self, group_id: str, user_id: str) -> Optional[dict]:
-        """Get group details by ID, only if user is a member"""
+        """Get group details by ID with enriched member information, only if user is a member"""
         db = self.get_db()
         try:
             obj_id = ObjectId(group_id)
@@ -95,7 +142,19 @@ class GroupService:
             "_id": obj_id,
             "members.userId": user_id
         })
-        return self.transform_group_document(group)
+        
+        if not group:
+            return None
+        
+        # Transform the basic group document
+        transformed_group = self.transform_group_document(group)
+        
+        if transformed_group and transformed_group.get("members"):
+            # Enrich member details with user information
+            enriched_members = await self._enrich_members_with_user_details(transformed_group["members"])
+            transformed_group["members"] = enriched_members
+        
+        return transformed_group
 
     async def update_group(self, group_id: str, updates: dict, user_id: str) -> Optional[dict]:
         """Update group metadata (admin only)"""
@@ -204,7 +263,7 @@ class GroupService:
         return result.modified_count == 1
 
     async def get_group_members(self, group_id: str, user_id: str) -> List[dict]:
-        """Get list of group members"""
+        """Get list of group members with detailed user information"""
         db = self.get_db()
         try:
             obj_id = ObjectId(group_id)
@@ -218,7 +277,12 @@ class GroupService:
         if not group:
             return []
 
-        return group.get("members", [])
+        members = group.get("members", [])
+        
+        # Fetch user details for each member
+        enriched_members = await self._enrich_members_with_user_details(members)
+
+        return enriched_members
 
     async def update_member_role(self, group_id: str, member_id: str, new_role: str, user_id: str) -> bool:
         """Update member role (admin only)"""
