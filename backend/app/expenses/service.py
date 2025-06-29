@@ -32,9 +32,15 @@ class ExpenseService:
     async def create_expense(self, group_id: str, expense_data: ExpenseCreateRequest, user_id: str) -> Dict[str, Any]:
         """Create a new expense and calculate settlements"""
         
+        # Validate and convert group_id to ObjectId
+        try:
+            group_obj_id = ObjectId(group_id)
+        except Exception:
+            raise ValueError("Group not found or user not a member")
+        
         # Verify user is member of the group
         group = await self.groups_collection.find_one({
-            "_id": ObjectId(group_id),
+            "_id": group_obj_id,
             "members.userId": user_id
         })
         if not group:
@@ -189,16 +195,23 @@ class ExpenseService:
     async def get_expense_by_id(self, group_id: str, expense_id: str, user_id: str) -> Dict[str, Any]:
         """Get a single expense with details"""
         
+        # Validate ObjectIds
+        try:
+            group_obj_id = ObjectId(group_id)
+            expense_obj_id = ObjectId(expense_id)
+        except Exception:
+            raise ValueError("Group not found or user not a member")
+        
         # Verify user access
         group = await self.groups_collection.find_one({
-            "_id": ObjectId(group_id),
+            "_id": group_obj_id,
             "members.userId": user_id
         })
         if not group:
             raise ValueError("Group not found or user not a member")
 
         expense_doc = await self.expenses_collection.find_one({
-            "_id": ObjectId(expense_id),
+            "_id": expense_obj_id,
             "groupId": group_id
         })
         if not expense_doc:
