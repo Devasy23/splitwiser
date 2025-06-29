@@ -174,6 +174,7 @@ App --> User: Show group details
      ```json
      { "error": "You have unsettled balances of ₹123.45" }
      ```
+  **Note**: The check for outstanding balances before allowing a user to leave a group is a **TODO** in the current service implementation. The endpoint will currently allow leaving regardless of balance.
 
 ---
 
@@ -194,3 +195,41 @@ App --> User: Show group details
 
 *All require `Authorization: Bearer <token>` (managed by [Auth Service](./auth-service.md)).*
 *Interactions with expenses and settlements are handled by the [Expense Service](./expense-service.md).*
+
+---
+
+## 5. List Group Members
+
+Retrieves a list of all members within a specified group, including their user details.
+
+* **Endpoint**: `GET /groups/{group_id}/members`
+* **Authorization**: `Bearer <access_token>` (User must be a member of the group)
+
+**Successful Response (200 OK):**
+Returns a list of member objects.
+
+```json
+[
+  {
+    "userId": "usr_123abc",
+    "role": "admin",
+    "joinedAt": "2024-01-15T10:00:00Z",
+    "name": "Jane Doe",
+    "imageUrl": "https://example.com/profile_jane.jpg"
+  },
+  {
+    "userId": "usr_456def",
+    "role": "member",
+    "joinedAt": "2024-01-16T11:30:00Z",
+    "name": "John Smith",
+    "imageUrl": "https://example.com/profile_john.jpg"
+  }
+]
+```
+
+Each object in the list contains:
+- `userId`: The unique identifier of the member.
+- `role`: The role of the member in the group (e.g., "admin", "member").
+- `joinedAt`: The timestamp when the member joined the group.
+- `name`: The name of the user (fetched from user profile).
+- `imageUrl`: The profile image URL of the user (fetched from user profile).

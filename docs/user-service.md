@@ -39,7 +39,7 @@ Retrieves the profile information for the currently authenticated user.
   "image_url": "https://example.com/profile.jpg",
   "currency": "USD",
   "created_at": "2024-01-15T10:00:00Z",
-  "updatedAt": "2024-01-16T12:30:00Z"
+  "updated_at": "2024-01-16T12:30:00Z"
 }
 ```
 
@@ -89,13 +89,13 @@ Allows the currently authenticated user to update their profile information and 
 ```json
 {
   "user": {
-    "_id": "507f191e810c19729de860ea",
+    "id": "507f191e810c19729de860ea",
     "name": "Johnathan Doe",
     "email": "john.doe@example.com",
-    "imageUrl": "https://example.com/profiles/johnathan_doe_new.jpg",
+    "image_url": "https://example.com/profiles/johnathan_doe_new.jpg",
     "currency": "EUR",
-    "createdAt": "2024-01-10T10:00:00Z",
-    "updatedAt": "2025-06-11T10:15:00Z"
+    "created_at": "2024-01-10T10:00:00Z",
+    "updated_at": "2025-06-11T10:15:00Z"
   }
 }
 ```

@@ -11,8 +11,9 @@
 | POST   | `/auth/password/reset/request`            | Send password-reset email link          |
 | POST   | `/auth/password/reset/confirm`            | Set new password via reset token        |
 | POST   | [`/auth/token/verify`](#4-access-token-verification-auto-login)                | Verify access token and auto-login      |
+| POST   | `/auth/token`                                     | OAuth2 compatible token login (for Swagger UI/OpenAPI) |
 
-*Refer to the [Micro-Level API Specification](./micro-plan.md#1-authentication-service) for more details on password reset endpoints.*
+*Refer to the [Micro-Level API Specification](./micro-plan.md#1-authentication-service) for more details on password reset endpoints. Basic request/response for password reset are also summarized below.*
 
 ## 1. Email/Password Sign-Up & Sign-In
 
@@ -186,7 +187,75 @@ This endpoint helps in providing a seamless login experience if a valid session 
 
 ---
 
-## 5. Client-Side Persistence & UX
+## 5. Password Reset Endpoints
+
+These endpoints manage the password reset flow.
+
+### a. Request Password Reset
+
+*   **Endpoint**: `POST /auth/password/reset/request`
+*   **Description**: Initiates the password reset process by sending a reset link/token to the user's email.
+*   **Request**:
+    ```json
+    {
+      "email": "user@example.com"
+    }
+    ```
+*   **Response (Success)**:
+    ```json
+    200 OK
+    {
+      "success": true,
+      "message": "If the email exists, a reset link has been sent"
+    }
+    ```
+
+### b. Confirm Password Reset
+
+*   **Endpoint**: `POST /auth/password/reset/confirm`
+*   **Description**: Allows a user to set a new password using a valid reset token.
+*   **Request**:
+    ```json
+    {
+      "reset_token": "valid_reset_token_string",
+      "new_password": "newSecurePassword123"
+    }
+    ```
+*   **Response (Success)**:
+    ```json
+    200 OK
+    {
+      "success": true,
+      "message": "Password has been reset successfully"
+    }
+    ```
+
+---
+
+## 6. OAuth2 Token Endpoint (Primarily for Swagger/OpenAPI)
+
+This endpoint is standard for OAuth2 password flow and primarily used by tools like Swagger UI for interactive API documentation. It allows users to authenticate within the Swagger interface to test protected endpoints.
+
+*   **Endpoint**: `POST /auth/token`
+*   **Description**: OAuth2 compatible token login. Expects `username` (as email) and `password` in form-data.
+*   **Request (form-data)**:
+    ```
+    username=user@example.com
+    password=userpassword
+    ```
+*   **Response (Success)**:
+    ```json
+    200 OK
+    {
+      "access_token": "...jwt...",
+      "token_type": "bearer"
+    }
+    ```
+    *(Note: This endpoint, as implemented in `auth/routes.py` for Swagger, returns only an access_token. The main `/auth/login/email` should be used by clients for full auth token pair.)*
+
+---
+
+## 7. Client-Side Persistence & UX
 
 * **On App Launch**
 
