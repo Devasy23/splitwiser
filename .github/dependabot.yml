@@ -13,11 +13,12 @@ updates:
       day: "monday"
       time: "09:00"
     assignees:
-      - "Devasy23"
+      - "devasy23"
+    reviewers:
+      - "devasy23"
     commit-message:
       prefix: "deps"
       prefix-development: "deps-dev"
-      include: "scope"
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
@@ -32,11 +33,12 @@ updates:
       day: "monday"
       time: "09:00"
     assignees:
-      - "Devasy23"
+      - "devasy23"
+    reviewers:
+      - "devasy23"
     commit-message:
       prefix: "deps"
       prefix-development: "deps-dev"
-      include: "scope"
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
@@ -51,6 +53,8 @@ updates:
       day: "tuesday"
       time: "09:00"
     assignees:
+      - "vrajpatelll"
+    reviewers:
       - "vrajpatelll"
     commit-message:
       prefix: "deps"
@@ -85,7 +89,9 @@ updates:
       day: "wednesday"
       time: "09:00"
     assignees:
-      - "Devasy23"
+      - "devasy23"
+    reviewers:
+      - "devasy23"
     commit-message:
       prefix: "ci"
       include: "scope"
