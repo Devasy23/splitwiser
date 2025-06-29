@@ -1,5 +1,6 @@
 # Codecov configuration for SplitWiser
 # Documentation: https://docs.codecov.com/docs/codecov-yaml
+# Features: Test Analytics, Flags, Components, Bundle Analysis
 
 coverage:
   status:
@@ -7,14 +8,93 @@ coverage:
       default:
         target: auto
         threshold: 1%
-        # Allow slight coverage drops for dependency updates
         if_ci_failed: error
+      backend:
+        target: auto
+        threshold: 1%
+        flags:
+          - backend
+        paths:
+          - backend/
+      frontend:
+        target: auto
+        threshold: 1%
+        flags:
+          - frontend
+        paths:
+          - frontend/
     patch:
       default:
         target: auto
         threshold: 1%
-        # More lenient for dependency-only changes
         if_ci_failed: error
+
+# Flags for different parts of the codebase
+flag_management:
+  default_rules:
+    carryforward: true
+    statuses:
+      - type: project
+        target: auto
+        threshold: 1%
+      - type: patch
+        target: auto
+        threshold: 1%
+
+# Components for modular coverage tracking
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+      - type: patch
+        target: auto
+  individual_components:
+    - component_id: backend-auth
+      name: "Authentication System"
+      paths:
+        - backend/app/auth/
+        - backend/tests/auth/
+      flag_regexes:
+        - backend
+    - component_id: backend-expenses
+      name: "Expense Management"
+      paths:
+        - backend/app/expenses/
+        - backend/tests/expenses/
+      flag_regexes:
+        - backend
+    - component_id: backend-groups
+      name: "Group Management"
+      paths:
+        - backend/app/groups/
+        - backend/tests/groups/
+      flag_regexes:
+        - backend
+    - component_id: backend-user
+      name: "User Management"
+      paths:
+        - backend/app/user/
+        - backend/tests/user/
+      flag_regexes:
+        - backend
+    - component_id: frontend-core
+      name: "Frontend Core"
+      paths:
+        - frontend/
+      flag_regexes:
+        - frontend
+
+# Test Analytics configuration
+test_analytics:
+  # Track test performance and flakiness
+  notify:
+    after_n_builds: 5
+    slack:
+      url: "https://hooks.slack.com/services/your/slack/webhook"
+      threshold: 5%
+      message: "Test suite analytics show concerning trends"
+      only_pulls: false
 
 # Ignore files that don't need coverage
 ignore:
