@@ -51,7 +51,7 @@ jobs:
         name: "Backend Test Results"
         
     - name: Upload Coverage to Codecov with Flags
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       if: github.actor != 'dependabot[bot]'
       with:
         token: ${{ secrets.CODECOV_TOKEN }}

@@ -60,7 +60,7 @@ jobs:
         fi
     
     - name: Upload Bundle Analysis to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       if: github.actor != 'dependabot[bot]'
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
