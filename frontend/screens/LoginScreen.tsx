@@ -18,7 +18,9 @@ import * as AuthSession from "expo-auth-session";
 
 const LoginScreen: React.FC = () => {
   const redirectUri = AuthSession.makeRedirectUri({});
-  console.log("Redirect URI:", redirectUri);
+  if(__DEV__){
+    console.log("Redirect URI:", redirectUri);
+  }
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -105,7 +107,7 @@ const LoginScreen: React.FC = () => {
 
           {/* Fixed Google Login Button */}
           <TouchableOpacity style={styles.googleButton} onPress={googleLogin}>
-            <Image source={{ uri: "https://img.icons8.com/color/48/google-logo.png" }} style={styles.googleIcon} />
+            <Image source={require("../assets/google-logo.png")} style={styles.googleIcon} />
             <Text style={styles.googleButtonText}>Continue with Google</Text>
           </TouchableOpacity>
         </View>

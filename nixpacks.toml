@@ -1,11 +1,15 @@
 [phases.setup]
 nixPkgs = ["python312", "pip"]
 
-# Use the default Python install behavior but ensure we use the right requirements file
+# Use default Python behavior but ensure we use the right requirements file
 [phases.install]
 cmds = [
     "pip install --upgrade pip",
     "pip install -r requirements.txt"
+    # (Optional) upgrade pip via the Python executable to avoid PATH ambiguity
+    "python -m pip install --upgrade pip",
+    # Install backend requirements first; fall back to root requirements.txt
+   "pip install -r backend/requirements.txt || pip install -r requirements.txt"
 ]
 
 [phases.build]

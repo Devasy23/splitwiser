@@ -7,7 +7,7 @@ This document provides essential context for AI assistants working with the Spli
 Splitwiser is an expense tracking and splitting application with:
 - Backend: FastAPI + MongoDB 
 - Frontend POC: Streamlit
-- Planned Frontend: Expo/React Native (in development)
+- Frontend: Expo/React Native (implemented with Google/Firebase authentication)
 
 The app allows users to create groups, add expenses with flexible splitting options, track balances, and handle settlements.
 
