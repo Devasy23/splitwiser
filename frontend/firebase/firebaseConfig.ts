@@ -12,7 +12,17 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
   // measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID // Only if you enabled Google Analytics
 };
+console.log('Env check:', process.env);
 
+// Validate required configuration
+const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'] as const;
+const missingKeys = requiredKeys.filter(key => !firebaseConfig[key as keyof typeof firebaseConfig]);
+console.log('Firebase configuration:', firebaseConfig);
+// Check if any required keys are missing
+console.log('Checking Firebase configuration for missing keys...',missingKeys);
+if (missingKeys.length > 0){
+  throw new Error(`Missing Firebase configuration keys: ${missingKeys.join(', ')}`);
+}
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
