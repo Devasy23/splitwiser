@@ -1,10 +1,15 @@
-import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import axios from "axios";
+import * as SecureStore from "expo-secure-store";
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
+import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import { auth } from "../firebase/firebaseConfig";
 
-const API_URL = 'https://splitwiser-production.up.railway.app'; // Replace with your actual backend URL
+WebBrowser.maybeCompleteAuthSession();
 
-// Define the shape of our authentication context
+const API_URL = "Your API URL here"; // Replace with your actual API URL
+
 type AuthContextType = {
   isAuthenticated: boolean;
   user: any;
@@ -13,164 +18,166 @@ type AuthContextType = {
   login: (credentials: { email: string; password: string }) => Promise<void>;
   signup: (userData: { email: string; password: string; name: string }) => Promise<void>;
   logout: () => void;
+  googleLogin: () => Promise<void>;
   loading: boolean;
 };
 
-// Create the context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Custom hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };
 
-// Authentication provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
 
-  // Set up axios with interceptors for authentication
+  // Google Auth request
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    webClientId: "your-web-client-id.apps.googleusercontent.com",
+    androidClientId: "your-android-client-id.apps.googleusercontent.com",
+  });
+
+  // Handle Google sign-in response
   useEffect(() => {
-    // Configure axios defaults
-    axios.defaults.baseURL = API_URL;
+    if (response?.type === "success") {
+      const handleGoogleLogin = async () => {
+        try {
+          const { authentication } = response;
+          if (!authentication?.accessToken) return;
 
-    // Set up request interceptor
-    axios.interceptors.request.use(
-      (config) => {
-        if (accessToken) {
-          config.headers.Authorization = `Bearer ${accessToken}`;
+          // Create Firebase credential
+          const credential = GoogleAuthProvider.credential(null, authentication.accessToken);
+          const userCredential = await signInWithCredential(auth, credential);
+
+          // Get Firebase ID token
+          const idToken = await userCredential.user.getIdToken(true);
+
+          // Call backend
+          await axios.post(`${API_URL}/auth/login/google`,
+            { id_token: idToken },
+            { headers: { "Content-Type": "application/json" } }
+          );
+
+          setUser(userCredential.user);
+          setIsAuthenticated(true);
+        } catch (err) {
+          console.log("Google Sign-In Error:", err);
+          alert("Login failed. Check network connection.");
         }
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
+      };
 
-    // Set up response interceptor for token refresh
+      handleGoogleLogin();
+    }
+  }, [response]);
+
+  // Axios setup
+  useEffect(() => {
+    axios.defaults.baseURL = API_URL;
+    axios.interceptors.request.use((config) => {
+      if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+      return config;
+    });
+
     axios.interceptors.response.use(
-      (response) => response,
+      (res) => res,
       async (error) => {
         const originalRequest = error.config;
-        
-        // If 401 response and not already retrying
         if (error.response?.status === 401 && !originalRequest._retry && refreshToken) {
           originalRequest._retry = true;
-
           try {
-            // Call refresh token endpoint
-            const response = await axios.post('/auth/refresh', { refresh_token: refreshToken });
-            
-            // Update tokens
+            const response = await axios.post("/auth/refresh", { refresh_token: refreshToken });
             setAccessToken(response.data.access_token);
             if (response.data.refresh_token) {
               setRefreshToken(response.data.refresh_token);
-              await SecureStore.setItemAsync('refreshToken', response.data.refresh_token);
+              await SecureStore.setItemAsync("refreshToken", response.data.refresh_token);
             }
-
-            // Retry the original request with new token
             originalRequest.headers.Authorization = `Bearer ${response.data.access_token}`;
             return axios(originalRequest);
-          } catch (refreshError) {
-            // If refresh fails, log out the user
+          } catch (err) {
             logout();
-            return Promise.reject(refreshError);
+            return Promise.reject(err);
           }
         }
-
         return Promise.reject(error);
       }
     );
 
-    // Check for existing session on app load
     const loadTokens = async () => {
       try {
-        // Get refresh token from secure storage
-        const storedRefreshToken = await SecureStore.getItemAsync('refreshToken');
-        
+        const storedRefreshToken = await SecureStore.getItemAsync("refreshToken");
         if (storedRefreshToken) {
-          // Try to get a new access token
-          const response = await axios.post('/auth/refresh', { refresh_token: storedRefreshToken });
-          
-          // Set authentication state
+          const response = await axios.post("/auth/refresh", { refresh_token: storedRefreshToken });
           setAccessToken(response.data.access_token);
           setRefreshToken(response.data.refresh_token || storedRefreshToken);
           setUser(response.data.user);
           setIsAuthenticated(true);
-          
-          // Update storage if we got a new refresh token
           if (response.data.refresh_token) {
-            await SecureStore.setItemAsync('refreshToken', response.data.refresh_token);
+            await SecureStore.setItemAsync("refreshToken", response.data.refresh_token);
           }
         }
-      } catch (error) {
-        // Clear any invalid tokens
-        await SecureStore.deleteItemAsync('refreshToken');
+      } catch {
+        await SecureStore.deleteItemAsync("refreshToken");
       } finally {
         setLoading(false);
       }
     };
-
     loadTokens();
-  }, []);  // Email/Password login
+  }, []);
+
   const login = async (credentials: { email: string; password: string }) => {
     setLoading(true);
     try {
-      const response = await axios.post('/auth/login/email', credentials);
-      
-      // Store tokens and user data
+      const response = await axios.post("/auth/login/email", credentials);
       setAccessToken(response.data.access_token);
       setRefreshToken(response.data.refresh_token);
       setUser(response.data.user);
       setIsAuthenticated(true);
-      
-      // Save refresh token securely
-      await SecureStore.setItemAsync('refreshToken', response.data.refresh_token);
-    } catch (error) {
-      // Re-throw the error so the UI can handle it
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };  // Email/Password signup
-  const signup = async (userData: { email: string; password: string; name: string }) => {
-    setLoading(true);
-    try {
-      const response = await axios.post('/auth/signup/email', userData);
-      
-      // Store tokens and user data
-      setAccessToken(response.data.access_token);
-      setRefreshToken(response.data.refresh_token);
-      setUser(response.data.user);
-      setIsAuthenticated(true);
-      
-      // Save refresh token securely
-      await SecureStore.setItemAsync('refreshToken', response.data.refresh_token);
-    } catch (error) {
-      // Re-throw the error so the UI can handle it
-      throw error;
+      await SecureStore.setItemAsync("refreshToken", response.data.refresh_token);
     } finally {
       setLoading(false);
     }
   };
 
-  // Logout
+  const signup = async (userData: { email: string; password: string; name: string }) => {
+    setLoading(true);
+    try {
+      const response = await axios.post("/auth/signup/email", userData);
+      setAccessToken(response.data.access_token);
+      setRefreshToken(response.data.refresh_token);
+      setUser(response.data.user);
+      console.log(response)
+      setIsAuthenticated(true);
+      await SecureStore.setItemAsync("refreshToken", response.data.refresh_token);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const googleLogin = async () => {
+    await promptAsync();
+  };
+
   const logout = async () => {
-    // Clear auth state
     setAccessToken(null);
     setRefreshToken(null);
     setUser(null);
     setIsAuthenticated(false);
-    
-    // Clear secure storage
-    await SecureStore.deleteItemAsync('refreshToken');
+    if (user && user.providerData?.some((p: any) => p.providerId === "google.com")) {
+      try {
+        await auth.signOut();
+      } catch (e) {
+        console.log("Error signing out from Google:", e);
+      }
+    }
+    await SecureStore.deleteItemAsync("refreshToken");
   };
-  // Provide auth context to children
+
   return (
     <AuthContext.Provider
       value={{
@@ -181,6 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         signup,
         logout,
+        googleLogin,
         loading,
       }}
     >

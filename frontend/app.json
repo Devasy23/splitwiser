@@ -12,18 +12,17 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
     "ios": {
-      "supportsTablet": true
-    },    "android": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.splitwiser.app"
+    },
+    "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "googleServicesFile": "./google-services.json",
-      "package": "splitwiser.app"
+      "package": "com.splitwiser.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"

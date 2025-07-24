@@ -1,5 +1,5 @@
-import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import { StatusBar } from "expo-status-bar";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -10,69 +10,47 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
-} from 'react-native';
-import { useAuth } from '../contexts/AuthContext';
+  View,
+  Image,
+} from "react-native";
+import { useAuth } from "../contexts/AuthContext";
+import * as AuthSession from "expo-auth-session";
 
 const LoginScreen: React.FC = () => {
-  // States for form input and mode
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const redirectUri = AuthSession.makeRedirectUri({});
+  console.log("Redirect URI:", redirectUri);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
-    // Get auth functions
-  const { login, signup, loading } = useAuth();  // Handle form submission
+
+  const { login, signup, googleLogin, loading } = useAuth();
+
   const handleSubmit = async () => {
-    // Basic form validation
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email');
-      return;
-    }
-    
-    if (!password.trim()) {
-      Alert.alert('Error', 'Please enter your password');
-      return;
-    }
-    
-    // Basic email format validation
+    if (!email.trim()) return Alert.alert("Error", "Please enter your email");
+    if (!password.trim()) return Alert.alert("Error", "Please enter your password");
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
-    }
-    
+    if (!emailRegex.test(email)) return Alert.alert("Error", "Please enter a valid email address");
+
     try {
       if (isSignUp) {
-        if (!name.trim()) {
-          Alert.alert('Error', 'Please enter your name');
-          return;
-        }
+        if (!name.trim()) return Alert.alert("Error", "Please enter your name");
         await signup({ email, password, name });
       } else {
         await login({ email, password });
       }
     } catch (error: any) {
-      console.error('Authentication error:', error);
-      
-      // Extract error message from different possible error structures
-      let errorMessage = 'Failed to authenticate';
-      
-      if (error.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      Alert.alert('Authentication Error', errorMessage);
+      console.error("Authentication error:", error);
+      let errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message || "Failed to authenticate";
+      Alert.alert("Authentication Error", errorMessage);
     }
   };
 
-
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
@@ -82,10 +60,10 @@ const LoginScreen: React.FC = () => {
           <Text style={styles.logoText}>Splitwiser</Text>
           <Text style={styles.tagline}>Split expenses with friends easily</Text>
         </View>
-        
+
         <View style={styles.formContainer}>
-          <Text style={styles.title}>{isSignUp ? 'Create Account' : 'Welcome Back'}</Text>
-          
+          <Text style={styles.title}>{isSignUp ? "Create Account" : "Welcome Back"}</Text>
+
           {isSignUp && (
             <TextInput
               style={styles.input}
@@ -95,7 +73,7 @@ const LoginScreen: React.FC = () => {
               autoCapitalize="words"
             />
           )}
-          
+
           <TextInput
             style={styles.input}
             placeholder="Email"
@@ -104,7 +82,7 @@ const LoginScreen: React.FC = () => {
             keyboardType="email-address"
             autoCapitalize="none"
           />
-          
+
           <TextInput
             style={styles.input}
             placeholder="Password"
@@ -112,29 +90,23 @@ const LoginScreen: React.FC = () => {
             onChangeText={setPassword}
             secureTextEntry
           />
-            <TouchableOpacity 
-            style={styles.button}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>
-                {isSignUp ? 'Sign Up' : 'Login'}
-              </Text>
-            )}
-          </TouchableOpacity>          
-          <TouchableOpacity 
-            style={styles.switchMode}
-            onPress={() => setIsSignUp(!isSignUp)}
-          >
+
+          <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{isSignUp ? "Sign Up" : "Login"}</Text>}
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.switchMode} onPress={() => setIsSignUp(!isSignUp)}>
             <Text style={styles.switchModeText}>
-              {isSignUp 
-                ? 'Already have an account? Login' 
-                : 'Don\'t have an account? Sign Up'
-              }
+              {isSignUp ? "Already have an account? Login" : "Don't have an account? Sign Up"}
             </Text>
+          </TouchableOpacity>
+
+          <Text style={styles.orText}>OR</Text>
+
+          {/* Fixed Google Login Button */}
+          <TouchableOpacity style={styles.googleButton} onPress={googleLogin}>
+            <Image source={{ uri: "https://img.icons8.com/color/48/google-logo.png" }} style={styles.googleIcon} />
+            <Text style={styles.googleButtonText}>Continue with Google</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -192,7 +164,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     fontSize: 16,
     backgroundColor: '#f5f5f5',
-  },  button: {
+  }, button: {
     backgroundColor: '#2e7d32', // Green color
     height: 50,
     borderRadius: 8,
@@ -205,14 +177,38 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
+  orText: {
+    textAlign: 'center',
+    color: '#999',
+    marginVertical: 15,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f5f5f5',
+    height: 50,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    paddingHorizontal: 15,
+  },
   switchMode: {
     marginTop: 20,
     alignItems: 'center',
   },
   switchModeText: {
     color: '#2e7d32', // Green color
-    fontSize: 15,
+  },
+  googleIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 10,
+  },
+  googleButtonText: {
+    color: '#2e7d32',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
-
 export default LoginScreen;
