@@ -65,7 +65,7 @@ body:
           required: true
         - label: I have starred the repository to support the project.
           required: false
-        - label: I agree to follow the project's [Code of Conduct](../CODE_OF_CONDUCT.md).
+        - label: I agree to follow the project's [Code of Conduct](../../CODE_OF_CONDUCT.md).
           required: true
 
   - type: markdown
