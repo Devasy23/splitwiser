@@ -2,7 +2,6 @@ name: 💡 GSSoC '25 Contribution
 description: Submit your issue, feature request, or proposal as part of GSSoC '25
 title: "[GSSoC25] <title>"
 labels: ["gssoc", "good first issue"]
-assignees: ''
 
 body:
   - type: markdown
