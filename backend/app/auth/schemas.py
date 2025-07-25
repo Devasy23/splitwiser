@@ -37,8 +37,7 @@ class UserResponse(BaseModel):
     currency: str = "USD"
     created_at: datetime
 
-    class Config:
-        populate_by_name = True
+    model_config = {"populate_by_name": True}
 
 class AuthResponse(BaseModel):
     access_token: str

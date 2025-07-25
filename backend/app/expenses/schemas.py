@@ -62,7 +62,7 @@ class ExpenseComment(BaseModel):
     createdAt: datetime
 
     model_config = {
-        # "populate_by_name": True,
+        "populate_by_name": True,
         "str_strip_whitespace": True,
         "validate_assignment": True
     }
