@@ -1,6 +1,6 @@
 import secrets
 import string
-
+from app.config import logger
 def generate_jwt_secret():
     """
     Generates a cryptographically secure 64-character secret key for JWT authentication.
@@ -17,7 +17,7 @@ def generate_jwt_secret():
 
 if __name__ == "__main__":
     secret = generate_jwt_secret()
-    print("Generated JWT Secret Key:")
-    print(secret)
-    print("\nCopy this key to your .env file:")
-    print(f"SECRET_KEY={secret}")
+    logger.info("Generated JWT Secret Key:")
+    logger.info(secret)
+    logger.info("\nCopy this key to your .env file:")
+    logger.info(f"SECRET_KEY={secret}")

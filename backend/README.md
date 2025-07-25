@@ -51,6 +51,12 @@ The following authentication endpoints are available:
 
 The application uses MongoDB for data storage. Make sure MongoDB is running and accessible via the connection string in your `.env` file.
 
+## Logging Configuration
+The logging configuration is defined in the `app/config.py` file. It includes:
+- **Log Levels**: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
+- **Format**: Logs include timestamps, log levels, and messages.
+- **Handlers**: Logs are output to the console.
+
 ## Project Structure
 
 ```

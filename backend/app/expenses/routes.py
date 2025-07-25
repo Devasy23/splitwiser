@@ -8,6 +8,7 @@ from app.expenses.schemas import (
 )
 from app.expenses.service import expense_service
 from app.auth.security import get_current_user
+from app.config import logger
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import io
@@ -83,9 +84,7 @@ async def update_expense(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        import traceback
-        print(f"Error updating expense: {str(e)}")
-        print(f"Traceback: {traceback.format_exc()}")
+        logger.error(f"Error updating expense: {str(e)}",exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to update expense: {str(e)}")
 
 @router.delete("/expenses/{expense_id}")

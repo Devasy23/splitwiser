@@ -8,7 +8,7 @@ from app.auth.security import get_password_hash, verify_password, create_refresh
 from app.auth.schemas import UserResponse
 import firebase_admin
 from firebase_admin import auth as firebase_auth, credentials
-from app.config import settings
+from app.config import settings,logger
 import os
 import json
 
@@ -39,16 +39,16 @@ if not firebase_admin._apps:
         firebase_admin.initialize_app(cred, {
             'projectId': settings.firebase_project_id,
         })
-        print("Firebase initialized with credentials from environment variables")
+        logger.info("Firebase initialized with credentials from environment variables")
     # Fall back to service account JSON file if env vars are not available
     elif os.path.exists(settings.firebase_service_account_path):
         cred = credentials.Certificate(settings.firebase_service_account_path)
         firebase_admin.initialize_app(cred, {
             'projectId': settings.firebase_project_id,
         })
-        print("Firebase initialized with service account file")
+        logger.info("Firebase initialized with service account file")
     else:
-        print("Firebase service account not found. Google auth will not work.")
+        logger.warning("Firebase service account not found. Google auth will not work.")
 
 class AuthService:
     def __init__(self):
@@ -335,8 +335,8 @@ class AuthService:
         
         # For development/free tier: just log the reset token
         # In production, you would send this via email
-        print(f"Password reset token for {email}: {reset_token}")
-        print(f"Reset link: https://yourapp.com/reset-password?token={reset_token}")
+        logger.info(f"Password reset token for {email}: {reset_token}")
+        logger.info(f"Reset link: https://yourapp.com/reset-password?token={reset_token}")
         
         return True
 

@@ -7,19 +7,19 @@ from app.auth.routes import router as auth_router
 from app.user.routes import router as user_router
 from app.groups.routes import router as groups_router
 from app.expenses.routes import router as expenses_router, balance_router
-from app.config import settings
+from app.config import settings, logger,RequestResponseLoggingMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    print("Lifespan: Connecting to MongoDB...")
+    logger.info("Lifespan: Connecting to MongoDB...")
     await connect_to_mongo()
-    print("Lifespan: MongoDB connected.")
+    logger.info("Lifespan: MongoDB connected.")
     yield
     # Shutdown
-    print("Lifespan: Closing MongoDB connection...")
+    logger.info("Lifespan: Closing MongoDB connection...")
     await close_mongo_connection()
-    print("Lifespan: MongoDB connection closed.")
+    logger.info("Lifespan: MongoDB connection closed.")
 
 app = FastAPI(
     title="Splitwiser API",
@@ -35,7 +35,7 @@ allowed_origins = []
 if settings.allow_all_origins:
     # Allow all origins in development mode
     allowed_origins = ["*"]
-    print("Development mode: CORS configured to allow all origins")
+    logger.debug("Development mode: CORS configured to allow all origins")
 elif settings.allowed_origins:
     # Use specified origins in production mode
     allowed_origins = [origin.strip() for origin in settings.allowed_origins.split(",") if origin.strip()]
@@ -43,7 +43,9 @@ else:
     # Fallback to allow all origins if not specified (not recommended for production)
     allowed_origins = ["*"]
 
-print(f"Allowed CORS origins: {allowed_origins}")
+logger.info(f"Allowed CORS origins: {allowed_origins}")
+
+app.add_middleware(RequestResponseLoggingMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -70,8 +72,8 @@ app.add_middleware(
 @app.options("/{path:path}")
 async def options_handler(request: Request, path: str):
     """Handle all OPTIONS requests"""
-    print(f"OPTIONS request received for path: /{path}")
-    print(f"Origin: {request.headers.get('origin', 'No origin header')}")
+    logger.info(f"OPTIONS request received for path: /{path}")
+    logger.info(f"Origin: {request.headers.get('origin', 'No origin header')}")
     
     response = Response(status_code=200)
     
