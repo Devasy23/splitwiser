@@ -1,0 +1,11 @@
+# This file ensures the assets directory is tracked by git
+# Add your app icons, splash screens, and other assets here
+
+# Required assets for production:
+# - icon.png (1024x1024) - App icon
+# - favicon.png (32x32 or 16x16) - Web favicon  
+# - splash.png (1242x2436) - Splash screen
+# - adaptive-icon.png (1024x1024) - Android adaptive icon
+
+# Current status: Assets removed from app.json to fix build issues
+# TODO: Add proper assets when available

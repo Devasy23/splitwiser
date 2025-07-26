@@ -53,6 +53,7 @@ REM Create assets directory if it doesn't exist
 if not exist "assets" (
     mkdir assets
     echo 📁 Created assets directory
+    echo # Assets placeholder > assets\.gitkeep
 )
 
 REM Install Expo CLI globally if not present

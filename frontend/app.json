@@ -4,29 +4,26 @@
     "slug": "splitwiser",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "scheme": "splitwiser",
     "splash": {
-      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2e7d32"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true
-    },    "android": {
+    },
+    "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#2e7d32"
       },
-      "googleServicesFile": "./google-services.json",
       "package": "splitwiser.app"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "bundler": "webpack"
     }
   }
 }
