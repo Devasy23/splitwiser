@@ -6,37 +6,23 @@ codecov:
 coverage:
   precision: 2
   round: down
-  range: 
+  range:
     - 60.0
     - 80.0
   status:
     project:
       default:
         target: auto
-        threshold: 1.0
+        threshold: 0.5
         if_ci_failed: error
         flag_coverage_not_uploaded_behavior: include
-      backend:
-        target: auto
-        threshold: 1.0
-        if_ci_failed: error
-        flags:
-          - backend
-        paths:
-          - backend/
-      frontend:
-        target: auto
-        threshold: 1.0
-        if_ci_failed: error
-        flags:
-          - frontend
-        paths:
-          - frontend/
     patch:
       default:
-        target: auto
-        threshold: 1.0
+        target: 80%
+        threshold: 0.5
         if_ci_failed: error
+        branches:
+          - "!main"  # Don't require patch coverage on main branch
     changes: false
 
 # Flags for different parts of the codebase
@@ -46,10 +32,12 @@ flag_management:
     statuses:
       - type: project
         target: auto
-        threshold: 1.0
+        threshold: 0.5
+        branches:
+          - "!main"
       - type: patch
-        target: auto
-        threshold: 1.0
+        target: 80%
+        threshold: 0.5
 
 # Components for modular coverage tracking
 component_management:
@@ -57,35 +45,35 @@ component_management:
     statuses:
       - type: project
         target: auto
+        threshold: 0.5
+        branches:
+          - "!main"
       - type: patch
-        target: auto
+        target: 80%
+        threshold: 0.5
   individual_components:
     - component_id: backend-auth
       name: "Authentication System"
       paths:
         - backend/app/auth/**
-        - backend/tests/auth/**
       flag_regexes:
         - backend
     - component_id: backend-expenses
       name: "Expense Management"
       paths:
         - backend/app/expenses/**
-        - backend/tests/expenses/**
       flag_regexes:
         - backend
     - component_id: backend-groups
       name: "Group Management"
       paths:
         - backend/app/groups/**
-        - backend/tests/groups/**
       flag_regexes:
         - backend
     - component_id: backend-user
       name: "User Management"
       paths:
         - backend/app/user/**
-        - backend/tests/user/**
       flag_regexes:
         - backend
     - component_id: backend-core
@@ -97,10 +85,24 @@ component_management:
         - backend/main.py
       flag_regexes:
         - backend
+    - component_id: frontend-auth
+      name: "Frontend Authentication"
+      paths:
+        - frontend/contexts/AuthContext.tsx
+        - frontend/screens/LoginScreen.tsx
+      flag_regexes:
+        - frontend
+    - component_id: frontend-screens
+      name: "Frontend Screens"
+      paths:
+        - frontend/screens/**
+      flag_regexes:
+        - frontend
     - component_id: frontend-core
       name: "Frontend Core"
       paths:
-        - frontend/**
+        - frontend/App.tsx
+        - frontend/contexts/**
       flag_regexes:
         - frontend
 
@@ -110,20 +112,21 @@ component_management:
 # Ignore files that don't need coverage
 ignore:
   - "**/__pycache__/**"
-  - "**/tests/**"
-  - "**/test_*.py"
   - "**/*.pyc"
-  - "frontend/**"
   - "docs/**"
   - "*.md"
   - "*.yml"
   - "*.yaml"
   - "*.toml"
   - "requirements*.txt"
+  - "setup*.sh"
+  - "setup*.bat"
+  - "*.json"
+  - "ui-poc/**"  # Ignore POC frontend since we have main frontend
 
 # Comments on PRs
 comment:
-  layout: "reach,diff,flags,components"
+  layout: "header, diff, flags, components"
   behavior: default
   require_changes: false
   require_base: false
@@ -133,3 +136,8 @@ comment:
 # Make codecov less strict for Dependabot PRs
 github_checks:
   annotations: true
+
+# Prevent coverage drops due to removed code
+fixes:
+  - "backend/app/::"  # Strip backend/app/ prefix from paths
+  - "frontend/::"     # Strip frontend/ prefix from paths
