@@ -1,8 +1,10 @@
-from fastapi import HTTPException, status, Depends
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional
+
 from app.database import get_database
 from bson import ObjectId
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from fastapi import Depends, HTTPException, status
+
 
 class UserService:
     def __init__(self):
@@ -22,7 +24,11 @@ class UserService:
                 return dt
             # Normalize to UTC and append 'Z'
             try:
-                dt_utc = dt.astimezone(timezone.utc) if getattr(dt, 'tzinfo', None) else dt.replace(tzinfo=timezone.utc)
+                dt_utc = (
+                    dt.astimezone(timezone.utc)
+                    if getattr(dt, "tzinfo", None)
+                    else dt.replace(tzinfo=timezone.utc)
+                )
                 return dt_utc.isoformat().replace("+00:00", "Z")
             except AttributeError:
                 return str(dt)
@@ -61,9 +67,7 @@ class UserService:
         updates = {k: v for k, v in updates.items() if k in allowed}
         updates["updated_at"] = datetime.now(timezone.utc)
         result = await db.users.find_one_and_update(
-            {"_id": obj_id},
-            {"$set": updates},
-            return_document=True
+            {"_id": obj_id}, {"$set": updates}, return_document=True
         )
         return self.transform_user_document(result)
 
@@ -75,5 +79,6 @@ class UserService:
             return False  # Handle invalid ObjectId gracefully
         result = await db.users.delete_one({"_id": obj_id})
         return result.deleted_count > 0
+
 
 user_service = UserService()

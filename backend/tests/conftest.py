@@ -1,17 +1,18 @@
+from mongomock_motor import AsyncMongoMockClient
+import os  # Added
+import sys  # Added
+from pathlib import Path  # Added
+from unittest.mock import MagicMock, patch
+
+import firebase_admin  # Added
 import pytest
 import pytest_asyncio
-from unittest.mock import patch, MagicMock
-import firebase_admin # Added
-import os # Added
-import sys # Added
-from pathlib import Path # Added
 
 # Add project root to sys.path to allow imports from app and main
 # This assumes conftest.py is in backend/tests/
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
-from mongomock_motor import AsyncMongoMockClient
 
 @pytest.fixture(scope="session", autouse=True)
 def mock_firebase_admin(request):
@@ -34,13 +35,15 @@ def mock_firebase_admin(request):
         "uid": "test_firebase_uid",
         "email": "firebaseuser@example.com",
         "name": "Firebase User",
-        "picture": None
-    } # Dummy decoded token
+        "picture": None,
+    }  # Dummy decoded token
 
     patches = [
         patch("firebase_admin.credentials.Certificate", mock_certificate),
         patch("firebase_admin.initialize_app", mock_initialize_app),
-        patch("firebase_admin.auth.verify_id_token", mock_firebase_auth.verify_id_token) # Mock specific function
+        patch(
+            "firebase_admin.auth.verify_id_token", mock_firebase_auth.verify_id_token
+        ),  # Mock specific function
     ]
 
     for p in patches:
@@ -57,19 +60,26 @@ def mock_firebase_admin(request):
     # If not using the os.environ patch, just yield:
     yield
 
+
 @pytest_asyncio.fixture(scope="function", autouse=True)
 async def mock_db():
     print("mock_db fixture: Creating AsyncMongoMockClient")
     mock_mongo_client = AsyncMongoMockClient()
-    print(f"mock_db fixture: mock_mongo_client type: {type(mock_mongo_client)}")
+    print(
+        f"mock_db fixture: mock_mongo_client type: {type(mock_mongo_client)}")
     mock_database_instance = mock_mongo_client["test_db"]
-    print(f"mock_db fixture: mock_database_instance type: {type(mock_database_instance)}, is None: {mock_database_instance is None}")
+    print(
+        f"mock_db fixture: mock_database_instance type: {type(mock_database_instance)}, is None: {mock_database_instance is None}"
+    )
 
     # Patch get_database for all services that use it
     patches = [
-        patch("app.auth.service.get_database", return_value=mock_database_instance),
-        patch("app.user.service.get_database", return_value=mock_database_instance),
-        patch("app.groups.service.get_database", return_value=mock_database_instance),
+        patch("app.auth.service.get_database",
+              return_value=mock_database_instance),
+        patch("app.user.service.get_database",
+              return_value=mock_database_instance),
+        patch("app.groups.service.get_database",
+              return_value=mock_database_instance),
     ]
 
     # Start all patches
