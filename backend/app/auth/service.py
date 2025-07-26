@@ -335,7 +335,7 @@ class AuthService:
         
         # For development/free tier: just log the reset token
         # In production, you would send this via email
-        logger.info(f"Password reset token for {email}: {reset_token}")
+        logger.info(f"Password reset token for {email}: {reset_token[:6]}")
         logger.info(f"Reset link: https://yourapp.com/reset-password?token={reset_token}")
         
         return True
