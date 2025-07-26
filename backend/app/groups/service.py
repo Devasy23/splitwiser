@@ -1,13 +1,12 @@
 from fastapi import HTTPException, status
 from app.database import get_database
+from app.config import logger
 from bson import ObjectId, errors
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 import secrets
 import string
-import logging
 
-logger = logging.getLogger(__name__)
 
 class GroupService:
     def __init__(self):
