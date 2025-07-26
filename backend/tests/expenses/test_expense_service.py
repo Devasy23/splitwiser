@@ -1,4 +1,5 @@
 import pytest
+from fastapi import HTTPException
 from unittest.mock import AsyncMock, MagicMock, patch
 from app.expenses.service import ExpenseService
 from app.expenses.schemas import ExpenseCreateRequest, ExpenseSplit, SplitType
@@ -103,13 +104,25 @@ async def test_create_expense_invalid_group(expense_service):
         mock_mongodb.database = mock_db
         mock_db.groups.find_one = AsyncMock(return_value=None)
         
-        # Test with invalid ObjectId format
+        '''# Test with invalid ObjectId format
         with pytest.raises(ValueError, match="Group not found or user not a member"):
             await expense_service.create_expense("invalid_group", expense_request, "user_a")
         
         # Test with valid ObjectId format but non-existent group
         with pytest.raises(ValueError, match="Group not found or user not a member"):
-            await expense_service.create_expense("65f1a2b3c4d5e6f7a8b9c0d0", expense_request, "user_a")
+            await expense_service.create_expense("65f1a2b3c4d5e6f7a8b9c0d0", expense_request, "user_a")'''
+        # Updated after stricter exception handling (July 2025)
+        # Case 1: Invalid ObjectId format
+        with pytest.raises(HTTPException) as exc_info_1:
+            await expense_service.create_expense("invalid_group", expense_request, "user_a")
+        assert exc_info_1.value.status_code == 400
+        assert "Invalid group ID" in str(exc_info_1.value.detail)
+
+        # Case 2: Valid ObjectId format but group not found or user not a member
+        with pytest.raises(HTTPException) as exc_info_2:
+            await expense_service.create_expense(str(ObjectId()), expense_request, "user_a")
+        assert exc_info_2.value.status_code == 403
+        assert "not a member of this group" in str(exc_info_2.value.detail)
 
 @pytest.mark.asyncio
 async def test_calculate_optimized_settlements_advanced(expense_service):
@@ -306,13 +319,23 @@ async def test_update_expense_unauthorized(expense_service):
         # Mock finding no expense (user not creator)
         mock_db.expenses.find_one = AsyncMock(return_value=None)
         
-        with pytest.raises(ValueError, match="Expense not found or not authorized to edit"):
+        '''with pytest.raises(ValueError, match="Expense not found or not authorized to edit"):
+            await expense_service.update_expense(
+                "group_id", 
+                "65f1a2b3c4d5e6f7a8b9c0d1",
+                update_request, 
+                "unauthorized_user"
+            )'''
+        # Updated after stricter exception handling (July 2025)
+        with pytest.raises(HTTPException) as exc_info:
             await expense_service.update_expense(
                 "group_id", 
                 "65f1a2b3c4d5e6f7a8b9c0d1",
                 update_request, 
                 "unauthorized_user"
             )
+        assert exc_info.value.status_code == 403
+        assert "Not authorized" in str(exc_info.value.detail)
 
 def test_expense_split_validation():
     """Test expense split validation with proper assertions"""
@@ -425,8 +448,17 @@ async def test_get_expense_by_id_not_found(expense_service):
         # Mock expense not found
         mock_db.expenses.find_one = AsyncMock(return_value=None)
         
-        with pytest.raises(ValueError, match="Expense not found"):
-            await expense_service.get_expense_by_id("65f1a2b3c4d5e6f7a8b9c0d0", "65f1a2b3c4d5e6f7a8b9c0d1", "user_a")
+        ''' with pytest.raises(ValueError, match="Expense not found"):
+            await expense_service.get_expense_by_id("65f1a2b3c4d5e6f7a8b9c0d0", "65f1a2b3c4d5e6f7a8b9c0d1", "user_a")'''
+        # Updated after stricter exception handling (July 2025)
+        with pytest.raises(HTTPException) as exc_info:
+            await expense_service.get_expense_by_id(
+                "65f1a2b3c4d5e6f7a8b9c0d0",
+                "65f1a2b3c4d5e6f7a8b9c0d1",
+                "user_a"
+            )
+        assert exc_info.value.status_code == 404
+        assert "Expense not found" in exc_info.value.detail
 
 @pytest.mark.asyncio
 async def test_list_group_expenses_success(expense_service, mock_group_data, mock_expense_data):
@@ -643,8 +675,17 @@ async def test_delete_expense_not_found(expense_service):
         mock_db.settlements.delete_many = AsyncMock() # Should not be called if expense not found
         mock_db.expenses.delete_one = AsyncMock() # Should not be called
 
-        with pytest.raises(ValueError, match="Expense not found or not authorized to delete"):
+        '''with pytest.raises(ValueError, match="Expense not found or not authorized to delete"):
             await expense_service.delete_expense(group_id, expense_id, user_id)
+
+        mock_db.settlements.delete_many.assert_not_called()
+        mock_db.expenses.delete_one.assert_not_called()'''
+        # Updated after stricter exception handling (July 2025)
+        with pytest.raises(HTTPException) as exc_info:
+            await expense_service.delete_expense(group_id, expense_id, user_id)
+        
+        assert exc_info.value.status_code == 403
+        assert exc_info.value.detail == "Not authorized to delete this expense or it does not exist"
 
         mock_db.settlements.delete_many.assert_not_called()
         mock_db.expenses.delete_one.assert_not_called()
@@ -764,8 +805,16 @@ async def test_create_manual_settlement_group_not_found(expense_service):
         mock_mongodb.database = mock_db
         mock_db.groups.find_one = AsyncMock(return_value=None) # Group not found
 
-        with pytest.raises(ValueError, match="Group not found or user not a member"):
+        '''with pytest.raises(ValueError, match="Group not found or user not a member"):
             await expense_service.create_manual_settlement(group_id, settlement_request, user_id)
+
+        mock_db.settlements.insert_one.assert_not_called()'''
+        #Updated after stricter exception handling (July 2025)
+        with pytest.raises(HTTPException) as exc_info:
+            await expense_service.create_manual_settlement(group_id, settlement_request, user_id)
+
+        assert exc_info.value.status_code == 403
+        assert exc_info.value.detail == "Group not found or user not a member"
 
         mock_db.settlements.insert_one.assert_not_called()
 
@@ -870,8 +919,14 @@ async def test_get_group_settlements_group_not_found(expense_service):
         mock_mongodb.database = mock_db
         mock_db.groups.find_one = AsyncMock(return_value=None) # Group not found
 
-        with pytest.raises(ValueError, match="Group not found or user not a member"):
+        '''with pytest.raises(ValueError, match="Group not found or user not a member"):
+            await expense_service.get_group_settlements(group_id, user_id)'''
+        # Updated after stricter exception handling (July 2025)
+        with pytest.raises(HTTPException) as exc_info:
             await expense_service.get_group_settlements(group_id, user_id)
+
+        assert exc_info.value.status_code == 403
+        assert exc_info.value.detail == "Group not found or user not a member"
 
         mock_db.settlements.find.assert_not_called()
         mock_db.settlements.count_documents.assert_not_called()
@@ -928,8 +983,14 @@ async def test_get_settlement_by_id_not_found(expense_service, mock_group_data):
         mock_db.groups.find_one = AsyncMock(return_value=mock_group_data)
         mock_db.settlements.find_one = AsyncMock(return_value=None) # Settlement not found
 
-        with pytest.raises(ValueError, match="Settlement not found"):
+        '''with pytest.raises(ValueError, match="Settlement not found"):
+            await expense_service.get_settlement_by_id(group_id, settlement_id_str, user_id)'''
+        # Updated after stricter exception handling (July 2025)
+        with pytest.raises(HTTPException) as exc_info:
             await expense_service.get_settlement_by_id(group_id, settlement_id_str, user_id)
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == "Settlement not found"
 
 @pytest.mark.asyncio
 async def test_get_settlement_by_id_group_access_denied(expense_service):
@@ -944,8 +1005,14 @@ async def test_get_settlement_by_id_group_access_denied(expense_service):
 
         mock_db.groups.find_one = AsyncMock(return_value=None) # User not in group / group doesn't exist
 
-        with pytest.raises(ValueError, match="Group not found or user not a member"):
+        '''with pytest.raises(ValueError, match="Group not found or user not a member"):
+            await expense_service.get_settlement_by_id(group_id, settlement_id_str, user_id)'''
+        # Updated after stricter exception handling (July 2025)
+        with pytest.raises(HTTPException) as exc_info:
             await expense_service.get_settlement_by_id(group_id, settlement_id_str, user_id)
+
+        assert exc_info.value.status_code == 403
+        assert exc_info.value.detail == "Group not found or user not a member"
 
         mock_db.settlements.find_one.assert_not_called()
 
@@ -1023,10 +1090,18 @@ async def test_update_settlement_status_not_found(expense_service):
         mock_db.settlements.find_one = AsyncMock(return_value=None)
 
 
-        with pytest.raises(ValueError, match="Settlement not found"):
+        '''with pytest.raises(ValueError, match="Settlement not found"):
+            await expense_service.update_settlement_status(
+                group_id, settlement_id_str, new_status
+            )'''
+        # Updated after stricter exception handling (July 2025)
+        with pytest.raises(HTTPException) as exc_info:
             await expense_service.update_settlement_status(
                 group_id, settlement_id_str, new_status
             )
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == "Settlement not found"
 
         mock_db.settlements.find_one.assert_not_called() # Should not be called if update fails
 
@@ -1096,8 +1171,14 @@ async def test_delete_settlement_group_access_denied(expense_service):
 
         mock_db.groups.find_one = AsyncMock(return_value=None) # User not in group
 
-        with pytest.raises(ValueError, match="Group not found or user not a member"):
+        '''with pytest.raises(ValueError, match="Group not found or user not a member"):
+            await expense_service.delete_settlement(group_id, settlement_id_str, user_id)'''
+        # Updated after stricter exception handling (July 2025)
+        with pytest.raises(HTTPException) as exc_info:
             await expense_service.delete_settlement(group_id, settlement_id_str, user_id)
+
+        assert exc_info.value.status_code == 403
+        assert exc_info.value.detail == "Group not found or user not a member"
 
         mock_db.settlements.delete_one.assert_not_called()
 
@@ -1203,8 +1284,16 @@ async def test_get_user_balance_in_group_access_denied(expense_service):
         mock_mongodb.database = mock_db
         mock_db.groups.find_one = AsyncMock(return_value=None) # Current user not member
 
-        with pytest.raises(ValueError, match="Group not found or user not a member"):
-            await expense_service.get_user_balance_in_group(group_id, target_user_id_str, current_user_id)
+        '''with pytest.raises(ValueError, match="Group not found or user not a member"):
+            await expense_service.get_user_balance_in_group(group_id, target_user_id_str, current_user_id)'''
+        # Updated after stricter exception handling (July 2025)
+        with pytest.raises(HTTPException) as exc_info:
+            await expense_service.get_user_balance_in_group(
+                group_id, target_user_id_str, current_user_id
+            )
+
+        assert exc_info.value.status_code == 403
+        assert exc_info.value.detail == "Group not found or user not a member"
 
         mock_db.users.find_one.assert_not_called()
         mock_db.settlements.aggregate.assert_not_called()
@@ -1650,8 +1739,14 @@ async def test_get_group_analytics_group_not_found(expense_service):
         mock_mongodb.database = mock_db
         mock_db.groups.find_one = AsyncMock(return_value=None) # Group not found
 
-        with pytest.raises(ValueError, match="Group not found or user not a member"):
+        '''with pytest.raises(ValueError, match="Group not found or user not a member"):
+            await expense_service.get_group_analytics(group_id, user_id)'''
+        # Updated after stricter exception handling (July 2025)
+        with pytest.raises(HTTPException) as exc_info:
             await expense_service.get_group_analytics(group_id, user_id)
+
+        assert exc_info.value.status_code == 403
+        assert exc_info.value.detail == "Group not found or user not a member"
 
         mock_db.expenses.find.assert_not_called()
         mock_db.users.find_one.assert_not_called()

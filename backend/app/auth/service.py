@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError, PyMongoError
 from bson import ObjectId
+from jose import JWTError
 from fastapi import HTTPException, status
 from app.database import get_database
 from app.auth.security import get_password_hash, verify_password, create_refresh_token, generate_reset_token
@@ -11,6 +12,9 @@ from firebase_admin import auth as firebase_auth, credentials
 from app.config import settings
 import os
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Initialize Firebase Admin SDK
 if not firebase_admin._apps:
@@ -116,6 +120,12 @@ class AuthService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="User with this email already exists"
             )
+        except Exception as e:
+            logger.exception("Unexpected error while creating user with email")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error"
+            )
 
     async def authenticate_user_with_email(self, email: str, password: str) -> Dict[str, Any]:
         """
@@ -127,17 +137,31 @@ class AuthService:
             A dictionary containing the authenticated user and a new refresh token.
         """
         db = self.get_db()
-        
-        user = await db.users.find_one({"email": email})
+        try:
+            user = await db.users.find_one({"email": email})
+        except PyMongoError as e:
+            logger.error(f"Database error during user lookup: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error"
+            )
+            
         if not user or not verify_password(password, user.get("hashed_password", "")):
+            logger.info("Authentication failed due to invalid credentials.")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password"
             )
-        
+            
         # Create new refresh token
-        refresh_token = await self._create_refresh_token_record(str(user["_id"]))
-        
+        try:
+            refresh_token = await self._create_refresh_token_record(str(user["_id"]))
+        except Exception as e:
+            logger.error(f"Failed to generate refresh token: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to generate refresh token"
+            )
         return {
             "user": user,
             "refresh_token": refresh_token
@@ -157,7 +181,14 @@ class AuthService:
         """
         try:
             # Verify the Firebase ID token
-            decoded_token = firebase_auth.verify_id_token(id_token)
+            try:
+                decoded_token = firebase_auth.verify_id_token(id_token)
+            except firebase_auth.InvalidIdTokenError: 
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid Google ID token"
+                )
+
             firebase_uid = decoded_token['uid']
             email = decoded_token.get('email')
             name = decoded_token.get('name', email.split('@')[0] if email else 'User')
@@ -172,11 +203,17 @@ class AuthService:
             db = self.get_db()
             
             # Check if user exists
-            user = await db.users.find_one({"$or": [
-                {"email": email},
-                {"firebase_uid": firebase_uid}
-            ]})
-            
+            try:
+                user = await db.users.find_one({"$or": [
+                    {"email": email},
+                    {"firebase_uid": firebase_uid}
+                ]})
+            except PyMongoError as e:
+                logger.error("Database error while checking user: %s", str(e))
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Internal server error"
+                )
             if user:
                 # Update user info if needed
                 update_data = {}
@@ -186,11 +223,14 @@ class AuthService:
                     update_data["avatar"] = picture
                 
                 if update_data:
-                    await db.users.update_one(
-                        {"_id": user["_id"]},
-                        {"$set": update_data}
-                    )
-                    user.update(update_data)
+                    try:
+                        await db.users.update_one(
+                            {"_id": user["_id"]},
+                            {"$set": update_data}
+                        )
+                        user.update(update_data)
+                    except PyMongoError as e:
+                        logger.warning("Failed to update user profile: %s", str(e))
             else:
                 # Create new user
                 user_doc = {
@@ -203,25 +243,35 @@ class AuthService:
                     "firebase_uid": firebase_uid,
                     "hashed_password": None
                 }
-                
-                result = await db.users.insert_one(user_doc)
-                user_doc["_id"] = result.inserted_id
-                user = user_doc
+                try:
+                    result = await db.users.insert_one(user_doc)
+                    user_doc["_id"] = result.inserted_id
+                    user = user_doc
+                except PyMongoError as e:
+                    logger.error("Failed to create new Google user: %s", str(e))
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Failed to create user"
+                    )
             
             # Create refresh token
-            refresh_token = await self._create_refresh_token_record(str(user["_id"]))
-            
+            try:
+                refresh_token = await self._create_refresh_token_record(str(user["_id"]))
+            except Exception as e:
+                logger.error("Failed to issue refresh token for Google login: %s", str(e))
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to generate refresh token"
+                )
+
             return {
                 "user": user,
                 "refresh_token": refresh_token
             }
-            
-        except firebase_auth.InvalidIdTokenError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid Google ID token"
-            )
+        except HTTPException:
+            raise 
         except Exception as e:
+            logger.exception("Unexpected error during Google authentication")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Google authentication failed: {str(e)}"
@@ -242,11 +292,18 @@ class AuthService:
         db = self.get_db()
         
         # Find and validate refresh token
-        token_record = await db.refresh_tokens.find_one({
-            "token": refresh_token,
-            "revoked": False,
-            "expires_at": {"$gt": datetime.now(timezone.utc)}
-        })
+        try:
+            token_record = await db.refresh_tokens.find_one({
+                "token": refresh_token,
+                "revoked": False,
+                "expires_at": {"$gt": datetime.now(timezone.utc)}
+            })
+        except PyMongoError as e:
+            logger.error("Database error while validating refresh token: %s", str(e))
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error"
+            )
         
         if not token_record:
             raise HTTPException(
@@ -255,7 +312,14 @@ class AuthService:
             )
         
         # Get user
-        user = await db.users.find_one({"_id": token_record["user_id"]})
+        try:
+            user = await db.users.find_one({"_id": token_record["user_id"]})
+        except PyMongoError as e:
+            logger.error("Error while fetching user: %s", str(e))
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error"
+            )
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -263,15 +327,27 @@ class AuthService:
             )
         
         # Create new refresh token (token rotation)
-        new_refresh_token = await self._create_refresh_token_record(str(user["_id"]))
+        try:
+            new_refresh_token = await self._create_refresh_token_record(str(user["_id"]))
+        except Exception as e:
+            logger.error("Failed to create new refresh token: %s", str(e))
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create refresh token"
+            )
         
         # Revoke old token
-        await db.refresh_tokens.update_one(
-            {"_id": token_record["_id"]},
-            {"$set": {"revoked": True}}
-        )
-        
+        try:
+            await db.refresh_tokens.update_one(
+                {"_id": token_record["_id"]},
+                {"$set": {"revoked": True}}
+            )
+        except PyMongoError as e:
+            logger.error("Failed to revoke old refresh token: %s", str(e))
+        # No raise here since new token is safely issued
+ 
         return new_refresh_token    
+    
     async def verify_access_token(self, token: str) -> Dict[str, Any]:
         """
         Verifies an access token and retrieves the associated user.
@@ -287,9 +363,16 @@ class AuthService:
         """
         from app.auth.security import verify_token
         
-        payload = verify_token(token)
-        user_id = payload.get("sub")
-        
+        try:
+            payload = verify_token(token)
+            user_id = payload.get("sub")
+        except JWTError as e:
+            logger.warning("JWT verification failed: %s", str(e))
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+            
         if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -297,7 +380,15 @@ class AuthService:
             )
         
         db = self.get_db()
-        user = await db.users.find_one({"_id": user_id})
+
+        try:
+            user = await db.users.find_one({"_id": user_id})
+        except Exception as e:
+            logger.error("Error while verifying token: %s", str(e))
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error"
+            )
         
         if not user:
             raise HTTPException(
@@ -315,7 +406,12 @@ class AuthService:
         """
         db = self.get_db()
         
-        user = await db.users.find_one({"email": email})
+        try:
+            user = await db.users.find_one({"email": email})
+        except PyMongoError as e:
+            logger.error(f"Database error while fetching user by email {email}: {str(e)}")
+            raise HTTPException(status_code=500, detail="Internal server error during user lookup.")
+        
         if not user:
             # Don't reveal if email exists or not
             return True
@@ -324,19 +420,23 @@ class AuthService:
         reset_token = generate_reset_token()
         reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)  # 1 hour expiry
         
-        # Store reset token
-        await db.password_resets.insert_one({
-            "user_id": user["_id"],
-            "token": reset_token,
-            "expires_at": reset_expires,
-            "used": False,
-            "created_at": datetime.utcnow()
-        })
+        try:
+            # Store reset token
+            await db.password_resets.insert_one({
+                "user_id": user["_id"],
+                "token": reset_token,
+                "expires_at": reset_expires,
+                "used": False,
+                "created_at": datetime.utcnow()
+            })
+        except PyMongoError as e:
+            logger.error(f"Database error while storing reset token for user {email}: {str(e)}")
+            raise HTTPException(status_code=500, detail="Internal server error during token storage.")
         
         # For development/free tier: just log the reset token
         # In production, you would send this via email
-        print(f"Password reset token for {email}: {reset_token}")
-        print(f"Reset link: https://yourapp.com/reset-password?token={reset_token}")
+        logger.info(f"Password reset token for {email}: {reset_token}")
+        logger.info(f"Reset link: https://yourapp.com/reset-password?token={reset_token}")
         
         return True
 
@@ -358,39 +458,51 @@ class AuthService:
         """
         db = self.get_db()
         
-        # Find and validate reset token
-        reset_record = await db.password_resets.find_one({
-            "token": reset_token,
-            "used": False,
-            "expires_at": {"$gt": datetime.now(timezone.utc)}
-        })
-        
-        if not reset_record:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid or expired reset token"
+        try:
+            # Find and validate reset token
+            reset_record = await db.password_resets.find_one({
+                "token": reset_token,
+                "used": False,
+                "expires_at": {"$gt": datetime.now(timezone.utc)}
+            })
+            
+            if not reset_record:
+                logger.warning("Invalid or expired reset token")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid or expired reset token"
+                )
+            
+            # Update user password
+            new_hash = get_password_hash(new_password)
+            await db.users.update_one(
+                {"_id": reset_record["user_id"]},
+                {"$set": {"hashed_password": new_hash}}
             )
-        
-        # Update user password
-        new_hash = get_password_hash(new_password)
-        await db.users.update_one(
-            {"_id": reset_record["user_id"]},
-            {"$set": {"hashed_password": new_hash}}
-        )
-        
-        # Mark token as used
-        await db.password_resets.update_one(
-            {"_id": reset_record["_id"]},
-            {"$set": {"used": True}}
-        )
-        
-        # Revoke all refresh tokens for this user (force re-login)
-        await db.refresh_tokens.update_many(
-            {"user_id": reset_record["user_id"]},
-            {"$set": {"revoked": True}}
-        )
-        
-        return True    
+            
+            # Mark token as used
+            await db.password_resets.update_one(
+                {"_id": reset_record["_id"]},
+                {"$set": {"used": True}}
+            )
+            
+            # Revoke all refresh tokens for this user (force re-login)
+            await db.refresh_tokens.update_many(
+                {"user_id": reset_record["user_id"]},
+                {"$set": {"revoked": True}}
+            )
+            logger.info(f"Password reset successful for user_id: {reset_record['user_id']}")
+            return True 
+
+        except HTTPException:
+            raise  # Raising HTTPException to avoid logging again
+        except Exception as e:
+            logger.exception(f"Unexpected error during password reset: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error during password reset"
+            ) 
+      
     async def _create_refresh_token_record(self, user_id: str) -> str:
         """
         Generates and stores a new refresh token for the specified user.
@@ -408,13 +520,20 @@ class AuthService:
         refresh_token = create_refresh_token()
         expires_at = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
         
-        await db.refresh_tokens.insert_one({
-            "token": refresh_token,
-            "user_id": ObjectId(user_id) if isinstance(user_id, str) else user_id,
-            "expires_at": expires_at,
-            "revoked": False,
-            "created_at": datetime.now(timezone.utc)
-        })
+        try:
+            await db.refresh_tokens.insert_one({
+                "token": refresh_token,
+                "user_id": ObjectId(user_id) if isinstance(user_id, str) else user_id,
+                "expires_at": expires_at,
+                "revoked": False,
+                "created_at": datetime.now(timezone.utc)
+            })
+        except Exception as e:
+            logger.error(f"Failed to create refresh token for user_id: {user_id}. Error: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to create refresh token: {str(e)}"
+            )
         
         return refresh_token
 

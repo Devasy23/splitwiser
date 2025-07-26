@@ -1,10 +1,13 @@
 from fastapi import HTTPException, status
 from app.database import get_database
-from bson import ObjectId
+from bson import ObjectId, errors
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 import secrets
 import string
+import logging
+
+logger = logging.getLogger(__name__)
 
 class GroupService:
     def __init__(self):
@@ -47,7 +50,20 @@ class GroupService:
                         }
                     }
                     enriched_members.append(enriched_member)
+                except errors.InvalidId: #exception for invalid ObjectId
+                    logger.warning(f"Invalid ObjectId for userId: {member_user_id}")
+                    enriched_members.append({
+                        "userId": member_user_id,
+                        "role": member.get("role", "member"),
+                        "joinedAt": member.get("joinedAt"),
+                        "user": {
+                            "name": f"User {member_user_id[-4:]}",
+                            "email": f"{member_user_id}@example.com",
+                            "avatar": None
+                        }
+                    })
                 except Exception as e:
+                    logger.error(f"Error enriching userId {member_user_id}: {e}")
                     # If user lookup fails, add member with basic info
                     enriched_members.append({
                         "userId": member_user_id,
@@ -71,7 +87,8 @@ class GroupService:
             return None
         try:
             group_id = str(group["_id"])
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to get _id from group document: {e}")
             return None
         
         return {
@@ -135,7 +152,11 @@ class GroupService:
         db = self.get_db()
         try:
             obj_id = ObjectId(group_id)
-        except Exception:
+        except errors.InvalidId:
+            logger.warning(f"Invalid group_id: {group_id}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error converting group_id to ObjectId: {e}")
             return None
         
         group = await db.groups.find_one({
@@ -161,7 +182,11 @@ class GroupService:
         db = self.get_db()
         try:
             obj_id = ObjectId(group_id)
-        except Exception:
+        except errors.InvalidId:
+            logger.warning(f"Invalid group_id: {group_id}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error converting group_id to ObjectId: {e}")
             return None
 
         # Check if user is admin
@@ -184,7 +209,11 @@ class GroupService:
         db = self.get_db()
         try:
             obj_id = ObjectId(group_id)
-        except Exception:
+        except errors.InvalidId:
+            logger.warning(f"Invalid group_id: {group_id}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error converting group_id to ObjectId: {e}")
             return False
 
         # Check if user is admin
