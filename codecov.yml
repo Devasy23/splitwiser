@@ -124,6 +124,7 @@ ignore:
   - "*.json"
   - "ui-poc/**"  # Ignore POC frontend since we have main frontend
 
+
 # Comments on PRs
 comment:
   layout: "header, diff, flags, components"
