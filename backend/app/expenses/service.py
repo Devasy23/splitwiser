@@ -3,15 +3,13 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
 from bson import ObjectId, errors
 from app.database import mongodb
+from app.config import logger
 from app.expenses.schemas import (
     ExpenseCreateRequest, ExpenseUpdateRequest, ExpenseResponse, Settlement,
     OptimizedSettlement, SettlementCreateRequest, SettlementStatus, SplitType
 )
 import asyncio
 from collections import defaultdict, deque
-import logging
-
-logger = logging.getLogger(__name__)
 
 class ExpenseService:
     def __init__(self):
@@ -355,8 +353,8 @@ class ExpenseService:
                     if updated_expense:
                         # Create new settlements
                         await self._create_settlements_for_expense(updated_expense, user_id)
-                except Exception as e:
-                    logger.warning(f"Warning: Failed to recalculate settlements: {e}") # Logger warning instead of printing
+                except Exception:
+                    logger.error(f"Warning: Failed to recalculate settlements",exc_info=True)
                     # Continue anyway, as the expense update succeeded
 
             # Return updated expense
