@@ -1,0 +1,35 @@
+[build]
+  # Build command for Expo web build
+  command = "cd frontend && npm install && npx expo export:web"
+  
+  # Output directory for built files (Expo uses web-build by default)
+  publish = "frontend/web-build"
+  
+  # Base directory for the build
+  base = "/"
+
+[build.environment]
+  # Set Node.js version
+  NODE_VERSION = "18"
+  
+  # Disable CI mode to allow proper builds
+  CI = "false"
+
+# Redirect rules for single-page app
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers for better performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
