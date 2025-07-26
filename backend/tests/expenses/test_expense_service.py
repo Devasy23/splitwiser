@@ -1407,7 +1407,8 @@ async def test_get_user_balance_in_group_success(expense_service, mock_group_dat
         assert result["totalOwed"] == 50.0
         assert result["netBalance"] == 50.0  # 100 - 50
         assert (
-            result["owesYou"] is True
+            result["owesYou"]
+            is True
             # Net balance is positive, so target_user_id is owed money (by others in general)
         )
 

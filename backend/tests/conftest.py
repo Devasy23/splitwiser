@@ -1,4 +1,3 @@
-from mongomock_motor import AsyncMongoMockClient
 import os  # Added
 import sys  # Added
 from pathlib import Path  # Added
@@ -7,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import firebase_admin  # Added
 import pytest
 import pytest_asyncio
+from mongomock_motor import AsyncMongoMockClient
 
 # Add project root to sys.path to allow imports from app and main
 # This assumes conftest.py is in backend/tests/
