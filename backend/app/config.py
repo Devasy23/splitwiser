@@ -46,7 +46,6 @@ settings = Settings()
 #centralized logging config
 LOGGING_CONFIG = {
     "version": 1,
-    "name":"splitwiser",
     "disable_existing_loggers": False,
     "formatters": {
         "default": {

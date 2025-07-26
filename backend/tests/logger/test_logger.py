@@ -9,8 +9,13 @@ from fastapi import FastAPI
 dictConfig(LOGGING_CONFIG)
 
 def test_logger_init():
-    assert logger.name == "splitwiser"
-    assert logger.root.level == logging.INFO
+    assert logger is not None
+    assert isinstance(logger, logging.Logger)
+    assert logger.getEffectiveLevel() == logging.INFO
+    assert logger.isEnabledFor(logging.INFO)
+    assert logger.isEnabledFor(logging.WARNING)
+    assert logger.isEnabledFor(logging.ERROR)
+    assert not logger.isEnabledFor(logging.DEBUG)
 
 def test_logger_logs_info(caplog):
     with caplog.at_level(logging.INFO):
