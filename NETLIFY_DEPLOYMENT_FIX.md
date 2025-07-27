@@ -11,13 +11,16 @@ Created proper Netlify configuration to build the Expo web app correctly.
 #### 1. `netlify.toml` (Root directory)
 ```toml
 [build]
-  command = "cd frontend && npm install && npx expo export:web"
+  command = "cd frontend && npm ci && npx expo export:web"
   publish = "frontend/web-build"
   base = "/"
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
   CI = "false"
+  NPM_CONFIG_AUDIT = "false"
+  NPM_CONFIG_FUND = "false"
+  NPM_CONFIG_LOGLEVEL = "error"
 
 [[redirects]]
   from = "/*"
@@ -36,9 +39,9 @@ Added build scripts:
 
 ## How it Works
 
-1. **Build Command**: `cd frontend && npm install && npx expo export:web`
+1. **Build Command**: `cd frontend && npm ci && npx expo export:web`
    - Navigates to frontend directory
-   - Installs dependencies
+   - Uses npm ci for faster, more reliable installs
    - Builds static web files using Expo
 
 2. **Publish Directory**: `frontend/web-build`
@@ -48,8 +51,9 @@ Added build scripts:
 3. **SPA Redirects**: All routes redirect to `index.html`
    - Enables React Router to handle client-side routing
 
-4. **Environment**: Node.js 18 with CI=false
-   - Ensures proper build environment
+4. **Environment**: Node.js 20 with optimized npm settings
+   - Disables audit and funding messages to prevent errors
+   - Uses error-level logging only
 
 ## Verification
 
@@ -60,6 +64,28 @@ npx expo export:web
 # ✅ Compiled successfully
 # ✅ Created web-build/ directory
 ```
+
+## Troubleshooting
+
+### Common Issues:
+
+1. **`--report-filename` error**
+   - Fixed by setting `NPM_CONFIG_AUDIT = "false"`
+   - Uses `npm ci` instead of `npm install`
+
+2. **Build timeout**
+   - Fixed by using `expo export:web` instead of `expo start --web`
+   - Added proper environment variables
+
+3. **Missing dependencies**
+   - `npm ci` ensures exact dependency versions
+   - Uses package-lock.json for reproducible builds
+
+### Environment Variables:
+- `NODE_VERSION = "20"` - Uses Node.js 20
+- `NPM_CONFIG_AUDIT = "false"` - Skips security audit  
+- `NPM_CONFIG_FUND = "false"` - Skips funding messages
+- `NPM_CONFIG_LOGLEVEL = "error"` - Minimal logging
 
 ## Result
 

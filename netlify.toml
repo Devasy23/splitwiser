@@ -1,6 +1,6 @@
 [build]
   # Build command for Expo web build
-  command = "cd frontend && npm install && npx expo export:web"
+  command = "cd frontend && npm ci && npx expo export:web"
   
   # Output directory for built files (Expo uses web-build by default)
   publish = "frontend/web-build"
@@ -9,11 +9,16 @@
   base = "/"
 
 [build.environment]
-  # Set Node.js version
-  NODE_VERSION = "18"
+  # Set Node.js version (use more recent version)
+  NODE_VERSION = "20"
   
   # Disable CI mode to allow proper builds
   CI = "false"
+  
+  # Skip npm audit and funding messages
+  NPM_CONFIG_AUDIT = "false"
+  NPM_CONFIG_FUND = "false"
+  NPM_CONFIG_LOGLEVEL = "error"
 
 # Redirect rules for single-page app
 [[redirects]]
