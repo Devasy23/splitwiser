@@ -47,6 +47,14 @@ file_handler.setFormatter(
 )
 logger.addHandler(file_handler)
 
+# Validate required environment variables
+if not MONGODB_URL:
+    logger.error("MONGODB_URL environment variable is required")
+    sys.exit(1)
+if not DATABASE_NAME:
+    logger.error("DATABASE_NAME environment variable is required")
+    sys.exit(1)
+
 
 def migrate_avatar_to_imageurl():
     """
@@ -118,9 +126,13 @@ def rollback_migration(backup_path):
     try:
         client = MongoClient(MONGODB_URL)
         db = client[DATABASE_NAME]
+        
+        backup_file_path = os.path.join(backup_path, "users.json")
+        if not os.path.exists(backup_file_path):
+            raise FileNotFoundError(f"Backup file not found: {backup_file_path}")
 
         # Read users collection backup
-        with open(os.path.join(backup_path, "users.json"), "r") as f:
+        with open(backup_file_path, "r") as f:
             users_backup = json.load(f)
 
         # Convert string IDs back to ObjectId
