@@ -2,12 +2,11 @@ import secrets
 import string
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-
+from fastapi import HTTPException
 from app.database import get_database
 from app.config import logger
 from bson import ObjectId, errors
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
 import secrets
 import string
 
@@ -98,21 +97,7 @@ class GroupService:
                             "avatar": None
                         }
                 })
-                except Exception as e:
-                    logger.error(f"Error enriching userId {member_user_id}: {e}")
-                    # If user lookup fails, add member with basic info
-                    enriched_members.append(
-                        {
-                            "userId": member_user_id,
-                            "role": member.get("role", "member"),
-                            "joinedAt": member.get("joinedAt"),
-                            "user": {
-                                "name": f"User {member_user_id[-4:]}",
-                                "email": f"{member_user_id}@example.com",
-                                "avatar": None,
-                            },
-                        }
-                    )
+
             else:
                 # Add member without user details if userId is missing
                 enriched_members.append(member)

@@ -1,9 +1,62 @@
+"""
+Test suite for the `AuthService` class in the `app.auth.service` module.
+
+This file contains extensive async tests using `pytest` and `unittest.mock` to validate
+the behavior of authentication-related features in a FastAPI-based application, including:
+
+1. **User Registration**
+   - Successful creation of a new user with email and password.
+   - Handling of duplicate email entries (via `find_one` and `DuplicateKeyError`).
+   - Failure to create refresh token during user registration.
+
+2. **Email/Password Login**
+   - Successful authentication with correct credentials.
+   - Handling incorrect password or nonexistent user.
+   - Missing hashed password in the database.
+   - DB errors during user retrieval.
+   - Failure in refresh token generation after successful login.
+
+3. **Google Sign-In (OAuth)**
+   - Successful authentication using a valid Google ID token.
+   - Handling invalid or missing tokens.
+   - Missing email in decoded token.
+   - MongoDB-related errors during find/insert operations.
+
+4. **Refresh Token Workflow**
+   - Successful issuance of new access token using a valid refresh token.
+   - Handling of invalid, expired, or revoked tokens.
+   - Missing user associated with the refresh token.
+   - DB errors during token or user fetch.
+   - Failure during new token generation.
+
+5. **Access Token Verification**
+   - Verifying access tokens for authenticated requests.
+   - Handling invalid tokens (JWT errors or missing `sub` claim).
+   - DB errors or missing user during verification.
+
+6. **Password Reset Flow**
+   - Requesting a password reset for an existing user and generating reset token.
+   - Ignoring requests for nonexistent users.
+   - Handling DB errors during lookup or insertion of reset tokens.
+   - Confirming password reset with valid token and updating user password.
+   - Rejecting invalid, expired, or already-used reset tokens.
+
+7. **Refresh Token Record Creation**
+   - Inserting a new refresh token record for a user.
+   - Handling DB insertion errors and invalid user IDs.
+
+All tests simulate various edge cases and exceptions to ensure robust handling of errors
+with appropriate HTTP response codes and messages.
+"""
+
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi import HTTPException, status
 from bson import ObjectId
 from jose import JWTError
 from firebase_admin import auth as firebase_auth
+from firebase_admin import credentials
+import firebase_admin
 from datetime import datetime, timedelta, timezone
 from app.auth.service import AuthService
 from app.auth.security import get_password_hash, create_refresh_token, verify_password
@@ -20,7 +73,8 @@ def validate_object_id(id_str: str, field_name: str = "ID") -> ObjectId:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid {field_name}"
         )
-
+    
+@pytest.mark.asyncio
 async def test_create_user_with_email_success(monkeypatch):
     service = AuthService()
 

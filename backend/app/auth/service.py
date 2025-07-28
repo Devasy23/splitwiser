@@ -1,8 +1,18 @@
 import json
 import os
+import firebase_admin
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from pymongo.errors import DuplicateKeyError, PyMongoError
+from app.config import settings, logger
+from app.auth.security import ( 
+    get_password_hash,
+    verify_password,
+    create_access_token,
+    create_refresh_token,
+    generate_reset_token
+)
+from app.database import get_database
 from bson import ObjectId
 from jose import JWTError
 from fastapi import HTTPException, status

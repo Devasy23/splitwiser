@@ -4,6 +4,7 @@ import pytest
 from app.expenses.schemas import ExpenseCreateRequest, ExpenseSplit
 from fastapi import status
 from httpx import ASGITransport, AsyncClient
+from firebase_admin import auth as firebase_auth
 from main import app  # Adjusted import
 
 

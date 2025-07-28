@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
-from bson import ObjectId
+from bson import ObjectId, errors
 from app.database import mongodb
 from app.config import logger
 from app.database import mongodb
@@ -15,8 +15,7 @@ from app.expenses.schemas import (
     SettlementStatus,
     SplitType,
 )
-from bson import ObjectId
-
+from collections import defaultdict
 
 class ExpenseService:
     def __init__(self):

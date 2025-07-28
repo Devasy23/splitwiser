@@ -1,12 +1,12 @@
 import pytest
 from fastapi import HTTPException
 from unittest.mock import AsyncMock, MagicMock, patch
-
+from datetime import datetime, timedelta, timezone
 import pytest
 from app.expenses.schemas import ExpenseCreateRequest, ExpenseSplit, SplitType
 from app.expenses.service import ExpenseService
-from bson import ObjectId
-
+from bson import ObjectId, errors
+import asyncio
 
 @pytest.fixture
 def expense_service():
@@ -344,7 +344,7 @@ async def test_update_expense_unauthorized(expense_service):
     """Test expense update by non-creator"""
     from app.expenses.schemas import ExpenseUpdateRequest
 
-    update_request = ExpenseUpdateRequest(description="Unauthorized Update")
+    update_request = ExpenseUpdateRequest(description="Unauthorized Update", amount=150.0)
 
     with patch("app.expenses.service.mongodb") as mock_mongodb:
         mock_db = MagicMock()
@@ -354,6 +354,14 @@ async def test_update_expense_unauthorized(expense_service):
         mock_db.expenses.find_one = AsyncMock(return_value=None)
         
         '''with pytest.raises(ValueError, match="Expense not found or not authorized to edit"):
+            await expense_service.update_expense(
+                "group_id", 
+                "65f1a2b3c4d5e6f7a8b9c0d1",
+                update_request, 
+                "unauthorized_user"
+            )'''
+        #Updated test
+        with pytest.raises(HTTPException) as exc_info:
             await expense_service.update_expense(
                 "group_id", 
                 "65f1a2b3c4d5e6f7a8b9c0d1",
