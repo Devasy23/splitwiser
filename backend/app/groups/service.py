@@ -2,13 +2,11 @@ import secrets
 import string
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-from fastapi import HTTPException
-from app.database import get_database
+
 from app.config import logger
+from app.database import get_database
 from bson import ObjectId, errors
-from datetime import datetime, timezone
-import secrets
-import string
+from fastapi import HTTPException
 
 
 class GroupService:
@@ -102,7 +100,7 @@ class GroupService:
                                 "avatar": None,
                             },
                         }
-                )
+                    )
 
             else:
                 # Add member without user details if userId is missing

@@ -1,6 +1,7 @@
+from collections import defaultdict
 from datetime import datetime, timedelta
-from bson import ObjectId, errors
-from app.database import mongodb
+from typing import Any, Dict, List, Optional
+
 from app.config import logger
 from app.database import mongodb
 from app.expenses.schemas import (
@@ -13,9 +14,9 @@ from app.expenses.schemas import (
     SettlementStatus,
     SplitType,
 )
-from collections import defaultdict
-from typing import Dict, List, Any, Optional
+from bson import ObjectId, errors
 from fastapi import HTTPException
+
 
 class ExpenseService:
     def __init__(self):

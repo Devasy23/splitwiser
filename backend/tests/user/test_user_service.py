@@ -294,7 +294,6 @@ async def test_delete_user_not_found(mock_db_client, mock_get_database):
     assert result is False
 
 
-
 # Added Test for invalid ObjectId format for user deletion
 @pytest.mark.asyncio
 async def test_delete_user_invalid_object_id(mock_db_client, mock_get_database):

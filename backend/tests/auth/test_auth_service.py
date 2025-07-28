@@ -49,21 +49,21 @@ All tests simulate various edge cases and exceptions to ensure robust handling o
 with appropriate HTTP response codes and messages.
 """
 
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from fastapi import HTTPException, status
-from bson import ObjectId
-from jose import JWTError
-from firebase_admin import auth as firebase_auth
-from firebase_admin import credentials
-import firebase_admin
+import logging
 from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import firebase_admin
+import pytest
+from app.auth.security import create_refresh_token, get_password_hash, verify_password
 from app.auth.service import AuthService
-from app.auth.security import get_password_hash, create_refresh_token, verify_password
 from bson import ObjectId
 from bson.errors import InvalidId
-from pymongo.errors import PyMongoError, DuplicateKeyError
-import logging
+from fastapi import HTTPException, status
+from firebase_admin import auth as firebase_auth
+from firebase_admin import credentials
+from jose import JWTError
+from pymongo.errors import DuplicateKeyError, PyMongoError
 
 
 def validate_object_id(id_str: str, field_name: str = "ID") -> ObjectId:
@@ -73,7 +73,8 @@ def validate_object_id(id_str: str, field_name: str = "ID") -> ObjectId:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid {field_name}"
         )
-    
+
+
 @pytest.mark.asyncio
 async def test_create_user_with_email_success(monkeypatch):
     service = AuthService()
