@@ -62,16 +62,16 @@ from app.auth.service import AuthService
 from app.auth.security import get_password_hash, create_refresh_token, verify_password
 from bson import ObjectId
 from bson.errors import InvalidId
-from pymongo.errors import PyMongoError
+from pymongo.errors import PyMongoError, DuplicateKeyError
 import logging
+
 
 def validate_object_id(id_str: str, field_name: str = "ID") -> ObjectId:
     try:
         return ObjectId(id_str)
     except InvalidId:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid {field_name}"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid {field_name}"
         )
     
 @pytest.mark.asyncio
@@ -85,14 +85,23 @@ async def test_create_user_with_email_success(monkeypatch):
     mock_db.users.insert_one.return_value = mock_insert_result
 
     monkeypatch.setattr(service, "get_db", lambda: mock_db)
-    monkeypatch.setattr(service, "_create_refresh_token_record", AsyncMock(return_value="mock_refresh_token"))
-    monkeypatch.setattr("app.auth.service.get_password_hash", lambda pwd: f"hashed_{pwd}")
+    monkeypatch.setattr(
+        service,
+        "_create_refresh_token_record",
+        AsyncMock(return_value="mock_refresh_token"),
+    )
+    monkeypatch.setattr(
+        "app.auth.service.get_password_hash", lambda pwd: f"hashed_{pwd}"
+    )
 
-    result = await service.create_user_with_email("new@example.com", "securepass", "Test User")
+    result = await service.create_user_with_email(
+        "new@example.com", "securepass", "Test User"
+    )
 
     assert result["user"]["email"] == "new@example.com"
     assert result["user"]["hashed_password"] == "hashed_securepass"
     assert result["refresh_token"] == "mock_refresh_token"
+
 
 @pytest.mark.asyncio
 async def test_create_user_with_email_already_exists(monkeypatch):
@@ -109,6 +118,7 @@ async def test_create_user_with_email_already_exists(monkeypatch):
     assert exc.value.status_code == 400
     assert exc.value.detail == "User with this email already exists"
 
+
 @pytest.mark.asyncio
 async def test_create_user_with_email_refresh_token_error(monkeypatch):
     service = AuthService()
@@ -119,12 +129,15 @@ async def test_create_user_with_email_refresh_token_error(monkeypatch):
     mock_db.users.insert_one.return_value = mock_insert_result
 
     monkeypatch.setattr(service, "get_db", lambda: mock_db)
-    monkeypatch.setattr("app.auth.service.get_password_hash", lambda pwd: f"hashed_{pwd}")
+    monkeypatch.setattr(
+        "app.auth.service.get_password_hash", lambda pwd: f"hashed_{pwd}"
+    )
 
     async def fail_refresh_token(*args, **kwargs):
         raise Exception("Token generation failed")
 
-    monkeypatch.setattr(service, "_create_refresh_token_record", fail_refresh_token)
+    monkeypatch.setattr(
+        service, "_create_refresh_token_record", fail_refresh_token)
 
     with pytest.raises(HTTPException) as exc:
         await service.create_user_with_email("fail@example.com", "pass", "User")
@@ -132,7 +145,6 @@ async def test_create_user_with_email_refresh_token_error(monkeypatch):
     assert exc.value.status_code == 500
     assert exc.value.detail == "Internal server error"
 
-from pymongo.errors import DuplicateKeyError
 
 @pytest.mark.asyncio
 async def test_create_user_with_email_duplicate_key(monkeypatch):
@@ -143,7 +155,9 @@ async def test_create_user_with_email_duplicate_key(monkeypatch):
     mock_db.users.insert_one.side_effect = DuplicateKeyError("dup key")
 
     monkeypatch.setattr(service, "get_db", lambda: mock_db)
-    monkeypatch.setattr("app.auth.service.get_password_hash", lambda pwd: f"hashed_{pwd}")
+    monkeypatch.setattr(
+        "app.auth.service.get_password_hash", lambda pwd: f"hashed_{pwd}"
+    )
     monkeypatch.setattr(service, "_create_refresh_token_record", AsyncMock())
 
     with pytest.raises(HTTPException) as exc:
@@ -152,26 +166,35 @@ async def test_create_user_with_email_duplicate_key(monkeypatch):
     assert exc.value.status_code == 400
     assert exc.value.detail == "User with this email already exists"
 
+
 @pytest.mark.asyncio
 async def test_authenticate_user_success(monkeypatch):
     service = AuthService()
     mock_user = {
         "_id": ObjectId(),
         "email": "test@example.com",
-        "hashed_password": "mocked_hash"
+        "hashed_password": "mocked_hash",
     }
 
     mock_db = AsyncMock()
     mock_db.users.find_one.return_value = mock_user
 
     monkeypatch.setattr(service, "get_db", lambda: mock_db)
-    monkeypatch.setattr("app.auth.service.verify_password", lambda pwd, hash: pwd == "correct-password")
-    monkeypatch.setattr(service, "_create_refresh_token_record", AsyncMock(return_value="refresh-token"))
+    monkeypatch.setattr(
+        "app.auth.service.verify_password", lambda pwd, hash: pwd == "correct-password"
+    )
+    monkeypatch.setattr(
+        service, "_create_refresh_token_record", AsyncMock(
+            return_value="refresh-token")
+    )
 
-    result = await service.authenticate_user_with_email("test@example.com", "correct-password")
+    result = await service.authenticate_user_with_email(
+        "test@example.com", "correct-password"
+    )
 
     assert result.get("user") == mock_user
     assert result.get("refresh_token") == "refresh-token"
+
 
 @pytest.mark.asyncio
 async def test_authenticate_user_db_error(monkeypatch):
@@ -183,7 +206,7 @@ async def test_authenticate_user_db_error(monkeypatch):
 
     with pytest.raises(HTTPException) as e:
         await service.authenticate_user_with_email("email", "pass")
-    
+
     assert e.value.status_code == 500
     assert "Internal server error" in e.value.detail
 
@@ -206,13 +229,18 @@ async def test_authenticate_user_not_found(monkeypatch):
 @pytest.mark.asyncio
 async def test_authenticate_user_password_incorrect(monkeypatch):
     service = AuthService()
-    mock_user = {"_id": ObjectId(), "email": "test@example.com", "hashed_password": "hashed"}
+    mock_user = {
+        "_id": ObjectId(),
+        "email": "test@example.com",
+        "hashed_password": "hashed",
+    }
 
     mock_db = AsyncMock()
     mock_db.users.find_one.return_value = mock_user
 
     monkeypatch.setattr(service, "get_db", lambda: mock_db)
-    monkeypatch.setattr("app.auth.service.verify_password", lambda pwd, hash: False)
+    monkeypatch.setattr("app.auth.service.verify_password",
+                        lambda pwd, hash: False)
 
     with pytest.raises(HTTPException) as e:
         await service.authenticate_user_with_email("email", "wrongpass")
@@ -224,18 +252,21 @@ async def test_authenticate_user_password_incorrect(monkeypatch):
 @pytest.mark.asyncio
 async def test_authenticate_user_missing_hashed_password(monkeypatch):
     service = AuthService()
-    mock_user = {"_id": ObjectId(), "email": "test@example.com"}  # no hashed_password
+    # no hashed_password
+    mock_user = {"_id": ObjectId(), "email": "test@example.com"}
 
     mock_db = AsyncMock()
     mock_db.users.find_one.return_value = mock_user
 
     monkeypatch.setattr(service, "get_db", lambda: mock_db)
-    monkeypatch.setattr("app.auth.service.verify_password", lambda pwd, hash: False)
+    monkeypatch.setattr("app.auth.service.verify_password",
+                        lambda pwd, hash: False)
 
     with pytest.raises(HTTPException) as e:
         await service.authenticate_user_with_email("email", "pass")
 
     assert e.value.status_code == 401
+
 
 @pytest.mark.asyncio
 async def test_authenticate_user_refresh_token_error(monkeypatch):
@@ -243,21 +274,27 @@ async def test_authenticate_user_refresh_token_error(monkeypatch):
     mock_user = {
         "_id": ObjectId(),
         "email": "test@example.com",
-        "hashed_password": "mocked_hash"
+        "hashed_password": "mocked_hash",
     }
 
     mock_db = AsyncMock()
     mock_db.users.find_one.return_value = mock_user
 
     monkeypatch.setattr(service, "get_db", lambda: mock_db)
-    monkeypatch.setattr("app.auth.service.verify_password", lambda pwd, hash: True)
-    monkeypatch.setattr(service, "_create_refresh_token_record", AsyncMock(side_effect=Exception("fail")))
+    monkeypatch.setattr("app.auth.service.verify_password",
+                        lambda pwd, hash: True)
+    monkeypatch.setattr(
+        service,
+        "_create_refresh_token_record",
+        AsyncMock(side_effect=Exception("fail")),
+    )
 
     with pytest.raises(HTTPException) as e:
         await service.authenticate_user_with_email("email", "pass")
 
     assert e.value.status_code == 500
     assert "Failed to generate refresh token" in e.value.detail
+
 
 @pytest.mark.asyncio
 async def test_authenticate_with_google_success(mocker):
@@ -267,11 +304,13 @@ async def test_authenticate_with_google_success(mocker):
         "uid": "firebase-uid-123",
         "email": "test@example.com",
         "name": "Test User",
-        "picture": "http://example.com/avatar.jpg"
+        "picture": "http://example.com/avatar.jpg",
     }
 
     # Mock firebase_auth.verify_id_token
-    mocker.patch("app.auth.service.firebase_auth.verify_id_token", return_value=decoded_token)
+    mocker.patch(
+        "app.auth.service.firebase_auth.verify_id_token", return_value=decoded_token
+    )
 
     # Mock db
     mock_db = AsyncMock()
@@ -279,7 +318,9 @@ async def test_authenticate_with_google_success(mocker):
     mock_db.users.insert_one.return_value.inserted_id = mock_user_id
 
     mocker.patch.object(AuthService, "get_db", return_value=mock_db)
-    mocker.patch.object(AuthService, "_create_refresh_token_record", return_value="new_refresh_token")
+    mocker.patch.object(
+        AuthService, "_create_refresh_token_record", return_value="new_refresh_token"
+    )
 
     service = AuthService()
     result = await service.authenticate_with_google(mock_token)
@@ -287,9 +328,13 @@ async def test_authenticate_with_google_success(mocker):
     assert result["user"]["email"] == "test@example.com"
     assert result["refresh_token"] == "new_refresh_token"
 
+
 @pytest.mark.asyncio
 async def test_authenticate_with_google_invalid_token(mocker):
-    mocker.patch("app.auth.service.firebase_auth.verify_id_token", side_effect=firebase_auth.InvalidIdTokenError("bad token"))
+    mocker.patch(
+        "app.auth.service.firebase_auth.verify_id_token",
+        side_effect=firebase_auth.InvalidIdTokenError("bad token"),
+    )
 
     service = AuthService()
     with pytest.raises(HTTPException) as exc_info:
@@ -298,12 +343,15 @@ async def test_authenticate_with_google_invalid_token(mocker):
     assert exc_info.value.status_code == 401
     assert "Invalid Google ID token" in str(exc_info.value.detail)
 
+
 @pytest.mark.asyncio
 async def test_authenticate_with_google_missing_email(mocker):
 
     decoded_token = {"uid": "uid123"}  # no email
 
-    mocker.patch("app.auth.service.firebase_auth.verify_id_token", return_value=decoded_token)
+    mocker.patch(
+        "app.auth.service.firebase_auth.verify_id_token", return_value=decoded_token
+    )
 
     service = AuthService()
     with pytest.raises(HTTPException) as exc_info:
@@ -312,14 +360,14 @@ async def test_authenticate_with_google_missing_email(mocker):
     assert exc_info.value.status_code == 400
     assert "Email not provided" in str(exc_info.value.detail)
 
+
 @pytest.mark.asyncio
 async def test_authenticate_with_google_db_find_error(mocker):
-    decoded_token = {
-        "uid": "uid123",
-        "email": "test@example.com"
-    }
+    decoded_token = {"uid": "uid123", "email": "test@example.com"}
 
-    mocker.patch("app.auth.service.firebase_auth.verify_id_token", return_value=decoded_token)
+    mocker.patch(
+        "app.auth.service.firebase_auth.verify_id_token", return_value=decoded_token
+    )
 
     mock_db = AsyncMock()
     mock_db.users.find_one.side_effect = PyMongoError("db error")
@@ -331,6 +379,7 @@ async def test_authenticate_with_google_db_find_error(mocker):
 
     assert exc_info.value.status_code == 500
 
+
 @pytest.mark.asyncio
 async def test_authenticate_with_google_insert_error(mocker):
     decoded_token = {
@@ -338,7 +387,9 @@ async def test_authenticate_with_google_insert_error(mocker):
         "email": "test@example.com",
     }
 
-    mocker.patch("app.auth.service.firebase_auth.verify_id_token", return_value=decoded_token)
+    mocker.patch(
+        "app.auth.service.firebase_auth.verify_id_token", return_value=decoded_token
+    )
 
     mock_db = AsyncMock()
     mock_db.users.find_one.return_value = None
@@ -352,6 +403,7 @@ async def test_authenticate_with_google_insert_error(mocker):
     assert exc_info.value.status_code == 500
     assert "Failed to create user" in str(exc_info.value.detail)
 
+
 @pytest.mark.asyncio
 async def test_refresh_access_token_success():
     service = AuthService()
@@ -364,7 +416,7 @@ async def test_refresh_access_token_success():
         "revoked": False,
         "expires_at": now + timedelta(hours=1),
         "user_id": "user123",
-        "_id": "token_id"
+        "_id": "token_id",
     }
     mock_user = {"_id": "user123", "email": "test@example.com"}
 
@@ -372,11 +424,13 @@ async def test_refresh_access_token_success():
     mock_db.users.find_one = AsyncMock(return_value=mock_user)
     mock_db.refresh_tokens.update_one = AsyncMock()
 
-    service._create_refresh_token_record = AsyncMock(return_value="new_refresh_token")
+    service._create_refresh_token_record = AsyncMock(
+        return_value="new_refresh_token")
 
     token = await service.refresh_access_token("valid_refresh_token")
     assert token == "new_refresh_token"
     mock_db.refresh_tokens.update_one.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_refresh_access_token_invalid_or_expired():
@@ -390,6 +444,7 @@ async def test_refresh_access_token_invalid_or_expired():
     assert e.value.status_code == status.HTTP_401_UNAUTHORIZED
     assert "Invalid or expired" in e.value.detail
 
+
 @pytest.mark.asyncio
 async def test_refresh_access_token_user_not_found():
     service = AuthService()
@@ -400,7 +455,7 @@ async def test_refresh_access_token_user_not_found():
         "token": "valid_token",
         "revoked": False,
         "expires_at": datetime.now(timezone.utc) + timedelta(hours=1),
-        "user_id": "user123"
+        "user_id": "user123",
     }
 
     mock_db.refresh_tokens.find_one = AsyncMock(return_value=mock_token_record)
@@ -412,17 +467,20 @@ async def test_refresh_access_token_user_not_found():
     assert e.value.status_code == status.HTTP_401_UNAUTHORIZED
     assert "User not found" in e.value.detail
 
+
 @pytest.mark.asyncio
 async def test_refresh_access_token_db_failure_on_token():
     service = AuthService()
     mock_db = MagicMock()
     service.get_db = MagicMock(return_value=mock_db)
-    mock_db.refresh_tokens.find_one = AsyncMock(side_effect=PyMongoError("DB error"))
+    mock_db.refresh_tokens.find_one = AsyncMock(
+        side_effect=PyMongoError("DB error"))
 
     with pytest.raises(HTTPException) as e:
         await service.refresh_access_token("any_token")
 
     assert e.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
 
 @pytest.mark.asyncio
 async def test_refresh_access_token_db_failure_on_user_fetch():
@@ -434,7 +492,7 @@ async def test_refresh_access_token_db_failure_on_user_fetch():
         "token": "token",
         "revoked": False,
         "expires_at": datetime.now(timezone.utc) + timedelta(hours=1),
-        "user_id": "user123"
+        "user_id": "user123",
     }
 
     mock_db.refresh_tokens.find_one = AsyncMock(return_value=mock_token_record)
@@ -444,6 +502,7 @@ async def test_refresh_access_token_db_failure_on_user_fetch():
         await service.refresh_access_token("token")
 
     assert e.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
 
 @pytest.mark.asyncio
 async def test_refresh_access_token_generation_failure():
@@ -456,14 +515,16 @@ async def test_refresh_access_token_generation_failure():
         "revoked": False,
         "expires_at": datetime.now(timezone.utc) + timedelta(hours=1),
         "user_id": "user123",
-        "_id": "token_id"
+        "_id": "token_id",
     }
 
     mock_user = {"_id": "user123"}
     mock_db.refresh_tokens.find_one = AsyncMock(return_value=mock_token_record)
     mock_db.users.find_one = AsyncMock(return_value=mock_user)
 
-    service._create_refresh_token_record = AsyncMock(side_effect=Exception("Token gen fail"))
+    service._create_refresh_token_record = AsyncMock(
+        side_effect=Exception("Token gen fail")
+    )
 
     with pytest.raises(HTTPException) as e:
         await service.refresh_access_token("token")
@@ -471,12 +532,15 @@ async def test_refresh_access_token_generation_failure():
     assert e.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert "Failed to create refresh token" in e.value.detail
 
+
 @pytest.mark.asyncio
 async def test_verify_access_token_valid(monkeypatch):
     service = AuthService()
 
     # Mock verify_token to return a payload
-    monkeypatch.setattr("app.auth.security.verify_token", lambda token: {"sub": "user123"})
+    monkeypatch.setattr(
+        "app.auth.security.verify_token", lambda token: {"sub": "user123"}
+    )
 
     # Mock DB response
     mock_user = {"_id": "user123", "email": "test@example.com"}
@@ -486,6 +550,7 @@ async def test_verify_access_token_valid(monkeypatch):
 
     user = await service.verify_access_token("validtoken")
     assert user == mock_user
+
 
 @pytest.mark.asyncio
 async def test_verify_access_token_invalid_token(monkeypatch):
@@ -498,9 +563,10 @@ async def test_verify_access_token_invalid_token(monkeypatch):
 
     with pytest.raises(HTTPException) as exc_info:
         await service.verify_access_token("badtoken")
-    
+
     assert exc_info.value.status_code == 401
     assert exc_info.value.detail == "Invalid token"
+
 
 @pytest.mark.asyncio
 async def test_verify_access_token_missing_sub(monkeypatch):
@@ -510,15 +576,18 @@ async def test_verify_access_token_missing_sub(monkeypatch):
 
     with pytest.raises(HTTPException) as exc_info:
         await service.verify_access_token("token")
-    
+
     assert exc_info.value.status_code == 401
     assert exc_info.value.detail == "Invalid token"
+
 
 @pytest.mark.asyncio
 async def test_verify_access_token_db_error(monkeypatch):
     service = AuthService()
 
-    monkeypatch.setattr("app.auth.security.verify_token", lambda token: {"sub": "user123"})
+    monkeypatch.setattr(
+        "app.auth.security.verify_token", lambda token: {"sub": "user123"}
+    )
 
     mock_db = AsyncMock()
     mock_db.users.find_one.side_effect = Exception("DB failure")
@@ -526,15 +595,18 @@ async def test_verify_access_token_db_error(monkeypatch):
 
     with pytest.raises(HTTPException) as exc_info:
         await service.verify_access_token("token")
-    
+
     assert exc_info.value.status_code == 500
     assert exc_info.value.detail == "Internal server error"
+
 
 @pytest.mark.asyncio
 async def test_verify_access_token_user_not_found(monkeypatch):
     service = AuthService()
 
-    monkeypatch.setattr("app.auth.security.verify_token", lambda token: {"sub": "user123"})
+    monkeypatch.setattr(
+        "app.auth.security.verify_token", lambda token: {"sub": "user123"}
+    )
 
     mock_db = AsyncMock()
     mock_db.users.find_one.return_value = None
@@ -542,31 +614,37 @@ async def test_verify_access_token_user_not_found(monkeypatch):
 
     with pytest.raises(HTTPException) as exc_info:
         await service.verify_access_token("token")
-    
+
     assert exc_info.value.status_code == 401
     assert exc_info.value.detail == "User not found"
+
 
 @pytest.mark.asyncio
 async def test_request_password_reset_user_exists(monkeypatch, caplog):
     service = AuthService()
     mock_db = AsyncMock()
     mock_user = {"_id": "mock_user_id", "email": "test@example.com"}
-    
+
     mock_db.users.find_one.return_value = mock_user
     mock_db.password_resets.insert_one.return_value = None
 
-    monkeypatch.setattr(service, "get_db", lambda: mock_db) #temporarily override get_db in function scope
-    
+    monkeypatch.setattr(
+        service, "get_db", lambda: mock_db
+    )  # temporarily override get_db in function scope
+
     # Mock the token generator
     with patch("app.auth.service.generate_reset_token", return_value="mocktoken"):
-        with caplog.at_level(logging.INFO): #caplog captures the log messages (previously print statements)
+        with caplog.at_level(
+            logging.INFO
+        ):  # caplog captures the log messages (previously print statements)
             result = await service.request_password_reset("test@example.com")
 
     # Assert
     assert result is True
     assert "mocktoken" in caplog.text
     assert "Reset link" in caplog.text
-    mock_db.users.find_one.assert_awaited_once_with({"email": "test@example.com"})
+    mock_db.users.find_one.assert_awaited_once_with(
+        {"email": "test@example.com"})
     mock_db.password_resets.insert_one.assert_awaited_once()
 
 
@@ -605,7 +683,8 @@ async def test_request_password_reset_db_error_on_insert(monkeypatch):
     mock_db = AsyncMock()
     mock_user = {"_id": "mock_user_id", "email": "test@example.com"}
     mock_db.users.find_one.return_value = mock_user
-    mock_db.password_resets.insert_one.side_effect = PyMongoError("Insert failure")
+    mock_db.password_resets.insert_one.side_effect = PyMongoError(
+        "Insert failure")
 
     monkeypatch.setattr(service, "get_db", lambda: mock_db)
 
@@ -616,6 +695,7 @@ async def test_request_password_reset_db_error_on_insert(monkeypatch):
     assert exc_info.value.status_code == 500
     assert "token storage" in exc_info.value.detail.lower()
 
+
 @pytest.mark.asyncio
 async def test_confirm_password_reset_success():
     service = AuthService()
@@ -624,18 +704,21 @@ async def test_confirm_password_reset_success():
 
     future_time = datetime.now(timezone.utc) + timedelta(hours=1)
 
-    with patch.object(service, 'get_db', return_value=mock_db):
+    with patch.object(service, "get_db", return_value=mock_db):
         # Mock reset token lookup
-        mock_db.password_resets.find_one = AsyncMock(return_value={
-            "token": "validtoken",
-            "used": False,
-            "expires_at": future_time,
-            "_id": ObjectId(),
-            "user_id": mock_user_id
-        })
+        mock_db.password_resets.find_one = AsyncMock(
+            return_value={
+                "token": "validtoken",
+                "used": False,
+                "expires_at": future_time,
+                "_id": ObjectId(),
+                "user_id": mock_user_id,
+            }
+        )
 
         # Mock user update
-        mock_db.users.update_one = AsyncMock(return_value=MagicMock(modified_count=1))
+        mock_db.users.update_one = AsyncMock(
+            return_value=MagicMock(modified_count=1))
         mock_db.password_resets.update_one = AsyncMock()
         mock_db.refresh_tokens.update_many = AsyncMock()
 
@@ -645,12 +728,13 @@ async def test_confirm_password_reset_success():
         mock_db.users.update_one.assert_awaited_once()
         mock_db.refresh_tokens.update_many.assert_awaited_once()
 
+
 @pytest.mark.asyncio
 async def test_confirm_password_reset_invalid_or_expired_token():
     service = AuthService()
     mock_db = MagicMock()
 
-    with patch.object(service, 'get_db', return_value=mock_db):
+    with patch.object(service, "get_db", return_value=mock_db):
         # Simulate token not found (invalid, used, or expired)
         mock_db.password_resets.find_one = AsyncMock(return_value=None)
 
@@ -665,6 +749,7 @@ async def test_confirm_password_reset_invalid_or_expired_token():
         mock_db.password_resets.update_one.assert_not_called()
         mock_db.refresh_tokens.update_many.assert_not_called()
 
+
 @pytest.mark.asyncio
 async def test_create_refresh_token_record_success():
     service = AuthService()
@@ -673,8 +758,9 @@ async def test_create_refresh_token_record_success():
     mock_user_id = str(ObjectId())
 
     # Patch get_db and create_refresh_token
-    with patch.object(service, 'get_db', return_value=mock_db), \
-         patch('app.auth.service.create_refresh_token', return_value=mock_token):
+    with patch.object(service, "get_db", return_value=mock_db), patch(
+        "app.auth.service.create_refresh_token", return_value=mock_token
+    ):
 
         # Mock insert
         mock_db.refresh_tokens.insert_one = AsyncMock()
@@ -684,23 +770,28 @@ async def test_create_refresh_token_record_success():
         assert result == mock_token
         mock_db.refresh_tokens.insert_one.assert_awaited_once()
 
+
 @pytest.mark.asyncio
 async def test_create_refresh_token_record_db_failure():
     service = AuthService()
     mock_db = MagicMock()
     mock_user_id = str(ObjectId())
 
-    with patch.object(service, 'get_db', return_value=mock_db), \
-         patch('app.auth.service.create_refresh_token', return_value="badtoken"):
+    with patch.object(service, "get_db", return_value=mock_db), patch(
+        "app.auth.service.create_refresh_token", return_value="badtoken"
+    ):
 
         # DB failure
-        mock_db.refresh_tokens.insert_one = AsyncMock(side_effect=Exception("DB write error"))
+        mock_db.refresh_tokens.insert_one = AsyncMock(
+            side_effect=Exception("DB write error")
+        )
 
         with pytest.raises(HTTPException) as exc_info:
             await service._create_refresh_token_record(mock_user_id)
 
         assert exc_info.value.status_code == 500
         assert "Failed to create refresh token" in exc_info.value.detail
+
 
 @pytest.mark.asyncio
 async def test_create_refresh_token_record_invalid_user_id():
