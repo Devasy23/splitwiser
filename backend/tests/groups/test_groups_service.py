@@ -447,21 +447,23 @@ class TestGroupService:
     @pytest.mark.asyncio
     async def test_get_group_by_id_invalid_objectid(self):
         """Test get_group_by_id with invalid ObjectId format"""
-        with patch.object(self.service, 'get_db'):
+        with patch.object(self.service, "get_db"):
             result = await self.service.get_group_by_id("invalid-id", "user123")
             assert result is None
 
     @pytest.mark.asyncio
     async def test_update_group_invalid_objectid(self):
         """Test update_group with invalid ObjectId"""
-        with patch.object(self.service, 'get_db'):
-            result = await self.service.update_group("invalid-id", {"name": "test"}, "user123")
+        with patch.object(self.service, "get_db"):
+            result = await self.service.update_group(
+                "invalid-id", {"name": "test"}, "user123"
+            )
             assert result is None
 
     @pytest.mark.asyncio
     async def test_delete_group_invalid_objectid(self):
         """Test delete_group with invalid ObjectId"""
-        with patch.object(self.service, 'get_db'):
+        with patch.object(self.service, "get_db"):
             result = await self.service.delete_group("invalid-id", "user123")
             assert result is False
 
@@ -469,7 +471,7 @@ class TestGroupService:
         """Test transform with partial group fields"""
         group_doc = {
             "_id": ObjectId("642f1e4a9b3c2d1f6a1b2c3d"),
-            "name": "Partial Group"
+            "name": "Partial Group",
         }
 
         result = self.service.transform_group_document(group_doc)

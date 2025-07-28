@@ -1,11 +1,10 @@
-import pytest
-from fastapi import HTTPException
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from app.expenses.schemas import ExpenseCreateRequest, ExpenseSplit, SplitType
 from app.expenses.service import ExpenseService
 from bson import ObjectId
+from fastapi import HTTPException
 
 
 @pytest.fixture
@@ -119,7 +118,7 @@ async def test_create_expense_invalid_group(expense_service):
         mock_db = MagicMock()
         mock_mongodb.database = mock_db
         mock_db.groups.find_one = AsyncMock(return_value=None)
-        
+
         '''# Test with invalid ObjectId format
         with pytest.raises(ValueError, match="Group not found or user not a member"):
             await expense_service.create_expense(
@@ -141,6 +140,7 @@ async def test_create_expense_invalid_group(expense_service):
             await expense_service.create_expense(str(ObjectId()), expense_request, "user_a")
         assert exc_info_2.value.status_code == 403
         assert "not a member of this group" in str(exc_info_2.value.detail)
+
 
 @pytest.mark.asyncio
 async def test_calculate_optimized_settlements_advanced(expense_service):
@@ -352,12 +352,12 @@ async def test_update_expense_unauthorized(expense_service):
 
         # Mock finding no expense (user not creator)
         mock_db.expenses.find_one = AsyncMock(return_value=None)
-        
+
         '''with pytest.raises(ValueError, match="Expense not found or not authorized to edit"):
             await expense_service.update_expense(
-                "group_id", 
+                "group_id",
                 "65f1a2b3c4d5e6f7a8b9c0d1",
-                update_request, 
+                update_request,
                 "unauthorized_user"
             )
         assert exc_info.value.status_code == 403
@@ -484,7 +484,7 @@ async def test_get_expense_by_id_not_found(expense_service):
 
         # Mock expense not found
         mock_db.expenses.find_one = AsyncMock(return_value=None)
-        
+
         ''' with pytest.raises(ValueError, match="Expense not found"):
             await expense_service.get_expense_by_id("65f1a2b3c4d5e6f7a8b9c0d0", "65f1a2b3c4d5e6f7a8b9c0d1", "user_a")'''
         # Updated after stricter exception handling (July 2025)
@@ -787,7 +787,7 @@ async def test_delete_expense_not_found(expense_service):
         # Updated after stricter exception handling (July 2025)
         with pytest.raises(HTTPException) as exc_info:
             await expense_service.delete_expense(group_id, expense_id, user_id)
-        
+
         assert exc_info.value.status_code == 403
         assert exc_info.value.detail == "Not authorized to delete this expense or it does not exist"
 
@@ -1285,7 +1285,8 @@ async def test_update_settlement_status_not_found(expense_service):
         assert exc_info.value.status_code == 404
         assert exc_info.value.detail == "Settlement not found"
 
-        mock_db.settlements.find_one.assert_not_called() # Should not be called if update fails
+        # Should not be called if update fails
+        mock_db.settlements.find_one.assert_not_called()
 
 @pytest.mark.asyncio
 async def test_delete_settlement_success(expense_service, mock_group_data):
