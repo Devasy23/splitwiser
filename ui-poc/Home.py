@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 from datetime import datetime
 import json
+from streamlit_cookies_manager import EncryptedCookieManager
 
 # Configure the page
 st.set_page_config(
@@ -22,6 +23,13 @@ if "username" not in st.session_state:
 # Base URL for API
 API_URL = "https://splitwiser-production.up.railway.app"
 
+cookies = EncryptedCookieManager(
+    prefix="splitwiser_",  
+    password="your_super_secret_key" #note for prod: store this in a env file.
+)
+if not cookies.ready():
+    st.stop()
+
 def login(email, password):
     """Login user and store access token in session state"""
     try:
@@ -36,6 +44,12 @@ def login(email, password):
             user_data = data.get("user", {})
             st.session_state.user_id = user_data.get("_id")  # Changed from user_id to _id
             st.session_state.username = user_data.get("name")  # Changed from username to name
+            
+            cookies["access_token"] = data.get("access_token")
+            cookies["user_id"] = user_data.get("_id")
+            cookies["username"] = user_data.get("name")
+            cookies.save()
+            
             return True, "Login successful!"
         else:
             return False, f"Login failed: {response.json().get('detail', 'Unknown error')}"
@@ -58,23 +72,46 @@ def signup(username, email, password):
 
 def logout():
     """Clear session state and log out user"""
-    for key in list(st.session_state.keys()):
-        del st.session_state[key]
+    # Clear session state keys by deleting them
+    keys_to_clear = ["access_token", "user_id", "username"]
+    for key in keys_to_clear:
+        if key in st.session_state:
+            del st.session_state[key]
+        cookies[key] = ""
+    cookies.save()
+    
     st.rerun()
 
+def check_cookies():
+    access_token = cookies.get("access_token")
+    user_id = cookies.get("user_id")
+    username = cookies.get("username")
+    
+    if access_token == "" or not access_token:
+        st.session_state.access_token = None
+        st.session_state.user_id = None
+        st.session_state.username = None
+        return False
+    st.session_state.access_token = access_token
+    st.session_state.user_id = user_id
+    st.session_state.username = username
+    return True
+    
+    
 # Main app
 def main():
     # Sidebar for app navigation
+    cookie_check = False
     with st.sidebar:
         st.title("Splitwiser 💰")
         
-        if st.session_state.access_token:
+        if cookie_check:=check_cookies():
             st.success(f"Logged in as {st.session_state.username}")
             if st.button("Logout", key="logout_btn"):
                 logout()
         
     # Main content
-    if not st.session_state.access_token:
+    if not cookie_check:
         display_auth_page()
     else:
         display_main_app()

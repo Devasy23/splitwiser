@@ -3,6 +3,34 @@ import requests
 from datetime import datetime
 import json
 import time
+from streamlit_cookies_manager import EncryptedCookieManager
+st.title("Groups")
+
+cookies = EncryptedCookieManager(
+    prefix="splitwiser_",  
+    password="your_super_secret_key" #note for prod: store this in a env file.
+)
+if not cookies.ready():
+    st.stop()
+
+def check_cookies():
+    access_token = cookies.get("access_token")
+    user_id = cookies.get("user_id")
+    username = cookies.get("username")
+    
+    if access_token == "" or not access_token:
+        st.session_state.access_token = None
+        st.session_state.user_id = None
+        st.session_state.username = None
+        return False
+    st.session_state.access_token = access_token
+    st.session_state.user_id = user_id
+    st.session_state.username = username
+    return True
+
+if not check_cookies():
+    st.warning("Please log in first")
+    st.stop()
 
 # Base URL for API
 API_URL = "https://splitwiser-production.up.railway.app"
@@ -31,7 +59,6 @@ def make_api_request(method, url, headers=None, json_data=None, max_retries=3, r
     
     return None  # This shouldn't be reached, but added for safety
 
-st.title("Groups")
 
 # Debug mode toggle
 if "debug_mode" not in st.session_state:
@@ -58,11 +85,6 @@ refresh_col1, refresh_col2 = st.columns([8, 1])
 with refresh_col2:
     if st.button("🔄"):
         st.rerun()
-
-# Check if user is logged in
-if "access_token" not in st.session_state or not st.session_state.access_token:
-    st.warning("Please log in first")
-    st.stop()
 
 # Function to fetch user's groups
 def fetch_user_groups():
