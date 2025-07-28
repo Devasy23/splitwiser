@@ -1,0 +1,144 @@
+codecov:
+  notify:
+    wait_for_ci: true
+  require_ci_to_pass: true
+
+coverage:
+  precision: 2
+  round: down
+  range:
+    - 60.0
+    - 80.0
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 0.5
+        if_ci_failed: error
+        flag_coverage_not_uploaded_behavior: include
+    patch:
+      default:
+        target: 80%
+        threshold: 0.5
+        if_ci_failed: error
+        branches:
+          - "!main"  # Don't require patch coverage on main branch
+    changes: false
+
+# Flags for different parts of the codebase
+flag_management:
+  default_rules:
+    carryforward: true
+    statuses:
+      - type: project
+        target: auto
+        threshold: 0.5
+        branches:
+          - "!main"
+      - type: patch
+        target: 80%
+        threshold: 0.5
+
+# Components for modular coverage tracking
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        threshold: 0.5
+        branches:
+          - "!main"
+      - type: patch
+        target: 80%
+        threshold: 0.5
+  individual_components:
+    - component_id: backend-auth
+      name: "Authentication System"
+      paths:
+        - backend/app/auth/**
+      flag_regexes:
+        - backend
+    - component_id: backend-expenses
+      name: "Expense Management"
+      paths:
+        - backend/app/expenses/**
+      flag_regexes:
+        - backend
+    - component_id: backend-groups
+      name: "Group Management"
+      paths:
+        - backend/app/groups/**
+      flag_regexes:
+        - backend
+    - component_id: backend-user
+      name: "User Management"
+      paths:
+        - backend/app/user/**
+      flag_regexes:
+        - backend
+    - component_id: backend-core
+      name: "Backend Core"
+      paths:
+        - backend/app/config.py
+        - backend/app/database.py
+        - backend/app/dependencies.py
+        - backend/main.py
+      flag_regexes:
+        - backend
+    - component_id: frontend-auth
+      name: "Frontend Authentication"
+      paths:
+        - frontend/contexts/AuthContext.tsx
+        - frontend/screens/LoginScreen.tsx
+      flag_regexes:
+        - frontend
+    - component_id: frontend-screens
+      name: "Frontend Screens"
+      paths:
+        - frontend/screens/**
+      flag_regexes:
+        - frontend
+    - component_id: frontend-core
+      name: "Frontend Core"
+      paths:
+        - frontend/App.tsx
+        - frontend/contexts/**
+      flag_regexes:
+        - frontend
+
+# Test Analytics configuration (removed - not supported in codecov.yml)
+# Use test-results-action in GitHub Actions instead
+
+# Ignore files that don't need coverage
+ignore:
+  - "**/__pycache__/**"
+  - "**/*.pyc"
+  - "docs/**"
+  - "*.md"
+  - "*.yml"
+  - "*.yaml"
+  - "*.toml"
+  - "requirements*.txt"
+  - "setup*.sh"
+  - "setup*.bat"
+  - "*.json"
+  - "ui-poc/**"  # Ignore POC frontend since we have main frontend
+
+
+# Comments on PRs
+comment:
+  layout: "header, diff, flags, components"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+  show_carryforward_flags: false
+
+# Make codecov less strict for Dependabot PRs
+github_checks:
+  annotations: true
+
+# Prevent coverage drops due to removed code
+fixes:
+  - "backend/app/::"  # Strip backend/app/ prefix from paths
+  - "frontend/::"     # Strip frontend/ prefix from paths
