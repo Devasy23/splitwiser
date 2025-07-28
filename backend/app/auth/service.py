@@ -115,7 +115,7 @@ class AuthService:
             "email": email,
             "hashed_password": get_password_hash(password),
             "name": name,
-            "avatar": None,
+            "imageUrl": None,
             "currency": "USD",
             "created_at": datetime.now(timezone.utc),
             "auth_provider": "email",
@@ -202,8 +202,8 @@ class AuthService:
                 update_data = {}
                 if user.get("firebase_uid") != firebase_uid:
                     update_data["firebase_uid"] = firebase_uid
-                if user.get("avatar") != picture and picture:
-                    update_data["avatar"] = picture
+                if user.get("imageUrl") != picture and picture:
+                    update_data["imageUrl"] = picture
 
                 if update_data:
                     await db.users.update_one(
@@ -215,7 +215,7 @@ class AuthService:
                 user_doc = {
                     "email": email,
                     "name": name,
-                    "avatar": picture,
+                    "imageUrl": picture,
                     "currency": "USD",
                     "created_at": datetime.now(timezone.utc),
                     "auth_provider": "google",

@@ -168,7 +168,7 @@ async def test_login_with_email_success(mock_db):
             "email": user_email,
             "hashed_password": hashed_password,
             "name": "Login User",
-            "avatar": None,
+            "imageUrl": None,
             "currency": "USD",
             # Ensure datetime is used
             "created_at": datetime.now(timezone.utc),

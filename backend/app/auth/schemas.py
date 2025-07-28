@@ -42,7 +42,7 @@ class UserResponse(BaseModel):
     id: str = Field(alias="_id")
     email: str
     name: str
-    avatar: Optional[str] = None
+    imageUrl: Optional[str] = None
     currency: str = "USD"
     created_at: datetime
 
