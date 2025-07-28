@@ -7,13 +7,13 @@ This script:
 4. Logs migration statistics
 """
 
-from backup_db import create_backup
 import json
 import logging
 import os
 import sys
 from datetime import datetime
 
+from backup_db import create_backup
 from bson import ObjectId
 from dotenv import load_dotenv
 from pymongo import MongoClient, UpdateOne
@@ -126,10 +126,11 @@ def rollback_migration(backup_path):
     try:
         client = MongoClient(MONGODB_URL)
         db = client[DATABASE_NAME]
-        
+
         backup_file_path = os.path.join(backup_path, "users.json")
         if not os.path.exists(backup_file_path):
-            raise FileNotFoundError(f"Backup file not found: {backup_file_path}")
+            raise FileNotFoundError(
+                f"Backup file not found: {backup_file_path}")
 
         # Read users collection backup
         with open(backup_file_path, "r") as f:
