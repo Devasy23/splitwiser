@@ -54,11 +54,7 @@ class GroupService:
                                     if user
                                     else f"{member_user_id}@example.com"
                                 ),
-                                "imageUrl": (
-                                    user.get("imageUrl")
-                                    if user
-                                    else None
-                                ),
+                                "imageUrl": (user.get("imageUrl") if user else None),
                             }
                             if user
                             else {

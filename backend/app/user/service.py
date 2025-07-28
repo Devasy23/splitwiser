@@ -67,9 +67,7 @@ class UserService:
         updates = {k: v for k, v in updates.items() if k in allowed}
         updates["updated_at"] = datetime.now(timezone.utc)
         result = await db.users.find_one_and_update(
-            {"_id": obj_id},
-            {"$set": updates},
-            return_document=True
+            {"_id": obj_id}, {"$set": updates}, return_document=True
         )
         return self.transform_user_document(result)
 
@@ -81,5 +79,6 @@ class UserService:
             return False  # Handle invalid ObjectId gracefully
         result = await db.users.delete_one({"_id": obj_id})
         return result.deleted_count > 0
+
 
 user_service = UserService()
