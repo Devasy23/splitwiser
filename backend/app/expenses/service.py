@@ -8,6 +8,9 @@ from app.expenses.schemas import (
 )
 import asyncio
 from collections import defaultdict, deque
+import os
+import logging
+logger = logging.getLogger(__name__)
 
 class ExpenseService:
     def __init__(self):
@@ -341,7 +344,7 @@ class ExpenseService:
                         # Create new settlements
                         await self._create_settlements_for_expense(updated_expense, user_id)
                 except Exception as e:
-                    print(f"Warning: Failed to recalculate settlements: {e}")
+                    logger.warning(f"Failed to recalculate settlements: {e}")
                     # Continue anyway, as the expense update succeeded
 
             # Return updated expense
@@ -354,9 +357,7 @@ class ExpenseService:
         except ValueError:
             raise
         except Exception as e:
-            print(f"Error in update_expense: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"Error in update_expense: {e}", exc_info=True)
             raise Exception(f"Database error during expense update: {str(e)}")
 
     async def delete_expense(self, group_id: str, expense_id: str, user_id: str) -> bool:
@@ -984,7 +985,7 @@ class ExpenseService:
             "totalOwedToYou": total_owed_to_you,
             "totalYouOwe": total_you_owe,
             "netBalance": total_owed_to_you - total_you_owe,
-            "currency": "USD",
+            "currency": os.getenv("DEFAULT_CURRENCY", "USD"),           
             "groupsSummary": groups_summary
         }
 

@@ -3,6 +3,10 @@ from app.database import get_database
 from bson import ObjectId
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class UserService:
     def __init__(self):
@@ -36,7 +40,7 @@ class UserService:
             "name": user.get("name"),
             "email": user.get("email"),
             "imageUrl": user.get("imageUrl") or user.get("avatar"),
-            "currency": user.get("currency", "USD"),
+            "currency": user.get("currency", os.getenv("DEFAULT_CURRENCY", "USD")), #configurable via environment variables
             "createdAt": iso(user.get("created_at")),
             "updatedAt": iso(user.get("updated_at") or user.get("created_at")),
         }

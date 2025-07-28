@@ -5,6 +5,19 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 import secrets
 import string
+import os
+
+DEFAULT_CURRENCY = os.getenv("DEFAULT_CURRENCY", "USD")
+ROLE_ADMIN = "admin"
+ROLE_MEMBER = "member"
+
+ERR_NOT_ADMIN = "Only group admins can delete groups"
+ERR_SELF_DEMOTE = "Cannot demote yourself when you are the only admin. Promote another member to admin first."
+ERR_GROUP_NOT_FOUND = "Group not found"
+ERR_MEMBER_NOT_FOUND = "Member not found in group"
+ERR_ALREADY_MEMBER = "You are already a member of this group"
+ERR_INVALID_JOIN_CODE = "Invalid join code"
+
 
 class GroupService:
     def __init__(self):
@@ -77,7 +90,7 @@ class GroupService:
         return {
             "_id": group_id,
             "name": group.get("name"),
-            "currency": group.get("currency", "USD"),
+            "currency": group.get("currency", DEFAULT_CURRENCY),
             "joinCode": group.get("joinCode"),
             "createdBy": group.get("createdBy"),
             "createdAt": group.get("createdAt"),
@@ -103,14 +116,14 @@ class GroupService:
         now = datetime.now(timezone.utc)
         group_doc = {
             "name": group_data["name"],
-            "currency": group_data.get("currency", "USD"),
+            "currency": group_data.get("currency", DEFAULT_CURRENCY),
             "imageUrl": group_data.get("imageUrl"),
             "joinCode": join_code,
             "createdBy": user_id,
             "createdAt": now,
             "members": [{
                 "userId": user_id,
-                "role": "admin",
+                "role": ROLE_ADMIN,
                 "joinedAt": now
             }]
         }
@@ -167,7 +180,7 @@ class GroupService:
         # Check if user is admin
         group = await db.groups.find_one({
             "_id": obj_id,
-            "members": {"$elemMatch": {"userId": user_id, "role": "admin"}}
+            "members": {"$elemMatch": {"userId": user_id, "role": ROLE_ADMIN}}
         })
         if not group:
             raise HTTPException(status_code=403, detail="Only group admins can update group details")
@@ -190,7 +203,7 @@ class GroupService:
         # Check if user is admin
         group = await db.groups.find_one({
             "_id": obj_id,
-            "members": {"$elemMatch": {"userId": user_id, "role": "admin"}}
+            "members": {"$elemMatch": {"userId": user_id, "role": ROLE_ADMIN}}
         })
         if not group:
             raise HTTPException(status_code=403, detail="Only group admins can delete groups")
@@ -215,7 +228,7 @@ class GroupService:
         # Add user as member
         new_member = {
             "userId": user_id,
-            "role": "member",
+            "role": ROLE_MEMBER,
             "joinedAt": datetime.now(timezone.utc)
         }
 
@@ -244,17 +257,21 @@ class GroupService:
 
         # Check if user is the last admin
         user_member = next((m for m in group.get("members", []) if m["userId"] == user_id), None)
-        if user_member and user_member["role"] == "admin":
-            admin_count = sum(1 for m in group.get("members", []) if m["role"] == "admin")
+        if user_member and user_member["role"] == ROLE_ADMIN:
+            admin_count = sum(1 for m in group.get("members", []) if m["role"] == ROLE_ADMIN)
             if admin_count <= 1:
                 raise HTTPException(
                     status_code=400, 
                     detail="Cannot leave group when you are the only admin. Delete the group or promote another member to admin first."
                 )
+       
+        if await self.has_outstanding_balance(group_id, user_id):
+            raise HTTPException(
+                status_code=400,
+                detail="You have an outstanding balance. Please settle it before leaving the group."
+            )
 
-        # TODO: Check for outstanding balances with expense service
-        # For now, we'll allow leaving without balance check
-        # This should be implemented when expense service is ready
+
 
         result = await db.groups.update_one(
             {"_id": obj_id},
@@ -295,7 +312,7 @@ class GroupService:
         # Check if user is admin
         group = await db.groups.find_one({
             "_id": obj_id,
-            "members": {"$elemMatch": {"userId": user_id, "role": "admin"}}
+            "members": {"$elemMatch": {"userId": user_id, "role": ROLE_ADMIN}}
         })
         if not group:
             raise HTTPException(status_code=403, detail="Only group admins can update member roles")
@@ -306,8 +323,8 @@ class GroupService:
             raise HTTPException(status_code=404, detail="Member not found in group")
 
         # Prevent admins from demoting themselves if they are the only admin
-        if member_id == user_id and new_role != "admin":
-            admin_count = sum(1 for m in group.get("members", []) if m["role"] == "admin")
+        if member_id == user_id and new_role != ROLE_ADMIN:
+            admin_count = sum(1 for m in group.get("members", []) if m["role"] == ROLE_ADMIN)
             if admin_count <= 1:
                 raise HTTPException(
                     status_code=400, 
@@ -331,7 +348,7 @@ class GroupService:
         # Check if group exists and user is admin
         group = await db.groups.find_one({
             "_id": obj_id,
-            "members": {"$elemMatch": {"userId": user_id, "role": "admin"}}
+            "members": {"$elemMatch": {"userId": user_id, "role": ROLE_ADMIN}}
         })
         if not group:
             # Check if group exists at all
@@ -348,14 +365,25 @@ class GroupService:
         
         if member_id == user_id:
             raise HTTPException(status_code=400, detail="Cannot remove yourself. Use leave group instead")
-
-        # TODO: Check for outstanding balances with expense service
-        # For now, we'll allow removal without balance check
+        
+        if await self.has_outstanding_balance(group_id, member_id):
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot remove member with outstanding balance. Ask them to settle dues first."
+            )
 
         result = await db.groups.update_one(
             {"_id": obj_id},
             {"$pull": {"members": {"userId": member_id}}}
         )
         return result.modified_count == 1
+   
+    async def has_outstanding_balance(self, group_id: str, user_id: str) -> bool:
+        """
+        placeholder for checking outstanding balances with the expense service.
+        can replace this with real service call when it's implemented.
+        """
+        # TODO: call the actual expense service here
+        return False  # allowing leave/removal for now
 
 group_service = GroupService()

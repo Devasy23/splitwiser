@@ -12,6 +12,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import io
 import uuid
+import os
 
 router = APIRouter(prefix="/groups/{group_id}", tags=["Expenses"])
 
@@ -128,7 +129,8 @@ async def upload_attachment_for_expense(
         file_content = await file.read()
         
         # Store file metadata (in practice, store the actual file and return the URL)
-        url = f"https://storage.example.com/attachments/{attachment_key}"
+        ATTACHMENT_BASE_URL = os.getenv("ATTACHMENT_BASE_URL", "https://storage.dev.local/attachments")
+        url = f"{ATTACHMENT_BASE_URL}/{attachment_key}"
         
         return AttachmentUploadResponse(
             attachment_key=attachment_key,
@@ -370,49 +372,4 @@ async def group_expense_analytics(
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to fetch analytics")
 
-# Debug endpoint (remove in production)
-@router.get("/expenses/{expense_id}/debug")
-async def debug_expense(
-    group_id: str,
-    expense_id: str,
-    current_user: Dict[str, Any] = Depends(get_current_user)
-):
-    """Debug endpoint to check expense details and user permissions"""
-    try:
-        from app.database import mongodb
-        from bson import ObjectId
-        
-        # Check if expense exists
-        expense = await mongodb.database.expenses.find_one({"_id": ObjectId(expense_id)})
-        if not expense:
-            return {"error": "Expense not found", "expense_id": expense_id}
-        
-        # Check group membership
-        group = await mongodb.database.groups.find_one({
-            "_id": ObjectId(group_id),
-            "members.userId": current_user["_id"]
-        })
-        
-        # Check if user created the expense
-        user_created = expense.get("createdBy") == current_user["_id"]
-        
-        return {
-            "expense_exists": True,
-            "expense_id": expense_id,
-            "group_id": group_id,
-            "user_id": current_user["_id"],
-            "expense_created_by": expense.get("createdBy"),
-            "user_created_expense": user_created,
-            "user_in_group": group is not None,
-            "expense_group_id": expense.get("groupId"),
-            "group_id_match": expense.get("groupId") == group_id,
-            "expense_data": {
-                "description": expense.get("description"),
-                "amount": expense.get("amount"),
-                "splits_count": len(expense.get("splits", [])),
-                "created_at": expense.get("createdAt"),
-                "updated_at": expense.get("updatedAt")
-            }
-        }
-    except Exception as e:
-        return {"error": str(e), "type": type(e).__name__}
+
