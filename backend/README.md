@@ -47,6 +47,17 @@ The following authentication endpoints are available:
 - `POST /auth/password/reset/request` - Request password reset
 - `POST /auth/password/reset/confirm` - Confirm password reset
 
+### Using Authenticated Endpoints
+
+To test protected endpoints that require a user to be logged in, follow these steps:
+
+1.  **Sign Up**: Create a user account using the `POST /auth/signup/email` endpoint.
+2.  **Log In**: Use the `POST /auth/login/email` endpoint with the same credentials.
+3.  **Copy Token**: From the successful login response, copy the `access_token` value.
+4.  **Authorize**: In the FastAPI docs (`/docs`), click the top-right "Authorize" button. In the popup, paste your token in the format `Bearer <your_token>`.
+5.  **Test**: You can now successfully test any protected endpoint (e.g., `GET /users/me`).
+
+
 ## Database
 
 The application uses MongoDB for data storage. Make sure MongoDB is running and accessible via the connection string in your `.env` file.

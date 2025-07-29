@@ -104,7 +104,21 @@ You can start developing by editing the files inside the **app** directory. This
    ```bash
    uvicorn main:app --reload
    ```
+#### Proof-of-Concept UI (Streamlit)
 
+This project includes a Streamlit UI for demonstration purposes, available on the `ui-poc` branch.
+
+1.  **Switch Branch**: Ensure you are on the `ui-poc` branch (`git checkout ui-poc`).
+2.  **Start Backend**: Make sure the backend server is running.
+3.  **Install Dependencies**: Navigate to the UI directory and install its requirements:
+    ```bash
+    cd ui 
+    pip install -r requirements.txt
+    ```
+4.  **Run UI**: Start the Streamlit app:
+    ```bash
+    streamlit run app.py
+    ```
 ## 📱 Features in Detail
 
 ### Authentication & Security

@@ -14,7 +14,7 @@ router = APIRouter(prefix="/users", tags=["User"])
 
 @router.get("/me", response_model=UserProfileResponse)
 async def get_current_user_profile(
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     user = await user_service.get_user_by_id(current_user["_id"])
     if not user:
