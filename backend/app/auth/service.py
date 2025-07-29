@@ -289,38 +289,46 @@ class AuthService:
 
         return new_refresh_token
 
-    async def verify_access_token(self, token: str) -> Dict[str, Any]:
-        """
-        Verifies an access token and retrieves the associated user.
 
-        Args:
-            token: The JWT access token to verify.
+async def verify_access_token(self, token: str) -> Dict[str, Any]:
+    """
+    Verifies an access token and retrieves the associated user.
 
-        Returns:
-            The user document corresponding to the token's subject.
+    Args:
+        token: The JWT access token to verify.
 
-        Raises:
-            HTTPException: If the token is invalid or the user does not exist.
-        """
-        from app.auth.security import verify_token
+    Returns:
+        The user document corresponding to the token's subject.
 
-        payload = verify_token(token)
-        user_id = payload.get("sub")
+    Raises:
+        HTTPException: If the token is invalid or the user does not exist.
+    """
+    from app.auth.security import verify_token
+    from bson import ObjectId
 
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
-            )
+    payload = verify_token(token)
+    user_id = payload.get("sub")
 
-        db = self.get_db()
-        user = await db.users.find_one({"_id": user_id})
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        )
 
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
-            )
+    db = self.get_db()
 
-        return user
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user ID format"
+        )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+        )
+
+    return user
 
     async def request_password_reset(self, email: str) -> bool:
         """
