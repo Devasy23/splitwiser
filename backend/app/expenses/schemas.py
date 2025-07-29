@@ -35,11 +35,8 @@ class ExpenseCreateRequest(BaseModel):
     def validate_splits_sum(cls, v, values):
         if "amount" in values:
             total_split = sum(split.amount for split in v)
-            if (
-                abs(total_split - values["amount"]) > 0.01
-            ):  # Allow small floating point differences
-                raise ValueError(
-                    "Split amounts must sum to total expense amount")
+            if abs(total_split - values["amount"]) > 0.01:
+                raise ValueError("Split amounts must sum to total expense amount")
         return v
 
 
@@ -52,16 +49,13 @@ class ExpenseUpdateRequest(BaseModel):
 
     @validator("splits")
     def validate_splits_sum(cls, v, values):
-        # Only validate if both splits and amount are provided in the update
         if v is not None and "amount" in values and values["amount"] is not None:
             total_split = sum(split.amount for split in v)
             if abs(total_split - values["amount"]) > 0.01:
-                raise ValueError(
-                    "Split amounts must sum to total expense amount")
+                raise ValueError("Split amounts must sum to total expense amount")
         return v
 
     class Config:
-        # Allow validation to work with partial updates
         validate_assignment = True
 
 
@@ -70,7 +64,7 @@ class ExpenseComment(BaseModel):
     userId: str
     userName: str
     content: str
-    createdAt: datetime
+    createdAt: datetime = Field(alias="created_at")
 
     model_config = ConfigDict(
         populate_by_name=True, str_strip_whitespace=True, validate_assignment=True
@@ -82,7 +76,7 @@ class ExpenseHistoryEntry(BaseModel):
     userId: str
     userName: str
     beforeData: Dict[str, Any]
-    editedAt: datetime
+    editedAt: datetime = Field(alias="edited_at")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -99,15 +93,15 @@ class ExpenseResponse(BaseModel):
     receiptUrls: List[str] = []
     comments: Optional[List[ExpenseComment]] = []
     history: Optional[List[ExpenseHistoryEntry]] = []
-    createdAt: datetime
-    updatedAt: datetime
+    createdAt: datetime = Field(alias="created_at")
+    updatedAt: datetime = Field(alias="updated_at")
 
     model_config = ConfigDict(populate_by_name=True)
 
 
 class Settlement(BaseModel):
     id: str = Field(alias="_id")
-    expenseId: Optional[str] = None  # None for manual settlements
+    expenseId: Optional[str] = None
     groupId: str
     payerId: str
     payeeId: str
@@ -116,8 +110,8 @@ class Settlement(BaseModel):
     amount: float
     status: SettlementStatus
     description: Optional[str] = None
-    paidAt: Optional[datetime] = None
-    createdAt: datetime
+    paidAt: Optional[datetime] = Field(default=None, alias="paidAt")
+    createdAt: datetime = Field(alias="created_at")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -194,7 +188,9 @@ class FriendBalance(BaseModel):
     netBalance: float
     owesYou: bool
     breakdown: List[FriendBalanceBreakdown]
-    lastActivity: datetime
+    lastActivity: datetime = Field(alias="last_activity")
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class FriendsBalanceResponse(BaseModel):

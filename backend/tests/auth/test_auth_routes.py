@@ -75,7 +75,7 @@ async def test_signup_with_existing_email(mock_db):
             "email": existing_email,
             "hashed_password": "hashedpassword",
             "name": "Existing User",
-            "created_at": "sometime",  # Simplified for mock
+            "createdAt": "sometime",  # Simplified for mock
         }
     )
 
@@ -171,7 +171,7 @@ async def test_login_with_email_success(mock_db):
             "avatar": None,
             "currency": "USD",
             # Ensure datetime is used
-            "created_at": datetime.now(timezone.utc),
+            "createdAt": datetime.now(timezone.utc),
             "auth_provider": "email",
             "firebase_uid": None,
         }
@@ -214,7 +214,7 @@ async def test_login_with_incorrect_password(mock_db):
             "email": user_email,
             "hashed_password": get_password_hash(correct_password),
             "name": "Wrong Pass User",
-            "created_at": datetime.now(timezone.utc),
+            "createdAt": datetime.now(timezone.utc),
         }
     )
 

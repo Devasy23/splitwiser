@@ -1,4 +1,5 @@
 from unittest.mock import AsyncMock, patch
+from app.auth.dependencies import get_current_user
 
 import pytest
 from app.expenses.schemas import ExpenseCreateRequest, ExpenseSplit

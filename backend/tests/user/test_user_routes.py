@@ -37,7 +37,7 @@ async def setup_test_user(mocker):
             "id": TEST_USER_ID,
             "name": "Test User",
             "email": TEST_USER_EMAIL,
-            "imageUrl": None,
+            "imageURL": None,
             "currency": "USD",
             "createdAt": iso_date,
             "updatedAt": iso_date,
@@ -46,7 +46,7 @@ async def setup_test_user(mocker):
     mocker.patch(
         "app.user.service.user_service.update_user_profile",
         return_value={
-            "id": TEST_USER_ID,
+            "_id": TEST_USER_ID,
             "name": "Updated Test User",
             "email": TEST_USER_EMAIL,
             "imageUrl": "http://example.com/avatar.png",
@@ -106,9 +106,9 @@ def test_update_user_profile_success(client: TestClient, auth_headers: dict, moc
     assert response.status_code == status.HTTP_200_OK
     data = response.json()["user"]
     assert data["name"] == "Updated Test User"
-    assert data["imageUrl"] == "http://example.com/avatar.png"
+    assert data["imageURL"] == "http://example.com/avatar.png"
     assert data["currency"] == "EUR"
-    assert data["id"] == TEST_USER_ID
+    assert data["_id"] == TEST_USER_ID
     assert "createdAt" in data and data["createdAt"].endswith("Z")
     assert "updatedAt" in data and data["updatedAt"].endswith("Z")
 
@@ -123,10 +123,10 @@ def test_update_user_profile_partial_update(
     mocker.patch(
         "app.user.service.user_service.update_user_profile",
         return_value={
-            "id": TEST_USER_ID,
+            "_id": TEST_USER_ID,
             "name": "Only Name Updated",
             "email": TEST_USER_EMAIL,
-            "imageUrl": None,
+            "imageURL": None,
             "currency": "USD",
             "createdAt": iso_date,
             "updatedAt": iso_date3,
@@ -138,7 +138,7 @@ def test_update_user_profile_partial_update(
     data = response.json()["user"]
     assert data["name"] == "Only Name Updated"
     assert data["currency"] == "USD"
-    assert data["id"] == TEST_USER_ID
+    assert data["_id"] == TEST_USER_ID
     assert "createdAt" in data and data["createdAt"].endswith("Z")
     assert "updatedAt" in data and data["updatedAt"].endswith("Z")
 

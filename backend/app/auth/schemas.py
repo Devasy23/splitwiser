@@ -44,7 +44,7 @@ class UserResponse(BaseModel):
     name: str
     avatar: Optional[str] = None
     currency: str = "USD"
-    created_at: datetime
+    created_at: datetime = Field(alias="createdAt")
 
     model_config = ConfigDict(populate_by_name=True)
 
