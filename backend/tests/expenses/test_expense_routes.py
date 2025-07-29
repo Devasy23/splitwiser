@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock, patch
-from app.auth.dependencies import get_current_user
 
 import pytest
+from app.auth.dependencies import get_current_user
 from app.expenses.schemas import ExpenseCreateRequest, ExpenseSplit
 from fastapi import status
 from httpx import ASGITransport, AsyncClient

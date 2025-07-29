@@ -36,7 +36,8 @@ class ExpenseCreateRequest(BaseModel):
         if "amount" in values:
             total_split = sum(split.amount for split in v)
             if abs(total_split - values["amount"]) > 0.01:
-                raise ValueError("Split amounts must sum to total expense amount")
+                raise ValueError(
+                    "Split amounts must sum to total expense amount")
         return v
 
 
@@ -52,7 +53,8 @@ class ExpenseUpdateRequest(BaseModel):
         if v is not None and "amount" in values and values["amount"] is not None:
             total_split = sum(split.amount for split in v)
             if abs(total_split - values["amount"]) > 0.01:
-                raise ValueError("Split amounts must sum to total expense amount")
+                raise ValueError(
+                    "Split amounts must sum to total expense amount")
         return v
 
     class Config:

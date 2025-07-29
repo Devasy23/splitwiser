@@ -289,6 +289,7 @@ class AuthService:
 
         return new_refresh_token
 
+
 async def verify_access_token(self, token: str) -> Dict[str, Any]:
     """
     Verifies an access token and retrieves the associated user.
@@ -328,7 +329,6 @@ async def verify_access_token(self, token: str) -> Dict[str, Any]:
         )
 
     return user
-
 
     async def request_password_reset(self, email: str) -> bool:
         """

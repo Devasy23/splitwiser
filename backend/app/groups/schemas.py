@@ -16,7 +16,8 @@ class GroupMemberWithDetails(BaseModel):
     userId: str = Field(..., alias="userId")
     role: str = Field(default="member", alias="role")  # "admin" or "member"
     joinedAt: datetime = Field(..., alias="joinedAt")
-    user: Optional[dict] = Field(default=None, alias="user")  # Contains user details
+    user: Optional[dict] = Field(
+        default=None, alias="user")  # Contains user details
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -30,7 +31,9 @@ class GroupCreateRequest(BaseModel):
 
 
 class GroupUpdateRequest(BaseModel):
-    name: Optional[str] = Field(default=None, min_length=1, max_length=100, alias="name")
+    name: Optional[str] = Field(
+        default=None, min_length=1, max_length=100, alias="name"
+    )
     imageUrl: Optional[str] = Field(default=None, alias="imageUrl")
 
     model_config = ConfigDict(populate_by_name=True)
@@ -44,7 +47,9 @@ class GroupResponse(BaseModel):
     createdBy: str = Field(..., alias="createdBy")
     createdAt: datetime = Field(..., alias="createdAt")
     imageUrl: Optional[str] = Field(default=None, alias="imageUrl")
-    members: Optional[List[GroupMemberWithDetails]] = Field(default_factory=list, alias="members")
+    members: Optional[List[GroupMemberWithDetails]] = Field(
+        default_factory=list, alias="members"
+    )
 
     model_config = ConfigDict(populate_by_name=True)
 
