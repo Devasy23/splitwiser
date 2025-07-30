@@ -1,8 +1,18 @@
+import streamlit as st
+
+# Configure the page – must come immediately after importing Streamlit
+st.set_page_config(
+    page_title="Splitwiser",
+    page_icon="💰",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# 3rd-party / std-lib imports – safe after the call above
 from streamlit_cookies_manager import EncryptedCookieManager
 import requests
 from datetime import datetime
 import json
-import streamlit as st
 
 # Configure the page
 st.set_page_config(
