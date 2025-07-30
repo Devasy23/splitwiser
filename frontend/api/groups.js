@@ -37,17 +37,10 @@ export const createExpense = (token, groupId, expenseData) => {
 };
 
 export const getGroupDetails = (token, groupId) => {
-    // Note: The backend doesn't seem to have a dedicated group details endpoint.
-    // The POC reuses the group object from the list. We will do the same for now,
-    // but in a real app, a dedicated endpoint would be better.
-    // This is a placeholder for if we had one.
-    // For now, we will fetch members and expenses separately.
-    // This function can be used to get the group's basic info if needed.
-    // However, the /groups endpoint already provides this.
-    // We will simulate fetching details by combining other calls.
-    // A single /groups/:id endpoint would be more efficient.
-    // For now, let's assume we don't need this function and will get group name from navigation params.
-    return Promise.resolve(null); // Placeholder
+    return Promise.all([
+        getGroupMembers(token, groupId),
+        getGroupExpenses(token, groupId),
+    ]);
 };
 
 export const getGroupMembers = (token, groupId) => {
