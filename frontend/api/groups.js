@@ -20,6 +20,14 @@ export const getGroups = (token) => {
   });
 };
 
+export const getOptimizedSettlements = (token, groupId) => {
+  return apiClient.post(`/groups/${groupId}/settlements/optimize`, {}, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
 export const createExpense = (token, groupId, expenseData) => {
   return apiClient.post(`/groups/${groupId}/expenses`, expenseData, {
     headers: {

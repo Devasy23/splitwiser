@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, StyleSheet, Alert, ScrollView } from 'react-native';
-import { Button, TextInput, ActivityIndicator, Appbar, Title, SegmentedButtons, Text, Paragraph } from 'react-native-paper';
+import { Button, TextInput, ActivityIndicator, Appbar, Title, SegmentedButtons, Text, Paragraph, Checkbox } from 'react-native-paper';
 import { AuthContext } from '../context/AuthContext';
 import { getGroupMembers, createExpense } from '../api/groups';
 
@@ -18,6 +18,7 @@ const AddExpenseScreen = ({ route, navigation }) => {
   const [percentages, setPercentages] = useState({});
   const [shares, setShares] = useState({});
   const [exactAmounts, setExactAmounts] = useState({});
+  const [selectedMembers, setSelectedMembers] = useState({}); // For equal split
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -28,15 +29,18 @@ const AddExpenseScreen = ({ route, navigation }) => {
         const initialShares = {};
         const initialPercentages = {};
         const initialExactAmounts = {};
+        const initialSelectedMembers = {};
         const numMembers = response.data.length;
         response.data.forEach(member => {
           initialShares[member.userId] = '1';
           initialPercentages[member.userId] = numMembers > 0 ? (100 / numMembers).toFixed(2) : '0';
           initialExactAmounts[member.userId] = '0.00';
+          initialSelectedMembers[member.userId] = true; // Select all by default
         });
         setShares(initialShares);
         setPercentages(initialPercentages);
         setExactAmounts(initialExactAmounts);
+        setSelectedMembers(initialSelectedMembers);
       } catch (error) {
         console.error('Failed to fetch members:', error);
         Alert.alert('Error', 'Failed to fetch group members.');
@@ -68,8 +72,12 @@ const AddExpenseScreen = ({ route, navigation }) => {
         let splitType = splitMethod;
 
         if (splitMethod === 'equal') {
-            const splitAmount = numericAmount / members.length;
-            splits = members.map(member => ({ userId: member.userId, amount: splitAmount }));
+            const includedMembers = Object.keys(selectedMembers).filter(userId => selectedMembers[userId]);
+            if (includedMembers.length === 0) {
+                throw new Error('You must select at least one member for the split.');
+            }
+            const splitAmount = numericAmount / includedMembers.length;
+            splits = includedMembers.map(userId => ({ userId, amount: splitAmount }));
         } else if (splitMethod === 'exact') {
             const total = Object.values(exactAmounts).reduce((sum, val) => sum + parseFloat(val || '0'), 0);
             if (Math.abs(total - numericAmount) > 0.01) {
@@ -114,12 +122,25 @@ const AddExpenseScreen = ({ route, navigation }) => {
     }
   };
 
+  const handleMemberSelect = (userId) => {
+    setSelectedMembers(prev => ({...prev, [userId]: !prev[userId]}));
+  };
+
   const renderSplitInputs = () => {
     const handleSplitChange = (setter, userId, value) => {
         setter(prev => ({ ...prev, [userId]: value }));
     };
 
     switch (splitMethod) {
+      case 'equal':
+        return members.map(member => (
+            <Checkbox.Item
+                key={member.userId}
+                label={member.user.name}
+                status={selectedMembers[member.userId] ? 'checked' : 'unchecked'}
+                onPress={() => handleMemberSelect(member.userId)}
+            />
+        ));
       case 'exact':
         return members.map(member => (
           <TextInput
@@ -153,9 +174,8 @@ const AddExpenseScreen = ({ route, navigation }) => {
             style={styles.splitInput}
           />
         ));
-      case 'equal':
       default:
-        return <Paragraph>The expense will be split equally among all {members.length} members.</Paragraph>;
+        return null;
     }
   };
 
