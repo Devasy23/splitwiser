@@ -15,9 +15,13 @@ const FriendsScreen = () => {
         const balances = {}; // { friendId: { name, netBalance, groups: { groupId: { name, balance } } } }
 
         groupsWithDetails.forEach(group => {
-            const [members, expenses] = group.details;
+            const [membersResponse, expensesResponse] = group.details;
+            const members = membersResponse.data;
+            const expenses = expensesResponse.data.expenses;
 
-            expenses.expenses.forEach(expense => {
+            if (!expenses) return; // Guard against undefined expenses
+
+            expenses.forEach(expense => {
                 const payerId = expense.createdBy;
                 const payerIsMe = payerId === user._id;
 
