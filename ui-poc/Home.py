@@ -179,12 +179,15 @@ def display_auth_page():
                         success, message = signup(username, email, password)
                         if success:
                             st.success(message)
-                            login_success, login_message = login(email, password)
+                            login_success, login_message = login(
+                                email, password)
                             if login_success:
                                 st.success("Logged in successfully!")
                                 st.rerun()  # Redirect to the main dashboard
                             else:
-                                st.error(f"Signup succeeded, but login failed: {login_message}")                            
+                                st.error(
+                                    f"Signup succeeded, but login failed: {login_message}"
+                                )
                         else:
                             st.error(message)
                 else:
