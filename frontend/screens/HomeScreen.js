@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, StyleSheet, FlatList, Alert } from 'react-native';
-import { Button, Text, Card, ActivityIndicator, Appbar, Modal, Portal, TextInput } from 'react-native-paper';
+import { Button, Text, Card, ActivityIndicator, Appbar, Modal, Portal, TextInput, Avatar } from 'react-native-paper';
 import { AuthContext } from '../context/AuthContext';
 import { getGroups, createGroup } from '../api/groups';
 
@@ -56,8 +56,11 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const renderGroup = ({ item }) => (
-    <Card style={styles.card} onPress={() => navigation.navigate('GroupDetails', { groupId: item._id, groupName: item.name })}>
-      <Card.Title title={item.name} />
+    <Card style={styles.card} onPress={() => navigation.navigate('GroupDetails', { groupId: item._id, groupName: item.name, groupIcon: item.icon })}>
+      <Card.Title
+        title={item.name}
+        left={(props) => <Avatar.Text {...props} label={item.icon || item.name.charAt(0)} />}
+      />
       <Card.Content>
         <Text>Join Code: {item.joinCode}</Text>
         <Text>You are settled up.</Text>

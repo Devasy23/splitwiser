@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, StyleSheet, FlatList, Alert, ScrollView } from 'react-native';
-import { Button, Text, Card, ActivityIndicator, Appbar, FAB, Title, Paragraph } from 'react-native-paper';
+import { Button, Text, Card, ActivityIndicator, Appbar, FAB, Title, Paragraph, Avatar } from 'react-native-paper';
 import { AuthContext } from '../context/AuthContext';
 import { getGroupMembers, getGroupExpenses, getOptimizedSettlements } from '../api/groups';
 
 const GroupDetailsScreen = ({ route, navigation }) => {
-  const { groupId, groupName } = route.params;
+  const { groupId, groupName, groupIcon } = route.params;
   const { token, user } = useContext(AuthContext);
   const [members, setMembers] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -120,7 +120,8 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     <View style={styles.container}>
         <Appbar.Header>
             <Appbar.BackAction onPress={() => navigation.goBack()} />
-            <Appbar.Content title={groupName} />
+            <Avatar.Text size={36} label={groupIcon || groupName.charAt(0)} style={{marginLeft: 8}} />
+            <Appbar.Content title={groupName} titleStyle={{marginLeft: 8}}/>
         </Appbar.Header>
 
         <ScrollView style={styles.contentContainer}>
