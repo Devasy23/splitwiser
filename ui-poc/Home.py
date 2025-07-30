@@ -1,4 +1,9 @@
+from streamlit_cookies_manager import EncryptedCookieManager
+import requests
+from datetime import datetime
+import json
 import streamlit as st
+
 # Configure the page
 st.set_page_config(
     page_title="Splitwiser",
@@ -10,12 +15,6 @@ st.set_page_config(
 # set_page_config() must be the very first Streamlit command,
 # placed right after `import streamlit as st` and before any
 # other `st.` calls (even indirectly via imports).
-
-import json
-from datetime import datetime
-
-import requests
-from streamlit_cookies_manager import EncryptedCookieManager
 
 
 # Initialize session state variables
