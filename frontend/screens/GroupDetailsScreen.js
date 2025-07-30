@@ -80,19 +80,28 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   );
 
   const renderSettlementSummary = () => {
-    const userSettlements = settlements.filter(s => s.fromUserId === user._id);
-    const totalOwed = userSettlements.reduce((sum, s) => sum + s.amount, 0);
+    const userOwes = settlements.filter(s => s.fromUserId === user._id);
+    const userIsOwed = settlements.filter(s => s.toUserId === user._id);
+    const totalOwed = userOwes.reduce((sum, s) => sum + s.amount, 0);
+    const totalToReceive = userIsOwed.reduce((sum, s) => sum + s.amount, 0);
 
-    if (userSettlements.length === 0) {
+    if (userOwes.length === 0 && userIsOwed.length === 0) {
       return <Paragraph>You are all settled up in this group!</Paragraph>;
     }
 
     return (
       <>
-        <Title>You owe ${totalOwed.toFixed(2)} overall</Title>
-        {userSettlements.map((s, index) => (
-          <Paragraph key={index}>
+        <Title style={{color: 'red'}}>You need to pay: ${totalOwed.toFixed(2)}</Title>
+        {userOwes.map((s, index) => (
+          <Paragraph key={`owes-${index}`}>
             - You owe {getMemberName(s.toUserId)} ${s.amount.toFixed(2)}
+          </Paragraph>
+        ))}
+
+        <Title style={{color: 'green', marginTop: 16}}>You will receive: ${totalToReceive.toFixed(2)}</Title>
+        {userIsOwed.map((s, index) => (
+          <Paragraph key={`is-owed-${index}`}>
+            - {getMemberName(s.fromUserId)} pays you ${s.amount.toFixed(2)}
           </Paragraph>
         ))}
       </>
