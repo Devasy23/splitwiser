@@ -42,7 +42,7 @@ jobs:
         working-directory: ./frontend
 
       - name: Upload APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: app
           path: frontend/app.apk
