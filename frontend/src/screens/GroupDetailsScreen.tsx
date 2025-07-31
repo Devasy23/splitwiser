@@ -197,11 +197,6 @@ const GroupDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
             {members.map((member) => (
               <Chip
                 key={member.userId}
-                avatar={{
-                  source: member.user.imageUrl 
-                    ? { uri: member.user.imageUrl }
-                    : undefined
-                }}
                 style={[
                   styles.memberChip,
                   { backgroundColor: generateAvatarColor(member.user.name) }
@@ -237,14 +232,14 @@ const GroupDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
       <FlatList
         style={styles.contentContainer}
         data={expenses}
-        renderItem={({ item }) => (
+        renderItem={({ item }: { item: Expense }) => (
           <ExpenseItem 
             item={item} 
             members={members} 
             userId={user?._id || ''} 
           />
         )}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item: Expense) => item._id}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>

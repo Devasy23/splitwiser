@@ -13,6 +13,7 @@ import {
     Card,
     Chip,
     Divider,
+    FAB,
     IconButton,
     Modal,
     Portal,
@@ -51,7 +52,9 @@ const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       }
       const response = await getGroups(token);
       console.log('Groups response:', response.data);
-      setGroups(response.data.data || []);
+      // Handle the actual API response structure
+      const groupsData = (response.data as any).groups || response.data.data || [];
+      setGroups(groupsData);
     } catch (error: any) {
       console.error('Failed to fetch groups:', error);
       if (error.response?.status === 401) {
@@ -146,16 +149,20 @@ const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 {group.members?.length || 0} members
               </Text>
               <View style={styles.memberChips}>
-                {group.members?.slice(0, 3).map((member, index) => (
-                  <Chip
-                    key={`${group._id}-${index}`}
-                    compact
-                    style={styles.memberChip}
-                    textStyle={styles.memberChipText}
-                  >
-                    {member.user?.name || 'Unknown'}
-                  </Chip>
-                ))}
+                {group.members?.slice(0, 3).map((member, index) => {
+                  // Only show chips for members with valid names
+                  if (!member.user?.name || member.user.name === 'Unknown') return null;
+                  return (
+                    <Chip
+                      key={`${group._id}-${index}`}
+                      compact
+                      style={styles.memberChip}
+                      textStyle={styles.memberChipText}
+                    >
+                      {member.user.name}
+                    </Chip>
+                  );
+                })}
                 {(group.members?.length || 0) > 3 && (
                   <Chip
                     compact
@@ -273,25 +280,20 @@ const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           </ScrollView>
         )}
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <Button 
-            mode="contained" 
-            onPress={() => setCreateModalVisible(true)} 
-            style={styles.actionButton}
-            contentStyle={styles.buttonContent}
-          >
-            Create Group
-          </Button>
-          <Button 
-            mode="outlined" 
-            onPress={handleJoinGroup} 
-            style={styles.actionButton}
-            contentStyle={styles.buttonContent}
-          >
-            Join Group
-          </Button>
-        </View>
+        {/* Floating Action Buttons */}
+        <FAB
+          icon="plus"
+          style={styles.createFab}
+          onPress={() => setCreateModalVisible(true)}
+          label="Create"
+        />
+        <FAB
+          icon="account-plus"
+          style={styles.joinFab}
+          onPress={handleJoinGroup}
+          label="Join"
+          variant="secondary"
+        />
       </View>
     </SafeAreaView>
   );
@@ -412,15 +414,17 @@ const styles = StyleSheet.create({
   buttonContent: {
     paddingVertical: spacing.sm,
   },
-  actionButtons: {
-    padding: spacing.lg,
-    gap: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: lightTheme.colors.outline,
-    backgroundColor: lightTheme.colors.surface,
+  createFab: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.xxl,
+    backgroundColor: lightTheme.colors.primary,
   },
-  actionButton: {
-    borderRadius: spacing.md,
+  joinFab: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.xxl + 72, // Position above the create FAB
+    backgroundColor: lightTheme.colors.primaryContainer,
   },
   bottomSpacing: {
     height: spacing.xxl,

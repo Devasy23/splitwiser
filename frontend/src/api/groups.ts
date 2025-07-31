@@ -100,3 +100,17 @@ export const joinGroup = (
 ): Promise<AxiosResponse<ApiResponse<Group>>> => {
   return apiClient.post('/groups/join', { joinCode }, getAuthHeaders(token));
 };
+
+export const addExpense = (
+  token: string,
+  expenseData: {
+    groupId: string;
+    description: string;
+    amount: number;
+    splitType: 'equal' | 'unequal';
+    participants: string[];
+    customSplits?: { [userId: string]: string };
+  }
+): Promise<AxiosResponse<ApiResponse<Expense>>> => {
+  return apiClient.post('/expenses', expenseData, getAuthHeaders(token));
+};
