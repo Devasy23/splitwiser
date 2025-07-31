@@ -1,4 +1,7 @@
 from typing import Any, Dict
+from fastapi import Request
+from utils.limiter import limiter
+
 
 from app.auth.security import get_current_user
 from app.user.schemas import (
@@ -13,7 +16,8 @@ router = APIRouter(prefix="/users", tags=["User"])
 
 
 @router.get("/me", response_model=UserProfileResponse)
-async def get_current_user_profile(
+@limiter.limit("20/minute")
+async def get_current_user_profile(request: Request,
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     user = await user_service.get_user_by_id(current_user["_id"])
@@ -25,7 +29,8 @@ async def get_current_user_profile(
 
 
 @router.patch("/me", response_model=Dict[str, Any])
-async def update_user_profile(
+@limiter.limit("5/minute") 
+async def update_user_profile(request: Request,
     updates: UserProfileUpdateRequest,
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
@@ -47,7 +52,8 @@ async def update_user_profile(
 
 
 @router.delete("/me", response_model=DeleteUserResponse)
-async def delete_user_account(current_user: Dict[str, Any] = Depends(get_current_user)):
+@limiter.limit("2/minute") 
+async def delete_user_account(request: Request,current_user: Dict[str, Any] = Depends(get_current_user)):
     deleted = await user_service.delete_user(current_user["_id"])
     if not deleted:
         raise HTTPException(
