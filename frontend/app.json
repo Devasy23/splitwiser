@@ -24,12 +24,6 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "afe97159-52c4-425a-9ce3-c56d4f2cb568"
-      }
-    },
-    "owner": "devasy23"
+    }
   }
 }
