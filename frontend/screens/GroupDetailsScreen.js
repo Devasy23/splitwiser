@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, StyleSheet, FlatList, Alert, ScrollView } from 'react-native';
-import { Button, Text, Card, ActivityIndicator, Appbar, FAB, Title, Paragraph, Avatar } from 'react-native-paper';
+import { useContext, useEffect, useState } from 'react';
+import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Card, FAB, Paragraph, Title } from 'react-native-paper';
+import { getGroupExpenses, getGroupMembers, getOptimizedSettlements } from '../api/groups';
 import { AuthContext } from '../context/AuthContext';
-import { getGroupMembers, getGroupExpenses, getOptimizedSettlements } from '../api/groups';
 
 const GroupDetailsScreen = ({ route, navigation }) => {
   const { groupId, groupName, groupIcon } = route.params;
@@ -75,10 +75,6 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     );
   };
 
-  const renderMember = ({ item }) => (
-      <Paragraph style={styles.memberText}>• {item.user.name}</Paragraph>
-  );
-
   const renderSettlementSummary = () => {
     const userOwes = settlements.filter(s => s.fromUserId === user._id);
     const userIsOwed = settlements.filter(s => s.toUserId === user._id);
@@ -116,42 +112,44 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     );
   }
 
+  const renderHeader = () => (
+    <>
+      <Card style={styles.card}>
+        <Card.Content>
+          <Title>Settlement Summary</Title>
+          {renderSettlementSummary()}
+        </Card.Content>
+      </Card>
+
+      <Card style={styles.card}>
+        <Card.Content>
+          <Title>Members</Title>
+          {members.map((item) => (
+            <Paragraph key={item.userId} style={styles.memberText}>• {item.user.name}</Paragraph>
+          ))}
+        </Card.Content>
+      </Card>
+
+      <Title style={styles.expensesTitle}>Expenses</Title>
+    </>
+  );
+
   return (
     <View style={styles.container}>
-        <Appbar.Header>
-            <Appbar.BackAction onPress={() => navigation.goBack()} />
-            <Avatar.Text size={36} label={groupIcon || groupName.charAt(0)} style={{marginLeft: 8}} />
-            <Appbar.Content title={groupName} titleStyle={{marginLeft: 8}}/>
-        </Appbar.Header>
-
-        <ScrollView style={styles.contentContainer}>
-            <Card style={styles.card}>
-                <Card.Content>
-                    <Title>Settlement Summary</Title>
-                    {renderSettlementSummary()}
-                </Card.Content>
-            </Card>
-
-            <Card style={styles.card}>
-                <Card.Content>
-                    <Title>Members</Title>
-                    <FlatList
-                        data={members}
-                        renderItem={renderMember}
-                        keyExtractor={(item) => item.userId}
-                    />
-                </Card.Content>
-            </Card>
-
-            <Title style={styles.expensesTitle}>Expenses</Title>
-            <FlatList
-                data={expenses}
-                renderItem={renderExpense}
-                keyExtractor={(item) => item._id}
-                ListEmptyComponent={<Text>No expenses recorded yet.</Text>}
-                contentContainerStyle={{ paddingBottom: 80 }} // To avoid FAB overlap
-            />
-        </ScrollView>
+        <FlatList
+            style={styles.contentContainer}
+            data={expenses}
+            renderItem={renderExpense}
+            keyExtractor={(item) => item._id}
+            ListHeaderComponent={renderHeader}
+            ListEmptyComponent={
+              <View>
+                {renderHeader()}
+                <Text>No expenses recorded yet.</Text>
+              </View>
+            }
+            contentContainerStyle={{ paddingBottom: 80 }} // To avoid FAB overlap
+        />
 
         <FAB
             style={styles.fab}
