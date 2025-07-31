@@ -12,6 +12,12 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   const [settlements, setSettlements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Currency configuration - can be made configurable later
+  const currency = '₹'; // Default to INR, can be changed to '$' for USD
+
+  // Helper function to format currency amounts
+  const formatCurrency = (amount) => `${currency}${amount.toFixed(2)}`;
+
   const fetchData = async () => {
     try {
       setIsLoading(true);
@@ -54,10 +60,10 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     let balanceColor = 'black';
 
     if (net > 0) {
-      balanceText = `You are owed $${net.toFixed(2)}`;
+      balanceText = `You are owed ${formatCurrency(net)}`;
       balanceColor = 'green';
     } else if (net < 0) {
-      balanceText = `You borrowed $${Math.abs(net).toFixed(2)}`;
+      balanceText = `You borrowed ${formatCurrency(Math.abs(net))}`;
       balanceColor = 'red';
     } else {
       balanceText = "You are settled for this expense.";
@@ -67,7 +73,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
         <Card style={styles.card}>
         <Card.Content>
             <Title>{item.description}</Title>
-            <Paragraph>Amount: ${item.amount.toFixed(2)}</Paragraph>
+            <Paragraph>Amount: {formatCurrency(item.amount)}</Paragraph>
             <Paragraph>Paid by: {getMemberName(item.createdBy)}</Paragraph>
             <Paragraph style={{ color: balanceColor }}>{balanceText}</Paragraph>
         </Card.Content>
@@ -81,26 +87,47 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     const totalOwed = userOwes.reduce((sum, s) => sum + s.amount, 0);
     const totalToReceive = userIsOwed.reduce((sum, s) => sum + s.amount, 0);
 
+    // If user is all settled up
     if (userOwes.length === 0 && userIsOwed.length === 0) {
-      return <Paragraph>You are all settled up in this group!</Paragraph>;
+      return (
+        <View style={styles.settledContainer}>
+          <Text style={styles.settledText}>✓ You are all settled up!</Text>
+        </View>
+      );
     }
 
     return (
-      <>
-        <Title style={{color: 'red'}}>You need to pay: ${totalOwed.toFixed(2)}</Title>
-        {userOwes.map((s, index) => (
-          <Paragraph key={`owes-${index}`}>
-            - You owe {getMemberName(s.toUserId)} ${s.amount.toFixed(2)}
-          </Paragraph>
-        ))}
+      <View style={styles.settlementContainer}>
+        {/* You owe section - only show if totalOwed > 0 */}
+        {totalOwed > 0 && (
+          <View style={styles.owedSection}>
+            <Text style={styles.sectionTitle}>You need to pay: <Text style={styles.amountOwed}>{formatCurrency(totalOwed)}</Text></Text>
+            {userOwes.map((s, index) => (
+              <View key={`owes-${index}`} style={styles.settlementItem}>
+                <View style={styles.personInfo}>
+                  <Text style={styles.personName}>{getMemberName(s.toUserId)}</Text>
+                  <Text style={styles.settlementAmount}>{formatCurrency(s.amount)}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
-        <Title style={{color: 'green', marginTop: 16}}>You will receive: ${totalToReceive.toFixed(2)}</Title>
-        {userIsOwed.map((s, index) => (
-          <Paragraph key={`is-owed-${index}`}>
-            - {getMemberName(s.fromUserId)} pays you ${s.amount.toFixed(2)}
-          </Paragraph>
-        ))}
-      </>
+        {/* You receive section - only show if totalToReceive > 0 */}
+        {totalToReceive > 0 && (
+          <View style={styles.receiveSection}>
+            <Text style={styles.sectionTitle}>You will receive: <Text style={styles.amountReceive}>{formatCurrency(totalToReceive)}</Text></Text>
+            {userIsOwed.map((s, index) => (
+              <View key={`is-owed-${index}`} style={styles.settlementItem}>
+                <View style={styles.personInfo}>
+                  <Text style={styles.personName}>{getMemberName(s.fromUserId)}</Text>
+                  <Text style={styles.settlementAmount}>{formatCurrency(s.amount)}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
     );
   };
 
@@ -191,6 +218,66 @@ const styles = StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
+  },
+  // Settlement Summary Styles
+  settlementContainer: {
+    gap: 16,
+  },
+  settledContainer: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  settledText: {
+    fontSize: 16,
+    color: '#2e7d32',
+    fontWeight: '500',
+  },
+  owedSection: {
+    backgroundColor: '#ffebee',
+    borderRadius: 8,
+    padding: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#d32f2f',
+  },
+  receiveSection: {
+    backgroundColor: '#e8f5e8',
+    borderRadius: 8,
+    padding: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2e7d32',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+    color: '#333',
+  },
+  amountOwed: {
+    color: '#d32f2f',
+    fontWeight: 'bold',
+  },
+  amountReceive: {
+    color: '#2e7d32',
+    fontWeight: 'bold',
+  },
+  settlementItem: {
+    marginVertical: 4,
+  },
+  personInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  personName: {
+    fontSize: 14,
+    color: '#555',
+    flex: 1,
+  },
+  settlementAmount: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
   },
 });
 
