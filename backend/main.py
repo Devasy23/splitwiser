@@ -10,18 +10,13 @@ from app.user.routes import router as user_router
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from slowapi.middleware import SlowAPIMiddleware
-from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
-from utils.limiter import limiter
-from utils.limiter import get_remote_address
-from utils.limiter import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from utils.limiter import Limiter, get_remote_address, limiter
 
 limiter = Limiter(key_func=get_remote_address)
 # limiter = Limiter(key_func=get_remote_address)
-
-
-
 
 
 @asynccontextmanager

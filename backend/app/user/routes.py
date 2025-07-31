@@ -1,7 +1,4 @@
 from typing import Any, Dict
-from fastapi import Request
-from utils.limiter import limiter
-
 
 from app.auth.security import get_current_user
 from app.user.schemas import (
@@ -10,14 +7,16 @@ from app.user.schemas import (
     UserProfileUpdateRequest,
 )
 from app.user.service import user_service
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from utils.limiter import limiter
 
 router = APIRouter(prefix="/users", tags=["User"])
 
 
 @router.get("/me", response_model=UserProfileResponse)
 @limiter.limit("20/minute")
-async def get_current_user_profile(request: Request,
+async def get_current_user_profile(
+    request: Request,
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     user = await user_service.get_user_by_id(current_user["_id"])
@@ -29,8 +28,9 @@ async def get_current_user_profile(request: Request,
 
 
 @router.patch("/me", response_model=Dict[str, Any])
-@limiter.limit("5/minute") 
-async def update_user_profile(request: Request,
+@limiter.limit("5/minute")
+async def update_user_profile(
+    request: Request,
     updates: UserProfileUpdateRequest,
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
@@ -52,8 +52,10 @@ async def update_user_profile(request: Request,
 
 
 @router.delete("/me", response_model=DeleteUserResponse)
-@limiter.limit("2/minute") 
-async def delete_user_account(request: Request,current_user: Dict[str, Any] = Depends(get_current_user)):
+@limiter.limit("2/minute")
+async def delete_user_account(
+    request: Request, current_user: Dict[str, Any] = Depends(get_current_user)
+):
     deleted = await user_service.delete_user(current_user["_id"])
     if not deleted:
         raise HTTPException(
