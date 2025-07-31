@@ -86,7 +86,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
             <Surface style={styles.logoContainer} elevation={elevation.level1}>
               <View style={styles.logoContent}>
                 <Image
-                  source={require('@/assets/icon.png')}
+                  source={require('../../assets/icon.png')}
                   style={styles.logo}
                   resizeMode="contain"
                 />

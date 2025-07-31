@@ -15,6 +15,7 @@ export interface Group {
   name: string;
   description?: string;
   icon?: string;
+  joinCode?: string;
   members: GroupMember[];
   createdBy: string;
   createdAt: string;
