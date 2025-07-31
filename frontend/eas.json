@@ -2,6 +2,9 @@
   "cli": {
     "version": ">= 7.6.0"
   },
+  "project": {
+    "id": "afe97159-52c4-425a-9ce3-c56d4f2cb568"
+  },
   "build": {
     "development": {
       "developmentClient": true,
@@ -14,5 +17,16 @@
   },
   "submit": {
     "production": {}
+  },
+  "update": {
+    "development": {
+      "channel": "development"
+    },
+    "preview": {
+      "channel": "preview"
+    },
+    "production": {
+      "channel": "production"
+    }
   }
 }
