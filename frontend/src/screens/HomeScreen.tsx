@@ -43,11 +43,23 @@ const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const loadGroups = async () => {
     setLoading(true);
     try {
+      console.log('Loading groups with token:', token ? 'Token exists' : 'No token');
+      if (!token) {
+        console.error('No authentication token available');
+        Alert.alert('Error', 'You need to log in first.');
+        return;
+      }
       const response = await getGroups(token);
+      console.log('Groups response:', response.data);
       setGroups(response.data.data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch groups:', error);
-      Alert.alert('Error', 'Failed to load groups. Please try again.');
+      if (error.response?.status === 401) {
+        Alert.alert('Authentication Error', 'Your session has expired. Please log in again.');
+        logout(); // This should redirect to login screen
+      } else {
+        Alert.alert('Error', 'Failed to load groups. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
