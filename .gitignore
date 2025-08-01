@@ -11,6 +11,7 @@ venv/
 .env.development
 .env.test
 .env.production
+.coverage
 
 # Firebase
 firebase-service-account.json

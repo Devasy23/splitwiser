@@ -2,6 +2,11 @@ from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional
 from datetime import datetime
 import re
+from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
 
 class EmailSignupRequest(BaseModel):
     email: EmailStr
@@ -20,18 +25,23 @@ class EmailSignupRequest(BaseModel):
             raise ValueError('Password must contain at least one special character')
         return v
 
+
 class EmailLoginRequest(BaseModel):
     email: EmailStr
     password: str
 
+
 class GoogleLoginRequest(BaseModel):
     id_token: str
+
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
+
 class PasswordResetRequest(BaseModel):
     email: EmailStr
+
 
 class PasswordResetConfirm(BaseModel):
     reset_token: str
@@ -49,6 +59,7 @@ class PasswordResetConfirm(BaseModel):
             raise ValueError('Password must contain at least one special character')
         return v
 
+
 class TokenVerifyRequest(BaseModel):
     access_token: str
 
@@ -56,25 +67,28 @@ class UserResponse(BaseModel):
     id: str = Field(alias="_id")
     email: str
     name: str
-    avatar: Optional[str] = None
+    imageUrl: Optional[str] = None
     currency: str = "USD"
     created_at: datetime
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
+
 
 class AuthResponse(BaseModel):
     access_token: str
     refresh_token: str
     user: UserResponse
 
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: Optional[str] = None
 
+
 class SuccessResponse(BaseModel):
     success: bool = True
     message: Optional[str] = None
+
 
 class ErrorResponse(BaseModel):
     error: str
