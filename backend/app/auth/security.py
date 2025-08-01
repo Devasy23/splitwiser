@@ -8,14 +8,15 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
 
-# Password hashing with better bcrypt configuration
+
+    # Password hashing with better bcrypt configuration
 try:
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 except Exception:
@@ -46,8 +47,8 @@ def get_password_hash(password: str) -> str:
 
     return pwd_context.hash(password)
 
-def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
 
+def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     """
     Hashes a plaintext password using bcrypt.
 
@@ -92,7 +93,6 @@ def create_access_token(
 
 
 def create_refresh_token() -> str:
-
     """
     Generates a secure random refresh token as a URL-safe string.
 
@@ -104,7 +104,6 @@ def create_refresh_token() -> str:
 
 
 def verify_token(token: str) -> Dict[str, Any]:
-
     """
     Verifies and decodes a JWT token.
 
@@ -125,7 +124,6 @@ def verify_token(token: str) -> Dict[str, Any]:
 
 
 def generate_reset_token() -> str:
-
     """
     Generates a secure, URL-safe token for password reset operations.
 

@@ -1,12 +1,14 @@
-from fastapi import Request, HTTPException, status
-from collections import defaultdict
 import time
+from collections import defaultdict
+
+from fastapi import HTTPException, Request, status
 
 # In-memory storage for rate limiting
 # In a production environment, you might want to use Redis or another shared storage.
 rate_limit_data = defaultdict(lambda: {"count": 0, "timestamp": 0})
 RATE_LIMIT_DURATION = 60  # seconds
 RATE_LIMIT_REQUESTS = 5  # requests
+
 
 def rate_limiter(request: Request):
     """
@@ -25,5 +27,5 @@ def rate_limiter(request: Request):
     if rate_limit_data[client_ip]["count"] > RATE_LIMIT_REQUESTS:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many requests. Please try again later."
+            detail="Too many requests. Please try again later.",
         )
