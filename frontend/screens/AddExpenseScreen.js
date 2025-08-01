@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Appbar, Button, Checkbox, Menu, Paragraph, SegmentedButtons, Text, TextInput, Title } from 'react-native-paper';
+import { ActivityIndicator, Button, Checkbox, Menu, Paragraph, SegmentedButtons, Text, TextInput, Title } from 'react-native-paper';
 import { createExpense, getGroupMembers } from '../api/groups';
 import { AuthContext } from '../context/AuthContext';
 
@@ -13,7 +13,7 @@ const AddExpenseScreen = ({ route, navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [splitMethod, setSplitMethod] = useState('equal');
-  const [payerId, setPayerId] = useState(user._id);
+  const [payerId, setPayerId] = useState(null); // Initialize as null until members are loaded
   const [menuVisible, setMenuVisible] = useState(false);
 
   // State for different split methods
@@ -51,6 +51,14 @@ const AddExpenseScreen = ({ route, navigation }) => {
         setPercentages(initialPercentages);
         setExactAmounts(initialExactAmounts);
         setSelectedMembers(initialSelectedMembers);
+        
+        // Set default payer to current user if they're a member
+        const currentUserMember = response.data.find(member => member.userId === user._id);
+        if (currentUserMember) {
+          setPayerId(user._id);
+        } else if (response.data.length > 0) {
+          setPayerId(response.data[0].userId);
+        }
       } catch (error) {
         console.error('Failed to fetch members:', error);
         Alert.alert('Error', 'Failed to fetch group members.');
@@ -66,6 +74,10 @@ const AddExpenseScreen = ({ route, navigation }) => {
   const handleAddExpense = async () => {
     if (!description || !amount) {
       Alert.alert('Error', 'Please fill in all fields.');
+      return;
+    }
+    if (!payerId) {
+      Alert.alert('Error', 'Please select who paid for this expense.');
       return;
     }
     const numericAmount = parseFloat(amount);
@@ -87,9 +99,13 @@ const AddExpenseScreen = ({ route, navigation }) => {
                 throw new Error('You must select at least one member for the split.');
             }
             const splitAmount = Math.round((numericAmount / includedMembers.length) * 100) / 100;
-            splits = includedMembers.map(userId => ({ 
+            // Calculate remainder to handle rounding
+            const totalSplitAmount = splitAmount * includedMembers.length;
+            const remainder = Math.round((numericAmount - totalSplitAmount) * 100) / 100;
+            
+            splits = includedMembers.map((userId, index) => ({ 
                 userId, 
-                amount: splitAmount, 
+                amount: index === 0 ? splitAmount + remainder : splitAmount, // Add remainder to first member
                 type: 'equal' 
             }));
             splitType = 'equal';
@@ -120,17 +136,32 @@ const AddExpenseScreen = ({ route, navigation }) => {
                 }));
             splitType = 'percentage';
         } else if (splitMethod === 'shares') {
-            const totalShares = Object.values(shares).reduce((sum, val) => sum + parseInt(val || '0', 10), 0);
+            const nonZeroShares = Object.entries(shares).filter(([userId, value]) => parseInt(value || '0', 10) > 0);
+            const totalShares = nonZeroShares.reduce((sum, [, value]) => sum + parseInt(value || '0', 10), 0);
+            
             if (totalShares === 0) {
                 throw new Error('Total shares cannot be zero.');
             }
-            splits = Object.entries(shares)
-                .filter(([userId, value]) => parseInt(value || '0', 10) > 0)
-                .map(([userId, value]) => ({
+            
+            // Calculate amounts with proper rounding
+            const amounts = nonZeroShares.map(([userId, value]) => {
+                const shareRatio = parseInt(value, 10) / totalShares;
+                return {
                     userId,
-                    amount: Math.round((numericAmount * (parseInt(value, 10) / totalShares)) * 100) / 100,
+                    amount: Math.round((numericAmount * shareRatio) * 100) / 100,
                     type: 'unequal'
-                }));
+                };
+            });
+            
+            // Adjust for rounding errors
+            const totalCalculated = amounts.reduce((sum, item) => sum + item.amount, 0);
+            const difference = Math.round((numericAmount - totalCalculated) * 100) / 100;
+            
+            if (Math.abs(difference) > 0) {
+                amounts[0].amount = Math.round((amounts[0].amount + difference) * 100) / 100;
+            }
+            
+            splits = amounts;
             splitType = 'unequal'; // Backend uses 'unequal' for shares
         }
 
@@ -143,6 +174,7 @@ const AddExpenseScreen = ({ route, navigation }) => {
             tags: []
         };
 
+        console.log('Expense data being sent:', JSON.stringify(expenseData, null, 2));
         await createExpense(token, groupId, expenseData);
         Alert.alert('Success', 'Expense added successfully.');
         navigation.goBack();
@@ -244,20 +276,14 @@ const AddExpenseScreen = ({ route, navigation }) => {
     );
   }
 
-  const selectedPayerName = members.find(m => m.userId === payerId)?.user.name || 'Select Payer';
+  const selectedPayerName = payerId ? (members.find(m => m.userId === payerId)?.user.name || 'Select Payer') : 'Select Payer';
 
   return (
-    <View style={styles.container}>
-      <Appbar.Header>
-          <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="Add Expense" />
-      </Appbar.Header>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoidingView}
-      >
-        <View style={styles.content}>
-          <Title>New Expense Details</Title>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <View style={styles.content}>
           <TextInput
             label="Description"
             value={description}
@@ -341,16 +367,12 @@ const AddExpenseScreen = ({ route, navigation }) => {
             Add Expense
           </Button>
         </View>
-      </KeyboardAvoidingView>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  keyboardAvoidingView: {
     flex: 1,
   },
   content: {
