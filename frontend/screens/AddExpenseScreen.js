@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, StyleSheet, Alert, ScrollView } from 'react-native';
-import { Button, TextInput, ActivityIndicator, Appbar, Title, SegmentedButtons, Text, Paragraph, Checkbox } from 'react-native-paper';
+import { useContext, useEffect, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Appbar, Button, Checkbox, Menu, Paragraph, SegmentedButtons, Text, TextInput, Title } from 'react-native-paper';
+import { createExpense, getGroupMembers } from '../api/groups';
 import { AuthContext } from '../context/AuthContext';
-import { getGroupMembers, createExpense } from '../api/groups';
 
 const AddExpenseScreen = ({ route, navigation }) => {
   const { groupId } = route.params;
@@ -13,6 +13,8 @@ const AddExpenseScreen = ({ route, navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [splitMethod, setSplitMethod] = useState('equal');
+  const [payerId, setPayerId] = useState(user._id);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   // State for different split methods
   const [percentages, setPercentages] = useState({});
@@ -31,9 +33,17 @@ const AddExpenseScreen = ({ route, navigation }) => {
         const initialExactAmounts = {};
         const initialSelectedMembers = {};
         const numMembers = response.data.length;
-        response.data.forEach(member => {
+        response.data.forEach((member, index) => {
           initialShares[member.userId] = '1';
-          initialPercentages[member.userId] = numMembers > 0 ? (100 / numMembers).toFixed(2) : '0';
+          // Better percentage distribution that sums to 100
+          if (index < numMembers - 1) {
+            const percentage = Math.floor((100 / numMembers) * 100) / 100;
+            initialPercentages[member.userId] = percentage.toString();
+          } else {
+            // Give remainder to last member to ensure total is 100
+            const otherPercentages = Object.values(initialPercentages).reduce((sum, val) => sum + parseFloat(val || '0'), 0);
+            initialPercentages[member.userId] = (100 - otherPercentages).toString();
+          }
           initialExactAmounts[member.userId] = '0.00';
           initialSelectedMembers[member.userId] = true; // Select all by default
         });
@@ -76,40 +86,61 @@ const AddExpenseScreen = ({ route, navigation }) => {
             if (includedMembers.length === 0) {
                 throw new Error('You must select at least one member for the split.');
             }
-            const splitAmount = numericAmount / includedMembers.length;
-            splits = includedMembers.map(userId => ({ userId, amount: splitAmount }));
+            const splitAmount = Math.round((numericAmount / includedMembers.length) * 100) / 100;
+            splits = includedMembers.map(userId => ({ 
+                userId, 
+                amount: splitAmount, 
+                type: 'equal' 
+            }));
+            splitType = 'equal';
         } else if (splitMethod === 'exact') {
             const total = Object.values(exactAmounts).reduce((sum, val) => sum + parseFloat(val || '0'), 0);
             if (Math.abs(total - numericAmount) > 0.01) {
-                throw new Error(`The exact amounts must add up to ${numericAmount}.`);
+                throw new Error(`The exact amounts must add up to ${numericAmount.toFixed(2)}. Current total: ${total.toFixed(2)}`);
             }
-            splits = Object.entries(exactAmounts).map(([userId, value]) => ({ userId, amount: parseFloat(value) }));
+            splits = Object.entries(exactAmounts)
+                .filter(([userId, value]) => parseFloat(value || '0') > 0)
+                .map(([userId, value]) => ({ 
+                    userId, 
+                    amount: Math.round(parseFloat(value) * 100) / 100, 
+                    type: 'unequal' 
+                }));
+            splitType = 'unequal'; // Backend uses 'unequal' for exact amounts
         } else if (splitMethod === 'percentage') {
             const total = Object.values(percentages).reduce((sum, val) => sum + parseFloat(val || '0'), 0);
             if (Math.abs(total - 100) > 0.01) {
-                throw new Error('Percentages must add up to 100%.');
+                throw new Error(`Percentages must add up to 100%. Current total: ${total.toFixed(2)}%`);
             }
-            splits = Object.entries(percentages).map(([userId, value]) => ({
-                userId,
-                amount: numericAmount * (parseFloat(value) / 100),
-            }));
+            splits = Object.entries(percentages)
+                .filter(([userId, value]) => parseFloat(value || '0') > 0)
+                .map(([userId, value]) => ({
+                    userId,
+                    amount: Math.round((numericAmount * (parseFloat(value) / 100)) * 100) / 100,
+                    type: 'percentage'
+                }));
+            splitType = 'percentage';
         } else if (splitMethod === 'shares') {
             const totalShares = Object.values(shares).reduce((sum, val) => sum + parseInt(val || '0', 10), 0);
             if (totalShares === 0) {
                 throw new Error('Total shares cannot be zero.');
             }
-            splits = Object.entries(shares).map(([userId, value]) => ({
-                userId,
-                amount: numericAmount * (parseInt(value, 10) / totalShares),
-            }));
+            splits = Object.entries(shares)
+                .filter(([userId, value]) => parseInt(value || '0', 10) > 0)
+                .map(([userId, value]) => ({
+                    userId,
+                    amount: Math.round((numericAmount * (parseInt(value, 10) / totalShares)) * 100) / 100,
+                    type: 'unequal'
+                }));
+            splitType = 'unequal'; // Backend uses 'unequal' for shares
         }
 
         expenseData = {
             description,
             amount: numericAmount,
-            paidBy: user._id,
+            paidBy: payerId, // Use the selected payer
             splitType,
             splits,
+            tags: []
         };
 
         await createExpense(token, groupId, expenseData);
@@ -126,9 +157,35 @@ const AddExpenseScreen = ({ route, navigation }) => {
     setSelectedMembers(prev => ({...prev, [userId]: !prev[userId]}));
   };
 
+  // Helper function to auto-balance percentages
+  const balancePercentages = (updatedPercentages) => {
+    const total = Object.values(updatedPercentages).reduce((sum, val) => sum + parseFloat(val || '0'), 0);
+    const memberIds = Object.keys(updatedPercentages);
+    
+    if (total !== 100 && memberIds.length > 1) {
+      // Find the last non-zero percentage to adjust
+      const lastMemberId = memberIds[memberIds.length - 1];
+      const otherTotal = Object.entries(updatedPercentages)
+        .filter(([id]) => id !== lastMemberId)
+        .reduce((sum, [, val]) => sum + parseFloat(val || '0'), 0);
+      
+      const newValue = Math.max(0, 100 - otherTotal);
+      updatedPercentages[lastMemberId] = newValue.toFixed(2);
+    }
+    
+    return updatedPercentages;
+  };
+
   const renderSplitInputs = () => {
     const handleSplitChange = (setter, userId, value) => {
-        setter(prev => ({ ...prev, [userId]: value }));
+        if (setter === setPercentages) {
+          // Auto-balance percentages when one changes
+          const updatedPercentages = { ...percentages, [userId]: value };
+          const balanced = balancePercentages(updatedPercentages);
+          setter(balanced);
+        } else {
+          setter(prev => ({ ...prev, [userId]: value }));
+        }
     };
 
     switch (splitMethod) {
@@ -187,55 +244,104 @@ const AddExpenseScreen = ({ route, navigation }) => {
     );
   }
 
+  const selectedPayerName = members.find(m => m.userId === payerId)?.user.name || 'Select Payer';
+
   return (
     <View style={styles.container}>
       <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="Add Expense" />
       </Appbar.Header>
-      <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 32 }}>
-        <Title>New Expense Details</Title>
-        <TextInput
-          label="Description"
-          value={description}
-          onChangeText={setDescription}
-          style={styles.input}
-        />
-        <TextInput
-          label="Amount"
-          value={amount}
-          onChangeText={setAmount}
-          style={styles.input}
-          keyboardType="numeric"
-        />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+        <View style={styles.content}>
+          <Title>New Expense Details</Title>
+          <TextInput
+            label="Description"
+            value={description}
+            onChangeText={setDescription}
+            style={styles.input}
+          />
+          <TextInput
+            label="Amount"
+            value={amount}
+            onChangeText={setAmount}
+            style={styles.input}
+            keyboardType="numeric"
+          />
 
-        <Title style={styles.splitTitle}>Split Method</Title>
-        <SegmentedButtons
-          value={splitMethod}
-          onValueChange={setSplitMethod}
-          buttons={[
-            { value: 'equal', label: 'Equally' },
-            { value: 'exact', label: 'Exact' },
-            { value: 'percentage', label: '%' },
-            { value: 'shares', label: 'Shares' },
-          ]}
-          style={styles.input}
-        />
+          <Menu
+              visible={menuVisible}
+              onDismiss={() => setMenuVisible(false)}
+              anchor={<Button onPress={() => setMenuVisible(true)}>Paid by: {selectedPayerName}</Button>}
+          >
+              {members.map(member => (
+                  <Menu.Item
+                      key={member.userId}
+                      onPress={() => {
+                          setPayerId(member.userId);
+                          setMenuVisible(false);
+                      }}
+                      title={member.user.name}
+                  />
+              ))}
+          </Menu>
 
-        <View style={styles.splitInputsContainer}>
-          {renderSplitInputs()}
+          <Title style={styles.splitTitle}>Split Method</Title>
+          <SegmentedButtons
+            value={splitMethod}
+            onValueChange={setSplitMethod}
+            buttons={[
+              { value: 'equal', label: 'Equally' },
+              { value: 'exact', label: 'Exact' },
+              { value: 'percentage', label: '%' },
+              { value: 'shares', label: 'Shares' },
+            ]}
+            style={styles.input}
+          />
+
+          {splitMethod === 'equal' && (
+            <Paragraph style={styles.helperText}>Select members to split the expense equally among them.</Paragraph>
+          )}
+          {splitMethod === 'exact' && (
+            <Paragraph style={styles.helperText}>
+              Enter exact amounts for each member. Total must equal ${amount || '0'}.
+              {amount && (
+                <Text style={styles.totalText}>
+                  {' '}Current total: ${Object.values(exactAmounts).reduce((sum, val) => sum + parseFloat(val || '0'), 0).toFixed(2)}
+                </Text>
+              )}
+            </Paragraph>
+          )}
+          {splitMethod === 'percentage' && (
+            <Paragraph style={styles.helperText}>
+              Enter percentages for each member. Total must equal 100%.
+              <Text style={styles.totalText}>
+                {' '}Current total: {Object.values(percentages).reduce((sum, val) => sum + parseFloat(val || '0'), 0).toFixed(2)}%
+              </Text>
+            </Paragraph>
+          )}
+          {splitMethod === 'shares' && (
+            <Paragraph style={styles.helperText}>Enter shares for each member. Higher shares = larger portion of the expense.</Paragraph>
+          )}
+
+          <View style={styles.splitInputsContainer}>
+            {renderSplitInputs()}
+          </View>
+
+          <Button
+            mode="contained"
+            onPress={handleAddExpense}
+            style={styles.button}
+            loading={isSubmitting}
+            disabled={isSubmitting}
+          >
+            Add Expense
+          </Button>
         </View>
-
-        <Button
-          mode="contained"
-          onPress={handleAddExpense}
-          style={styles.button}
-          loading={isSubmitting}
-          disabled={isSubmitting}
-        >
-          Add Expense
-        </Button>
-      </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 };
@@ -244,8 +350,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   content: {
+    flex: 1,
     padding: 16,
+    paddingBottom: 32,
   },
   loaderContainer: {
     flex: 1,
@@ -267,6 +378,15 @@ const styles = StyleSheet.create({
   },
   splitInput: {
     marginBottom: 8,
+  },
+  helperText: {
+    fontSize: 12,
+    marginBottom: 8,
+    opacity: 0.7,
+  },
+  totalText: {
+    fontWeight: 'bold',
+    opacity: 1,
   }
 });
 
