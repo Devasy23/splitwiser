@@ -63,11 +63,22 @@ class ExpenseService:
                 status_code=403, detail="You are not a member of this group"
             )
 
+        # Verify the payer is also a member of the group
+        payer_is_member = any(
+            member.get("userId") == expense_data.paidBy 
+            for member in group.get("members", [])
+        )
+        if not payer_is_member:
+            raise HTTPException(
+                status_code=400, detail="The selected payer is not a member of this group"
+            )
+
         # Create expense document
         expense_doc = {
             "_id": ObjectId(),
             "groupId": group_id,
             "createdBy": user_id,
+            "paidBy": expense_data.paidBy,
             "description": expense_data.description,
             "amount": expense_data.amount,
             "splits": [split.model_dump() for split in expense_data.splits],
@@ -84,7 +95,7 @@ class ExpenseService:
         await self.expenses_collection.insert_one(expense_doc)
 
         # Create settlements
-        settlements = await self._create_settlements_for_expense(expense_doc, user_id)
+        settlements = await self._create_settlements_for_expense(expense_doc, expense_data.paidBy)
 
         # Get optimized settlements for the group
         optimized_settlements = await self.calculate_optimized_settlements(group_id)

@@ -28,6 +28,7 @@ class ExpenseCreateRequest(BaseModel):
     amount: float = Field(..., gt=0)
     splits: List[ExpenseSplit]
     splitType: SplitType = SplitType.EQUAL
+    paidBy: str = Field(..., description="User ID of who paid for the expense")
     tags: Optional[List[str]] = []
     receiptUrls: Optional[List[str]] = []
 
@@ -91,6 +92,7 @@ class ExpenseResponse(BaseModel):
     id: str = Field(alias="_id")
     groupId: str
     createdBy: str
+    paidBy: str
     description: str
     amount: float
     splits: List[ExpenseSplit]

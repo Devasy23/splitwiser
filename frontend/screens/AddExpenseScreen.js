@@ -174,7 +174,6 @@ const AddExpenseScreen = ({ route, navigation }) => {
             tags: []
         };
 
-        console.log('Expense data being sent:', JSON.stringify(expenseData, null, 2));
         await createExpense(token, groupId, expenseData);
         Alert.alert('Success', 'Expense added successfully.');
         navigation.goBack();
