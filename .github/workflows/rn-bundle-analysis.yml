@@ -1,0 +1,117 @@
+name: React Native Bundle Analysis
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+    branches: [ main, master ]
+  push:
+    paths:
+      - 'frontend/**'
+    branches: [ main, master ]
+
+jobs:
+  rn-bundle-analysis:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Setup EAS
+      uses: expo/expo-github-action@v8
+      with:
+        eas-version: latest
+        token: ${{ secrets.EXPO_TOKEN }}
+
+    - name: Install Dependencies
+      run: npm install
+      working-directory: ./frontend
+
+    - name: Analyze React Native Bundle Size
+      working-directory: ./frontend
+      run: |
+        echo "📊 Analyzing React Native bundle size..."
+        
+        # Install bundle analysis tools
+        npm install --no-save metro-visualizer
+        
+        # Create bundle for Android (this usually works better than web)
+        echo "🤖 Creating Android bundle for analysis..."
+        if npx expo export --platform android --output-dir android-build --max-workers 1; then
+          echo "✅ Android export successful"
+          
+          # Find and analyze the bundle
+          if [ -f "android-build/bundles/android-*.js" ]; then
+            BUNDLE_FILE=$(find android-build/bundles -name "android-*.js" | head -1)
+            BUNDLE_SIZE=$(stat -c%s "$BUNDLE_FILE")
+            BUNDLE_SIZE_MB=$(echo "scale=2; $BUNDLE_SIZE / 1024 / 1024" | bc -l)
+            
+            echo "# React Native Bundle Analysis Report" > bundle-analysis.md
+            echo "" >> bundle-analysis.md
+            echo "## Bundle Size Summary" >> bundle-analysis.md
+            echo "- Platform: Android (React Native)" >> bundle-analysis.md
+            echo "- Bundle size: **${BUNDLE_SIZE_MB} MB**" >> bundle-analysis.md
+            echo "- Bundler: Metro (Expo)" >> bundle-analysis.md
+            echo "" >> bundle-analysis.md
+            echo "## Bundle Details" >> bundle-analysis.md
+            echo "- File: $(basename "$BUNDLE_FILE")" >> bundle-analysis.md
+            echo "- Size: ${BUNDLE_SIZE_MB} MB" >> bundle-analysis.md
+            
+            echo "📊 Bundle analysis complete: ${BUNDLE_SIZE_MB} MB"
+          else
+            echo "❌ No Android bundle found"
+            ls -la android-build/
+          fi
+        else
+          echo "⚠️ Android export failed, analyzing dependencies instead..."
+          
+          # Fallback: analyze key dependencies
+          echo "# React Native Bundle Analysis Report (Dependencies)" > bundle-analysis.md
+          echo "" >> bundle-analysis.md
+          echo "## Dependencies Analysis" >> bundle-analysis.md
+          echo "Bundle creation failed, analyzing key dependencies:" >> bundle-analysis.md
+          echo "" >> bundle-analysis.md
+          
+          # Get sizes of major dependencies
+          if command -v du >/dev/null 2>&1; then
+            echo "### Core Dependencies" >> bundle-analysis.md
+            for dep in react react-native expo @react-navigation; do
+              if [ -d "node_modules/$dep" ]; then
+                size=$(du -sh "node_modules/$dep" 2>/dev/null | cut -f1)
+                echo "- $dep: $size" >> bundle-analysis.md
+              fi
+            done
+          fi
+          
+          echo "" >> bundle-analysis.md
+          echo "Note: Bundle size analysis requires successful export. Check React Native compatibility." >> bundle-analysis.md
+        fi
+        
+        # Install bc for calculations if needed
+        sudo apt-get update && sudo apt-get install -y bc
+        
+        # Display the report
+        if [ -f "bundle-analysis.md" ]; then
+          cat bundle-analysis.md
+        fi
+
+    - name: Upload RN Bundle Analysis Report
+      if: always() && hashFiles('frontend/bundle-analysis.md') != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: rn-bundle-analysis-report
+        path: frontend/bundle-analysis.md
+        retention-days: 30
+
+    - name: RN Bundle Analysis Skipped
+      if: github.actor == 'dependabot[bot]'
+      run: echo "📦 React Native bundle analysis skipped for Dependabot PR"
