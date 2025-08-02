@@ -150,6 +150,38 @@ async def test_create_expense_invalid_group(expense_service):
 
 
 @pytest.mark.asyncio
+async def test_create_expense_payer_not_member(expense_service, mock_group_data):
+    """Test expense creation with payer who is not a member of the group"""
+    expense_request = ExpenseCreateRequest(
+        description="Test Dinner",
+        amount=100.0,
+        splits=[
+            ExpenseSplit(userId="user_a", amount=50.0),
+            ExpenseSplit(userId="user_b", amount=50.0),
+        ],
+        splitType=SplitType.EQUAL,
+        paidBy="non_member_user",  # User who is NOT in the group
+        tags=["dinner"],
+    )
+
+    with patch("app.expenses.service.mongodb") as mock_mongodb:
+        mock_db = MagicMock()
+        mock_mongodb.database = mock_db
+
+        mock_db.groups.find_one = AsyncMock(return_value=mock_group_data)
+
+        with pytest.raises(HTTPException) as exc_info:
+            await expense_service.create_expense(
+                "65f1a2b3c4d5e6f7a8b9c0d0", expense_request, "user_a"
+            )
+
+        assert exc_info.value.status_code == 400
+        assert "The selected payer is not a member of this group" in str(
+            exc_info.value.detail
+        )
+
+
+@pytest.mark.asyncio
 async def test_calculate_optimized_settlements_advanced(expense_service):
     """Test advanced settlement algorithm with real optimization logic"""
     group_id = "test_group_123"
