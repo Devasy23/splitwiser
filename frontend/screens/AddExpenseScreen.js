@@ -33,17 +33,22 @@ const AddExpenseScreen = ({ route, navigation }) => {
         const initialExactAmounts = {};
         const initialSelectedMembers = {};
         const numMembers = response.data.length;
+        
+        // Calculate percentages using integer math to avoid floating-point errors
+        const basePercentage = Math.floor(100 / numMembers);
+        const remainder = 100 - (basePercentage * numMembers);
+        
         response.data.forEach((member, index) => {
           initialShares[member.userId] = '1';
-          // Better percentage distribution that sums to 100
-          if (index < numMembers - 1) {
-            const percentage = Math.floor((100 / numMembers) * 100) / 100;
-            initialPercentages[member.userId] = percentage.toString();
-          } else {
-            // Give remainder to last member to ensure total is 100
-            const otherPercentages = Object.values(initialPercentages).reduce((sum, val) => sum + parseFloat(val || '0'), 0);
-            initialPercentages[member.userId] = (100 - otherPercentages).toString();
+          
+          // Distribute percentages using integer math
+          let memberPercentage = basePercentage;
+          // Distribute remainder to first members (could also be last, but first is simpler)
+          if (index < remainder) {
+            memberPercentage += 1;
           }
+          initialPercentages[member.userId] = memberPercentage.toString();
+          
           initialExactAmounts[member.userId] = '0.00';
           initialSelectedMembers[member.userId] = true; // Select all by default
         });

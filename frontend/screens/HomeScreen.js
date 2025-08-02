@@ -2,12 +2,13 @@ import React, { useState, useEffect, useContext } from 'react';
 import { View, StyleSheet, FlatList, Alert } from 'react-native';
 import { Button, Text, Card, ActivityIndicator, Appbar, Modal, Portal, TextInput, Avatar } from 'react-native-paper';
 import { AuthContext } from '../context/AuthContext';
-import { getGroups, createGroup } from '../api/groups';
+import { getGroups, createGroup, getOptimizedSettlements } from '../api/groups';
 
 const HomeScreen = ({ navigation }) => {
-  const { token, logout } = useContext(AuthContext);
+  const { token, logout, user } = useContext(AuthContext);
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [groupSettlements, setGroupSettlements] = useState({}); // Track settlement status for each group
 
   // State for the Create Group modal
   const [modalVisible, setModalVisible] = useState(false);
@@ -17,11 +18,57 @@ const HomeScreen = ({ navigation }) => {
   const showModal = () => setModalVisible(true);
   const hideModal = () => setModalVisible(false);
 
+  // Calculate settlement status for a group
+  const calculateSettlementStatus = async (groupId, userId) => {
+    try {
+      const response = await getOptimizedSettlements(token, groupId);
+      const settlements = response.data.optimizedSettlements || [];
+      
+      // Check if user has any pending settlements
+      const userOwes = settlements.filter(s => s.fromUserId === userId);
+      const userIsOwed = settlements.filter(s => s.toUserId === userId);
+      
+      const totalOwed = userOwes.reduce((sum, s) => sum + (s.amount || 0), 0);
+      const totalToReceive = userIsOwed.reduce((sum, s) => sum + (s.amount || 0), 0);
+      
+      return {
+        isSettled: totalOwed === 0 && totalToReceive === 0,
+        owesAmount: totalOwed,
+        owedAmount: totalToReceive,
+        netBalance: totalToReceive - totalOwed
+      };
+    } catch (error) {
+      console.error('Failed to fetch settlement status for group:', groupId, error);
+      return {
+        isSettled: true,
+        owesAmount: 0,
+        owedAmount: 0,
+        netBalance: 0
+      };
+    }
+  };
+
   const fetchGroups = async () => {
     try {
       setIsLoading(true);
       const response = await getGroups(token);
-      setGroups(response.data.groups);
+      const groupsList = response.data.groups;
+      setGroups(groupsList);
+      
+      // Fetch settlement status for each group
+      if (user?._id) {
+        const settlementPromises = groupsList.map(async (group) => {
+          const status = await calculateSettlementStatus(group._id, user._id);
+          return { groupId: group._id, status };
+        });
+        
+        const settlementResults = await Promise.all(settlementPromises);
+        const settlementMap = {};
+        settlementResults.forEach(({ groupId, status }) => {
+          settlementMap[groupId] = status;
+        });
+        setGroupSettlements(settlementMap);
+      }
     } catch (error) {
       console.error('Failed to fetch groups:', error);
       Alert.alert('Error', 'Failed to fetch groups.');
@@ -55,18 +102,58 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const renderGroup = ({ item }) => (
-    <Card style={styles.card} onPress={() => navigation.navigate('GroupDetails', { groupId: item._id, groupName: item.name, groupIcon: item.icon })}>
-      <Card.Title
-        title={item.name}
-        left={(props) => <Avatar.Text {...props} label={item.icon || item.name.charAt(0)} />}
-      />
-      <Card.Content>
-        <Text>Join Code: {item.joinCode}</Text>
-        <Text>You are settled up.</Text>
-      </Card.Content>
-    </Card>
-  );
+  const renderGroup = ({ item }) => {
+    const settlementStatus = groupSettlements[item._id];
+    
+    // Generate settlement status text
+    const getSettlementStatusText = () => {
+      if (!settlementStatus) {
+        return "Calculating balances...";
+      }
+      
+      if (settlementStatus.isSettled) {
+        return "✓ You are settled up.";
+      }
+      
+      if (settlementStatus.netBalance > 0) {
+        return `You are owed $${settlementStatus.netBalance.toFixed(2)}.`;
+      } else if (settlementStatus.netBalance < 0) {
+        return `You owe $${Math.abs(settlementStatus.netBalance).toFixed(2)}.`;
+      }
+      
+      return "You are settled up.";
+    };
+    
+    // Get text color based on settlement status
+    const getStatusColor = () => {
+      if (!settlementStatus || settlementStatus.isSettled) {
+        return '#4CAF50'; // Green for settled
+      }
+      
+      if (settlementStatus.netBalance > 0) {
+        return '#4CAF50'; // Green for being owed money
+      } else if (settlementStatus.netBalance < 0) {
+        return '#F44336'; // Red for owing money
+      }
+      
+      return '#4CAF50'; // Default green
+    };
+
+    return (
+      <Card style={styles.card} onPress={() => navigation.navigate('GroupDetails', { groupId: item._id, groupName: item.name, groupIcon: item.icon })}>
+        <Card.Title
+          title={item.name}
+          left={(props) => <Avatar.Text {...props} label={item.icon || item.name.charAt(0)} />}
+        />
+        <Card.Content>
+          <Text>Join Code: {item.joinCode}</Text>
+          <Text style={[styles.settlementStatus, { color: getStatusColor() }]}>
+            {getSettlementStatusText()}
+          </Text>
+        </Card.Content>
+      </Card>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -137,6 +224,10 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 16,
+  },
+  settlementStatus: {
+    fontWeight: '500',
+    marginTop: 4,
   },
   actions: {
     padding: 16,

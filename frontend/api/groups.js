@@ -74,3 +74,11 @@ export const joinGroup = (token, joinCode) => {
     },
   });
 };
+
+export const getUserBalanceSummary = (token) => {
+  return apiClient.get('/users/me/balance-summary', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
