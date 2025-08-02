@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 import os
 
-
 class UserService:
     def __init__(self):
         pass

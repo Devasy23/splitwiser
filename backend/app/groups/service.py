@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any, List
 import secrets
 import string
 import os
-
+from app.expenses.service import ExpenseService
 DEFAULT_CURRENCY = os.getenv("DEFAULT_CURRENCY", "USD")
 ROLE_ADMIN = "admin"
 ROLE_MEMBER = "member"
@@ -17,11 +17,10 @@ ERR_GROUP_NOT_FOUND = "Group not found"
 ERR_MEMBER_NOT_FOUND = "Member not found in group"
 ERR_ALREADY_MEMBER = "You are already a member of this group"
 ERR_INVALID_JOIN_CODE = "Invalid join code"
-
-
+    
 class GroupService:
     def __init__(self):
-        pass
+        self.expense_service = ExpenseService() 
 
     def get_db(self):
         return get_database()
@@ -379,11 +378,11 @@ class GroupService:
         return result.modified_count == 1
    
     async def has_outstanding_balance(self, group_id: str, user_id: str) -> bool:
-        """
-        placeholder for checking outstanding balances with the expense service.
-        can replace this with real service call when it's implemented.
-        """
-        # balance check integration is pending; defaults to no outstanding balance
-        return False  # allowing leave/removal for now
+        balance_info = await expense_service.get_user_balance_in_group(
+            group_id, user_id, user_id
+        )
+        if balance_info["netBalance"] != 0 or balance_info["pendingSettlements"]:
+            return True
+        return False
 
 group_service = GroupService()
