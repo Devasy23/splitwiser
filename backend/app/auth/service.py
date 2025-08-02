@@ -130,8 +130,7 @@ class AuthService:
         user = await db.users.find_one({"email": email})
 
         if not user:
-            logger.warning(
-                f"Failed login attempt for non-existent user: {email}")
+            logger.warning(f"Failed login attempt for non-existent user: {email}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password",
@@ -166,8 +165,7 @@ class AuthService:
         if new_attempts >= MAX_FAILED_ATTEMPTS:
             lockout_until = datetime.now(timezone.utc) + LOCKOUT_DURATION
             update_data["$set"]["lockout_until"] = lockout_until
-            logger.warning(
-                f"Account for user {user['email']} has been locked.")
+            logger.warning(f"Account for user {user['email']} has been locked.")
 
         await db.users.update_one({"_id": user["_id"]}, update_data)
         logger.warning(f"Failed login attempt for user: {user['email']}")
@@ -268,7 +266,6 @@ class AuthService:
     async def refresh_access_token(self, refresh_token: str) -> str:
         db = self.get_db()
 
-
         # Find and validate refresh token
         try:
             token_record = await db.refresh_tokens.find_one(
@@ -337,7 +334,6 @@ class AuthService:
 
         reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)  # 1 hour expiry
 
-
         await db.password_resets.insert_one(
             {
                 "user_id": user["_id"],
@@ -357,7 +353,6 @@ class AuthService:
 
     async def confirm_password_reset(self, reset_token: str, new_password: str) -> bool:
         db = self.get_db()
-
 
         try:
             # Find and validate reset token
@@ -408,8 +403,7 @@ class AuthService:
 
         new_hash = get_password_hash(new_password)
         await db.users.update_one(
-            {"_id": reset_record["user_id"]}, {
-                "$set": {"hashed_password": new_hash}}
+            {"_id": reset_record["user_id"]}, {"$set": {"hashed_password": new_hash}}
         )
 
         await db.password_resets.update_one(
@@ -450,7 +444,6 @@ class AuthService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to create refresh token: {str(e)}",
             )
-
 
         return refresh_token
 

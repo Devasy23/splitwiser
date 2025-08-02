@@ -49,8 +49,7 @@ allowed_origins = []
 if settings.allow_all_origins:
     allowed_origins = ["*"]
 elif settings.allowed_origins:
-    allowed_origins = [origin.strip()
-                       for origin in settings.allowed_origins.split(",")]
+    allowed_origins = [origin.strip() for origin in settings.allowed_origins.split(",")]
 
 app.add_middleware(
     CORSMiddleware,
