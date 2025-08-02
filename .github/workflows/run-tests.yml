@@ -28,38 +28,46 @@ jobs:
         
     - name: Run Backend Tests with Coverage
       run: |
-        cd $GITHUB_WORKSPACE
-        export PYTHONPATH=$GITHUB_WORKSPACE:$GITHUB_WORKSPACE/backend
-        # Generate coverage with detailed flags
+        cd backend
+        export PYTHONPATH=$GITHUB_WORKSPACE/backend:$GITHUB_WORKSPACE
+        # Generate coverage with proper paths
         pytest \
-          --cov=./backend \
+          --cov=app \
           --cov-report=xml:coverage.xml \
-          --cov-report=json:coverage.json \
-          --cov-report=lcov:coverage.lcov \
+          --cov-report=term-missing \
           --junit-xml=test-results.xml \
           --tb=short \
           -v \
-          backend/tests/
+          tests/
           
+    - name: List coverage files for debugging
+      run: |
+        echo "Coverage files generated:"
+        find . -name "coverage.*" -type f | head -10
+        ls -la backend/ | grep -E "(coverage|test-results)"
+        
     - name: Run Test Analytics Upload
       uses: codecov/test-results-action@v1
       if: github.actor != 'dependabot[bot]'
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        files: test-results.xml
+        files: backend/test-results.xml
         flags: backend,test-analytics
         name: "Backend Test Results"
         
     - name: Upload Coverage to Codecov with Flags
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v4
       if: github.actor != 'dependabot[bot]'
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./coverage.xml,./coverage.json,./coverage.lcov
+        file: backend/coverage.xml
         flags: backend,python,api
-        name: "Backend Coverage"
+        name: backend-coverage
         fail_ci_if_error: false
         verbose: true
+        working-directory: ./
+        override_branch: ${{ github.head_ref }}
+        override_commit: ${{ github.event.pull_request.head.sha }}
         
     - name: Codecov upload skipped for Dependabot
       if: github.actor == 'dependabot[bot]'
@@ -85,18 +93,33 @@ jobs:
         cd frontend
         npm ci
         
-    - name: Run Frontend Tests (if available)
+    - name: Check if frontend tests exist
+      id: check_tests
       run: |
         cd frontend
-        # Check if test script exists
-        if npm run test --dry-run 2>/dev/null; then
-          npm run test -- --coverage --watchAll=false --testResultsProcessor=jest-junit
+        if [ -f "package.json" ] && npm run test --dry-run 2>/dev/null; then
+          echo "has_tests=true" >> $GITHUB_OUTPUT
         else
-          echo "No frontend tests configured yet"
-          # Create a placeholder test result for analytics
-          mkdir -p test-results
-          echo '<?xml version="1.0"?><testsuites><testsuite name="frontend-placeholder" tests="1" failures="0" errors="0"><testcase name="placeholder" /></testsuite></testsuites>' > test-results/frontend-results.xml
+          echo "has_tests=false" >> $GITHUB_OUTPUT
         fi
+        
+    - name: Run Frontend Tests with Coverage
+      if: steps.check_tests.outputs.has_tests == 'true'
+      run: |
+        cd frontend
+        npm run test -- --coverage --watchAll=false --coverageReporters=lcov,json,text --testResultsProcessor=jest-junit
+        
+    - name: Create placeholder for missing frontend tests
+      if: steps.check_tests.outputs.has_tests == 'false'
+      run: |
+        cd frontend
+        mkdir -p coverage test-results
+        echo "No frontend tests configured yet - creating placeholder"
+        # Create minimal coverage files
+        echo '{"total":{"lines":{"total":0,"covered":0,"skipped":0,"pct":0}}}' > coverage/coverage-summary.json
+        echo 'TN:SF:placeholder.ts end_of_record' > coverage/lcov.info
+        # Create placeholder test result
+        echo '<?xml version="1.0"?><testsuites><testsuite name="frontend-placeholder" tests="0" failures="0" errors="0"></testsuite></testsuites>' > test-results/frontend-results.xml
         
     - name: Upload Frontend Test Analytics
       uses: codecov/test-results-action@v1
@@ -106,6 +129,19 @@ jobs:
         files: frontend/test-results/frontend-results.xml
         flags: frontend,javascript,react-native
         name: "Frontend Test Results"
+        
+    - name: Upload Frontend Coverage (if tests exist)
+      uses: codecov/codecov-action@v5
+      if: github.actor != 'dependabot[bot]' && steps.check_tests.outputs.has_tests == 'true'
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: frontend/coverage/lcov.info
+        flags: frontend,javascript,react-native
+        name: "Frontend Coverage"
+        fail_ci_if_error: false
+        verbose: true
+        directory: frontend
+        root_dir: ${{ github.workspace }}
         
     - name: Frontend Analytics Upload Skipped
       if: github.actor == 'dependabot[bot]'
