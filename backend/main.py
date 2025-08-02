@@ -8,6 +8,9 @@ from app.user.routes import router as user_router
 from app.groups.routes import router as groups_router
 from app.expenses.routes import router as expenses_router, balance_router
 from app.config import settings
+from dotenv import load_dotenv
+
+load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

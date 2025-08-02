@@ -4,9 +4,7 @@ from bson import ObjectId
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
 
 class UserService:
     def __init__(self):

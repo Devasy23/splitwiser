@@ -383,7 +383,7 @@ class GroupService:
         placeholder for checking outstanding balances with the expense service.
         can replace this with real service call when it's implemented.
         """
-        # TODO: call the actual expense service here
+        # balance check integration is pending; defaults to no outstanding balance
         return False  # allowing leave/removal for now
 
 group_service = GroupService()
