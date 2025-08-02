@@ -13,11 +13,9 @@ try:
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 except Exception:
     # Fallback for bcrypt version compatibility issues
-    pwd_context = CryptContext(
-        schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
 
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/auth/token")  # Updated tokenUrl
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")  # Updated tokenUrl
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -130,8 +128,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> Dict[str, Any]:
     Raises:
         HTTPException: If the token is invalid or user information cannot be extracted.
     """
-    payload = verify_token(
-        token)  # Centralized JWT validation and error handling
+    payload = verify_token(token)  # Centralized JWT validation and error handling
     user_id = payload.get("sub")
     if user_id is None:
         raise HTTPException(

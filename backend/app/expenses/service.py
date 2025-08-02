@@ -51,8 +51,7 @@ class ExpenseService:
             raise HTTPException(status_code=400, detail="Invalid group ID")
         except Exception as e:
             logger.error(f"Unexpected error parsing groupId: {e}")
-            raise HTTPException(
-                status_code=500, detail="Failed to process group ID")
+            raise HTTPException(status_code=500, detail="Failed to process group ID")
 
         # Verify user is member of the group
         group = await self.groups_collection.find_one(
@@ -110,13 +109,11 @@ class ExpenseService:
         group_id = expense_doc["groupId"]
 
         # Get user names for the settlements
-        user_ids = [split["userId"]
-                    for split in expense_doc["splits"]] + [payer_id]
+        user_ids = [split["userId"] for split in expense_doc["splits"]] + [payer_id]
         users = await self.users_collection.find(
             {"_id": {"$in": [ObjectId(uid) for uid in user_ids]}}
         ).to_list(None)
-        user_names = {str(user["_id"]): user.get(
-            "name", "Unknown") for user in users}
+        user_names = {str(user["_id"]): user.get("name", "Unknown") for user in users}
 
         for split in expense_doc["splits"]:
             settlement_doc = {
@@ -247,8 +244,7 @@ class ExpenseService:
             )
         except Exception as e:
             logger.error(f"Unexpected error parsing IDs: {e}")
-            raise HTTPException(
-                status_code=500, detail="Unable to process IDs")
+            raise HTTPException(status_code=500, detail="Unable to process IDs")
 
         # Verify user access
         group = await self.groups_collection.find_one(
@@ -294,8 +290,7 @@ class ExpenseService:
                 expense_obj_id = ObjectId(expense_id)
             except errors.InvalidId:
                 logger.warning(f"Invalid expense ID format: {expense_id}")
-                raise HTTPException(
-                    status_code=400, detail="Invalid expense ID format")
+                raise HTTPException(status_code=400, detail="Invalid expense ID format")
 
             # Verify user access and that they created the expense
             expense_doc = await self.expenses_collection.find_one(
@@ -341,8 +336,7 @@ class ExpenseService:
             if updates.amount is not None:
                 update_doc["amount"] = updates.amount
             if updates.splits is not None:
-                update_doc["splits"] = [split.model_dump()
-                                        for split in updates.splits]
+                update_doc["splits"] = [split.model_dump() for split in updates.splits]
             if updates.tags is not None:
                 update_doc["tags"] = updates.tags
             if updates.receiptUrls is not None:
@@ -356,8 +350,7 @@ class ExpenseService:
                         {"_id": ObjectId(user_id)}
                     )
                     user_name = (
-                        user.get(
-                            "name", "Unknown User") if user else "Unknown User"
+                        user.get("name", "Unknown User") if user else "Unknown User"
                     )
                 except Exception as e:
                     logger.warning(f"Failed to fetch user for history: {e}")
@@ -450,8 +443,7 @@ class ExpenseService:
 
         # Verify user access and that they created the expense
         expense_doc = await self.expenses_collection.find_one(
-            {"_id": ObjectId(expense_id), "groupId": group_id,
-             "createdBy": user_id}
+            {"_id": ObjectId(expense_id), "groupId": group_id, "createdBy": user_id}
         )
         if not expense_doc:
             logger.warning(
@@ -643,8 +635,7 @@ class ExpenseService:
                 }
             }
         ).to_list(None)
-        user_names = {str(user["_id"]): user.get(
-            "name", "Unknown") for user in users}
+        user_names = {str(user["_id"]): user.get("name", "Unknown") for user in users}
 
         settlement_doc = {
             "_id": ObjectId(),
@@ -801,8 +792,7 @@ class ExpenseService:
             update_doc["paidAt"] = paid_at
 
         result = await self.settlements_collection.update_one(
-            {"_id": ObjectId(settlement_id), "groupId": group_id}, {
-                "$set": update_doc}
+            {"_id": ObjectId(settlement_id), "groupId": group_id}, {"$set": update_doc}
         )
 
         if result.matched_count == 0:
@@ -887,8 +877,7 @@ class ExpenseService:
         ]
 
         result = await self.settlements_collection.aggregate(pipeline).to_list(None)
-        balance_data = result[0] if result else {
-            "totalPaid": 0, "totalOwed": 0}
+        balance_data = result[0] if result else {"totalPaid": 0, "totalOwed": 0}
 
         total_paid = balance_data["totalPaid"]
         total_owed = balance_data["totalOwed"]
@@ -971,8 +960,7 @@ class ExpenseService:
         users = await self.users_collection.find(
             {"_id": {"$in": [ObjectId(uid) for uid in friend_ids]}}
         ).to_list(None)
-        user_names = {str(user["_id"]): user.get(
-            "name", "Unknown") for user in users}
+        user_names = {str(user["_id"]): user.get("name", "Unknown") for user in users}
 
         for friend_id in friend_ids:
             friend_balance_data = {
@@ -1017,8 +1005,7 @@ class ExpenseService:
                                     "$cond": [
                                         {
                                             "$and": [
-                                                {"$eq": [
-                                                    "$payerId", friend_id]},
+                                                {"$eq": ["$payerId", friend_id]},
                                                 {"$eq": ["$payeeId", user_id]},
                                             ]
                                         },
@@ -1033,8 +1020,7 @@ class ExpenseService:
                                         {
                                             "$and": [
                                                 {"$eq": ["$payerId", user_id]},
-                                                {"$eq": [
-                                                    "$payeeId", friend_id]},
+                                                {"$eq": ["$payeeId", friend_id]},
                                             ]
                                         },
                                         "$amount",
@@ -1049,11 +1035,9 @@ class ExpenseService:
                 result = await self.settlements_collection.aggregate(pipeline).to_list(
                     None
                 )
-                balance_data = result[0] if result else {
-                    "userOwes": 0, "friendOwes": 0}
+                balance_data = result[0] if result else {"userOwes": 0, "friendOwes": 0}
 
-                group_balance = balance_data["friendOwes"] - \
-                    balance_data["userOwes"]
+                group_balance = balance_data["friendOwes"] - balance_data["userOwes"]
                 total_friend_balance += group_balance
 
                 if (
@@ -1134,11 +1118,9 @@ class ExpenseService:
             ]
 
             result = await self.settlements_collection.aggregate(pipeline).to_list(None)
-            balance_data = result[0] if result else {
-                "totalPaid": 0, "totalOwed": 0}
+            balance_data = result[0] if result else {"totalPaid": 0, "totalOwed": 0}
 
-            group_balance = balance_data["totalPaid"] - \
-                balance_data["totalOwed"]
+            group_balance = balance_data["totalPaid"] - balance_data["totalOwed"]
 
             if (
                 abs(group_balance) > 0.01
@@ -1207,8 +1189,7 @@ class ExpenseService:
 
         # Get expenses in the period
         expenses = await self.expenses_collection.find(
-            {"groupId": group_id, "createdAt": {
-                "$gte": start_date, "$lt": end_date}}
+            {"groupId": group_id, "createdAt": {"$gte": start_date, "$lt": end_date}}
         ).to_list(None)
 
         total_expenses = sum(expense["amount"] for expense in expenses)
@@ -1244,7 +1225,7 @@ class ExpenseService:
 
         # Member contributions
         member_contributions = []
-        group_members = {member["userId"]                         : member for member in group["members"]}
+        group_members = {member["userId"]: member for member in group["members"]}
 
         for member_id in group_members:
             # Get user info

@@ -368,8 +368,7 @@ class TestGroupService:
                 )  # user789 is not admin
 
             assert exc_info.value.status_code == 403
-            assert "Only group admins can remove members" in str(
-                exc_info.value.detail)
+            assert "Only group admins can remove members" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
     async def test_leave_group_prevent_last_admin(self):

@@ -61,8 +61,7 @@ class SplitWiserTestSetup:
         response = requests.post(url, json=data)
         if response.status_code == 200:
             result = response.json()
-            print(
-                f"✅ Logged in existing user: {result['user']['name']} ({email})")
+            print(f"✅ Logged in existing user: {result['user']['name']} ({email})")
             return result
         else:
             print(f"❌ Failed to login user {email}: {response.text}")
@@ -208,8 +207,7 @@ class SplitWiserTestSetup:
         ]
 
         for user in user_data:
-            result = self.signup_user(
-                user["name"], user["email"], user["password"])
+            result = self.signup_user(user["name"], user["email"], user["password"])
             if result:
                 self.users[user["name"]] = {
                     "id": result["user"]["_id"],
@@ -276,8 +274,7 @@ class SplitWiserTestSetup:
         existing_groups_diana = self.get_existing_groups(
             self.users["Diana Prince"]["access_token"]
         )
-        trip_group = self.find_group_by_name(
-            existing_groups_diana, "Trip to Goa")
+        trip_group = self.find_group_by_name(existing_groups_diana, "Trip to Goa")
         if trip_group:
             print(f"✅ Group 'Trip to Goa' already exists")
             self.groups["Trip to Goa"] = trip_group
@@ -304,8 +301,7 @@ class SplitWiserTestSetup:
         existing_groups_bob = self.get_existing_groups(
             self.users["Bob Smith"]["access_token"]
         )
-        lunch_group = self.find_group_by_name(
-            existing_groups_bob, "Office Lunch Group")
+        lunch_group = self.find_group_by_name(existing_groups_bob, "Office Lunch Group")
         if lunch_group:
             print(f"✅ Group 'Office Lunch Group' already exists")
             self.groups["Office Lunch Group"] = lunch_group
@@ -584,8 +580,7 @@ class SplitWiserTestSetup:
             3200.0,
             [
                 {"userId": bob_id, "amount": 960.0, "type": "percentage"},  # 30%
-                {"userId": charlie_id, "amount": 800.0,
-                    "type": "percentage"},  # 25%
+                {"userId": charlie_id, "amount": 800.0, "type": "percentage"},  # 25%
                 {"userId": diana_id, "amount": 640.0, "type": "percentage"},  # 20%
                 {"userId": eve_id, "amount": 800.0, "type": "percentage"},  # 25%
             ],

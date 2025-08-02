@@ -33,8 +33,7 @@ async def update_user_profile(
     if not update_data:
         raise HTTPException(
             status_code=400,
-            detail={"error": "InvalidInput",
-                    "message": "No update fields provided."},
+            detail={"error": "InvalidInput", "message": "No update fields provided."},
         )
     updated_user = await user_service.update_user_profile(
         current_user["_id"], update_data

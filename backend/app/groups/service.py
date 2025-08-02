@@ -44,14 +44,12 @@ class GroupService:
                         "user": (
                             {
                                 "name": (
-                                    user.get(
-                                        "name", f"User {member_user_id[-4:]}")
+                                    user.get("name", f"User {member_user_id[-4:]}")
                                     if user
                                     else f"User {member_user_id[-4:]}"
                                 ),
                                 "email": (
-                                    user.get(
-                                        "email", f"{member_user_id}@example.com")
+                                    user.get("email", f"{member_user_id}@example.com")
                                     if user
                                     else f"{member_user_id}@example.com"
                                 ),
@@ -67,8 +65,7 @@ class GroupService:
                     }
                     enriched_members.append(enriched_member)
                 except errors.InvalidId:  # exception for invalid ObjectId
-                    logger.warning(
-                        f"Invalid ObjectId for userId: {member_user_id}")
+                    logger.warning(f"Invalid ObjectId for userId: {member_user_id}")
                     enriched_members.append(
                         {
                             "userId": member_user_id,
@@ -82,8 +79,7 @@ class GroupService:
                         }
                     )
                 except Exception as e:
-                    logger.error(
-                        f"Error enriching userId {member_user_id}: {e}")
+                    logger.error(f"Error enriching userId {member_user_id}: {e}")
                     # If user lookup fails, add member with basic info
                     enriched_members.append(
                         {
@@ -177,8 +173,7 @@ class GroupService:
             logger.warning(f"Invalid group_id: {group_id}")
             return None
         except Exception as e:
-            logger.error(
-                f"Unexpected error converting group_id to ObjectId: {e}")
+            logger.error(f"Unexpected error converting group_id to ObjectId: {e}")
             return None
 
         group = await db.groups.find_one({"_id": obj_id, "members.userId": user_id})
@@ -209,8 +204,7 @@ class GroupService:
             logger.warning(f"Invalid group_id: {group_id}")
             return None
         except Exception as e:
-            logger.error(
-                f"Unexpected error converting group_id to ObjectId: {e}")
+            logger.error(f"Unexpected error converting group_id to ObjectId: {e}")
             return None
 
         # Check if user is admin
@@ -239,8 +233,7 @@ class GroupService:
             logger.warning(f"Invalid group_id: {group_id}")
             return False
         except Exception as e:
-            logger.error(
-                f"Unexpected error converting group_id to ObjectId: {e}")
+            logger.error(f"Unexpected error converting group_id to ObjectId: {e}")
             return False
 
         # Check if user is admin
@@ -374,8 +367,7 @@ class GroupService:
             (m for m in group.get("members", []) if m["userId"] == member_id), None
         )
         if not target_member:
-            raise HTTPException(
-                status_code=404, detail="Member not found in group")
+            raise HTTPException(status_code=404, detail="Member not found in group")
 
         # Prevent admins from demoting themselves if they are the only admin
         if member_id == user_id and new_role != "admin":
@@ -424,8 +416,7 @@ class GroupService:
             (m for m in group.get("members", []) if m["userId"] == member_id), None
         )
         if not target_member:
-            raise HTTPException(
-                status_code=404, detail="Member not found in group")
+            raise HTTPException(status_code=404, detail="Member not found in group")
 
         if member_id == user_id:
             raise HTTPException(
