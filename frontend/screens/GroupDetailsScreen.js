@@ -53,7 +53,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   const renderExpense = ({ item }) => {
     const userSplit = item.splits.find(s => s.userId === user._id);
     const userShare = userSplit ? userSplit.amount : 0;
-    const paidByMe = item.createdBy === user._id;
+    const paidByMe = (item.paidBy || item.createdBy) === user._id;
     const net = paidByMe ? item.amount - userShare : -userShare;
 
     let balanceText;
@@ -74,7 +74,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
         <Card.Content>
             <Title>{item.description}</Title>
             <Paragraph>Amount: {formatCurrency(item.amount)}</Paragraph>
-            <Paragraph>Paid by: {getMemberName(item.createdBy)}</Paragraph>
+            <Paragraph>Paid by: {getMemberName(item.paidBy || item.createdBy)}</Paragraph>
             <Paragraph style={{ color: balanceColor }}>{balanceText}</Paragraph>
         </Card.Content>
         </Card>

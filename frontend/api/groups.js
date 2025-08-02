@@ -82,3 +82,11 @@ export const getUserBalanceSummary = (token) => {
     },
   });
 };
+
+export const getFriendsBalance = (token) => {
+  return apiClient.get('/users/me/friends-balance', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
