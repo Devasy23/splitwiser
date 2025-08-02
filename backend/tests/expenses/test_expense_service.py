@@ -64,6 +64,7 @@ async def test_create_expense_success(expense_service, mock_group_data):
             ExpenseSplit(userId="user_b", amount=50.0),
         ],
         splitType=SplitType.EQUAL,
+        paidBy="user_a",  # Added required paidBy field
         tags=["dinner"],
     )
 
@@ -113,6 +114,7 @@ async def test_create_expense_invalid_group(expense_service):
         description="Test Dinner",
         amount=100.0,
         splits=[ExpenseSplit(userId="user_a", amount=100.0)],
+        paidBy="user_a",  # Added required paidBy field
     )
 
     with patch("app.expenses.service.mongodb") as mock_mongodb:
@@ -385,7 +387,10 @@ def test_expense_split_validation():
     ]
 
     expense_request = ExpenseCreateRequest(
-        description="Test expense", amount=100.0, splits=splits
+        description="Test expense",
+        amount=100.0,
+        splits=splits,
+        paidBy="user_a",  # Added required paidBy field
     )
 
     # Verify the expense was created successfully
@@ -404,7 +409,10 @@ def test_expense_split_validation():
         ]
 
         ExpenseCreateRequest(
-            description="Test expense", amount=100.0, splits=invalid_splits
+            description="Test expense",
+            amount=100.0,
+            splits=invalid_splits,
+            paidBy="user_a",  # Added required paidBy field
         )
 
 
@@ -422,6 +430,7 @@ def test_split_types():
         amount=100.0,
         splits=equal_splits,
         splitType=SplitType.EQUAL,
+        paidBy="user_a",  # Added required paidBy field
     )
 
     assert expense.splitType == SplitType.EQUAL
@@ -441,6 +450,7 @@ def test_split_types():
         amount=100.0,
         splits=unequal_splits,
         splitType=SplitType.UNEQUAL,
+        paidBy="user_a",  # Added required paidBy field
     )
 
     assert expense.splitType == SplitType.UNEQUAL
