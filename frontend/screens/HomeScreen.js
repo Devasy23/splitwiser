@@ -179,7 +179,8 @@ const HomeScreen = ({ navigation }) => {
 
       <Appbar.Header>
           <Appbar.Content title="Your Groups" />
-          <Appbar.Action icon="logout" onPress={logout} />
+          <Appbar.Action icon="plus" onPress={showModal} />
+          <Appbar.Action icon="account-plus" onPress={() => navigation.navigate('JoinGroup', { onGroupJoined: fetchGroups })} />
       </Appbar.Header>
 
       {isLoading ? (
@@ -197,15 +198,6 @@ const HomeScreen = ({ navigation }) => {
               refreshing={isLoading}
           />
       )}
-
-      <View style={styles.actions}>
-          <Button mode="contained" onPress={showModal} style={styles.button}>
-            Create Group
-          </Button>
-          <Button mode="outlined" onPress={() => navigation.navigate('JoinGroup', { onGroupJoined: fetchGroups })} style={styles.button}>
-            Join Group
-          </Button>
-      </View>
     </View>
   );
 };
@@ -228,14 +220,6 @@ const styles = StyleSheet.create({
   settlementStatus: {
     fontWeight: '500',
     marginTop: 4,
-  },
-  actions: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  button: {
-    marginTop: 8,
   },
   emptyText: {
     textAlign: 'center',
