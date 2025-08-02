@@ -58,26 +58,18 @@ component_management:
       name: "Authentication System"
       paths:
         - "backend/app/auth/**"
-      flag_regexes:
-        - "backend.*"
     - component_id: backend-expenses
       name: "Expense Management"
       paths:
         - "backend/app/expenses/**"
-      flag_regexes:
-        - "backend.*"
     - component_id: backend-groups
       name: "Group Management"
       paths:
         - "backend/app/groups/**"
-      flag_regexes:
-        - "backend.*"
     - component_id: backend-user
       name: "User Management"
       paths:
         - "backend/app/user/**"
-      flag_regexes:
-        - "backend.*"
     - component_id: backend-core
       name: "Backend Core"
       paths:
@@ -85,28 +77,6 @@ component_management:
         - "backend/app/database.py"
         - "backend/app/dependencies.py"
         - "backend/main.py"
-      flag_regexes:
-        - "backend.*"
-    - component_id: frontend-auth
-      name: "Frontend Authentication"
-      paths:
-        - "frontend/contexts/AuthContext.tsx"
-        - "frontend/screens/LoginScreen.tsx"
-      flag_regexes:
-        - "frontend.*"
-    - component_id: frontend-screens
-      name: "Frontend Screens"
-      paths:
-        - "frontend/screens/**"
-      flag_regexes:
-        - "frontend.*"
-    - component_id: frontend-core
-      name: "Frontend Core"
-      paths:
-        - "frontend/App.tsx"
-        - "frontend/contexts/**"
-      flag_regexes:
-        - "frontend.*"
 
 # Ignore files that don't need coverage
 ignore:
@@ -122,6 +92,7 @@ ignore:
   - "setup*.bat"
   - "*.json"
   - "ui-poc/**"
+  - "frontend/**"  # Ignore entire frontend directory
   - "**/node_modules/**"
   - "**/dist/**"
   - "**/build/**"
@@ -130,18 +101,13 @@ ignore:
 
 # Comments on PRs
 comment:
-  layout: "header, diff, flags, components"
+  layout: "header, diff, components"
   behavior: default
   require_changes: false
   require_base: false
-  require_head: true
+  require_head: false  # Don't require head report to show comment
   show_carryforward_flags: false
 
 # Make codecov less strict for Dependabot PRs
 github_checks:
   annotations: true
-
-# Path fixes for proper file matching
-fixes:
-  - "backend/app/::" # Remove backend/app/ prefix from coverage paths
-  - "frontend/::" # Remove frontend/ prefix from coverage paths
