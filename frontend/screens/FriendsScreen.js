@@ -1,65 +1,16 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, StyleSheet, FlatList, Alert } from 'react-native';
-import { Text, Appbar, List, Divider, ActivityIndicator } from 'react-native-paper';
-import { AuthContext } from '../context/AuthContext';
-import { getGroups, getGroupDetails } from '../api/groups';
 import { useIsFocused } from '@react-navigation/native';
+import { useContext, useEffect, useState } from 'react';
+import { Alert, FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Appbar, Divider, List, Text } from 'react-native-paper';
+import { getGroupDetails, getGroups } from '../api/groups';
+import { AuthContext } from '../context/AuthContext';
+import { calculateFriendBalances } from '../utils/balanceCalculator';
 
 const FriendsScreen = () => {
     const { token, user } = useContext(AuthContext);
     const [friends, setFriends] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const isFocused = useIsFocused();
-
-    const calculateFriendBalances = (groupsWithDetails) => {
-        const balances = {}; // { friendId: { name, netBalance, groups: { groupId: { name, balance } } } }
-
-        groupsWithDetails.forEach(group => {
-            const [membersResponse, expensesResponse] = group.details;
-            const members = membersResponse.data;
-            const expenses = expensesResponse.data.expenses;
-
-            if (!expenses) return; // Guard against undefined expenses
-
-            expenses.forEach(expense => {
-                const payerId = expense.createdBy;
-                const payerIsMe = payerId === user._id;
-
-                expense.splits.forEach(split => {
-                    const memberId = split.userId;
-                    const memberIsMe = memberId === user._id;
-
-                    if (memberId === payerId) return; // Payer doesn't owe themselves
-
-                    if (payerIsMe && !memberIsMe) { // I paid, they owe me
-                        if (!balances[memberId]) balances[memberId] = { name: members.find(m => m.userId === memberId)?.user.name || 'Unknown', netBalance: 0, groups: {} };
-                        if (!balances[memberId].groups[group.id]) balances[memberId].groups[group.id] = { name: group.name, balance: 0 };
-                        balances[memberId].netBalance += split.amount;
-                        balances[memberId].groups[group.id].balance += split.amount;
-                    } else if (!payerIsMe && memberIsMe) { // They paid, I owe them
-                        if (!balances[payerId]) balances[payerId] = { name: members.find(m => m.userId === payerId)?.user.name || 'Unknown', netBalance: 0, groups: {} };
-                        if (!balances[payerId].groups[group.id]) balances[payerId].groups[group.id] = { name: group.name, balance: 0 };
-                        balances[payerId].netBalance -= split.amount;
-                        balances[payerId].groups[group.id].balance -= split.amount;
-                    }
-                });
-            });
-        });
-
-        // Format the data for the UI
-        const formattedFriends = Object.entries(balances).map(([id, data]) => ({
-            id,
-            name: data.name,
-            netBalance: data.netBalance,
-            groups: Object.entries(data.groups).map(([groupId, groupData]) => ({
-                id: groupId,
-                name: groupData.name,
-                balance: groupData.balance,
-            })),
-        }));
-
-        setFriends(formattedFriends);
-    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -75,7 +26,9 @@ const FriendsScreen = () => {
                     })
                 );
 
-                calculateFriendBalances(groupsWithDetails);
+                // Use the utility function to calculate friend balances
+                const calculatedFriends = calculateFriendBalances(groupsWithDetails, user._id);
+                setFriends(calculatedFriends);
 
             } catch (error) {
                 console.error('Failed to fetch data for friends screen:', error);

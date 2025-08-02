@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, StyleSheet, FlatList, Alert } from 'react-native';
-import { Button, Text, Card, ActivityIndicator, Appbar, Modal, Portal, TextInput, Avatar } from 'react-native-paper';
+import { useContext, useEffect, useState } from 'react';
+import { Alert, FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Appbar, Avatar, Button, Card, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import { createGroup, getGroups, getOptimizedSettlements } from '../api/groups';
 import { AuthContext } from '../context/AuthContext';
-import { getGroups, createGroup, getOptimizedSettlements } from '../api/groups';
 
 const HomeScreen = ({ navigation }) => {
   const { token, logout, user } = useContext(AuthContext);
