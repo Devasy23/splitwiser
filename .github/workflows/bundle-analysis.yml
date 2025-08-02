@@ -34,34 +34,64 @@ jobs:
     - name: Build for Bundle Analysis
       run: |
         cd frontend
-        # Create a production build for analysis
-        if npm run build --dry-run 2>/dev/null; then
-          npm run build
-        else
-          # Use Expo's build process
-          npx expo export:web
-        fi
+        # Use Expo's export command for bundle analysis (Metro bundler)
+        npx expo export --platform web --output-dir web-build
     
     - name: Analyze Bundle Size
       run: |
         cd frontend
-        # Install bundle analyzer
-        npm install --no-save webpack-bundle-analyzer
+        # Install Metro bundle analyzer and bc for calculations
+        npm install --no-save @expo/metro-config metro-visualizer
+        sudo apt-get update && sudo apt-get install -y bc
         
-        # Generate bundle stats (adjust path based on your build output)
+        # Generate bundle report using Metro
+        echo "📊 Analyzing bundle size for Expo/React Native project..."
+        
+        # Check if web-build directory exists
         if [ -d "web-build" ]; then
-          # Expo web build
-          npx webpack-bundle-analyzer web-build/static/js/*.js --report --mode static --report-filename bundle-report.html
-        elif [ -d "dist" ]; then
-          # Standard React build
-          npx webpack-bundle-analyzer dist/static/js/*.js --report --mode static --report-filename bundle-report.html
+          echo "✅ Web build directory found"
+          ls -la web-build/
+          
+          # Calculate bundle sizes
+          if [ -d "web-build/static/js" ]; then
+            echo "📁 JavaScript bundle files:"
+            find web-build/static/js -name "*.js" -type f -exec ls -lh {} \; | awk '{print $5 " " $9}'
+            
+            # Calculate total bundle size
+            TOTAL_SIZE=$(find web-build/static/js -name "*.js" -type f -exec stat -c%s {} \; | awk '{sum+=$1} END {print sum}')
+            TOTAL_SIZE_MB=$(echo "scale=2; $TOTAL_SIZE / 1024 / 1024" | bc -l)
+            echo "📊 Total JavaScript bundle size: ${TOTAL_SIZE_MB} MB"
+            
+            # Create a simple analysis report
+            echo "# Bundle Analysis Report" > bundle-analysis.md
+            echo "" >> bundle-analysis.md
+            echo "## Bundle Size Summary" >> bundle-analysis.md
+            echo "- Total JavaScript bundle size: **${TOTAL_SIZE_MB} MB**" >> bundle-analysis.md
+            echo "" >> bundle-analysis.md
+            echo "## Individual Files" >> bundle-analysis.md
+            find web-build/static/js -name "*.js" -type f -exec ls -lh {} \; | awk '{print "- " $9 ": " $5}' >> bundle-analysis.md
+            
+            cat bundle-analysis.md
+          else
+            echo "❌ No JavaScript bundles found in web-build/static/js"
+          fi
         else
-          echo "No build output found for bundle analysis"
+          echo "❌ No web-build directory found after export"
+          echo "📁 Available directories:"
+          ls -la
         fi
     
+    - name: Upload Bundle Analysis Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: bundle-analysis-report
+        path: frontend/bundle-analysis.md
+        retention-days: 30
+    
     - name: Upload Bundle Analysis to Codecov
-      uses: codecov/codecov-action@v5
-      if: github.actor != 'dependabot[bot]'
+      uses: codecov/codecov-action@v4
+      if: github.actor != 'dependabot[bot]' && hashFiles('frontend/bundle-analysis.md') != ''
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         flags: bundle,frontend,javascript
