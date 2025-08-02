@@ -27,19 +27,22 @@ jobs:
         cache-dependency-path: frontend/package-lock.json
     
     - name: Install Dependencies
-      run: |
-        cd frontend
-        npm ci
+      run: npm install
+      working-directory: ./frontend
     
+    - name: Setup EAS
+      uses: expo/expo-github-action@v8
+      with:
+        eas-version: latest
+        token: ${{ secrets.EXPO_TOKEN }}
+
     - name: Build for Bundle Analysis
-      run: |
-        cd frontend
-        # Use Expo's export command for bundle analysis (Metro bundler)
-        npx expo export --platform web --output-dir web-build
+      run: npx expo export --platform web --output-dir web-build
+      working-directory: ./frontend
     
     - name: Analyze Bundle Size
+      working-directory: ./frontend
       run: |
-        cd frontend
         # Install Metro bundle analyzer and bc for calculations
         npm install --no-save @expo/metro-config metro-visualizer
         sudo apt-get update && sudo apt-get install -y bc
