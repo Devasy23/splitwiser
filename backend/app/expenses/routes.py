@@ -167,8 +167,7 @@ async def upload_attachment_for_expense(
         )
 
         # Generate unique key for the attachment
-        file_extension = file.filename.split(
-            ".")[-1] if "." in file.filename else ""
+        file_extension = file.filename.split(".")[-1] if "." in file.filename else ""
         attachment_key = f"{expense_id}_{uuid.uuid4().hex}.{file_extension}"
 
         # In a real implementation, you would upload to cloud storage (S3, etc.)
@@ -182,8 +181,7 @@ async def upload_attachment_for_expense(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail="Failed to upload attachment")
+        raise HTTPException(status_code=500, detail="Failed to upload attachment")
 
 
 @router.get("/expenses/{expense_id}/attachments/{key}")
@@ -231,8 +229,7 @@ async def manually_record_payment(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail="Failed to record settlement")
+        raise HTTPException(status_code=500, detail="Failed to record settlement")
 
 
 @router.get("/settlements", response_model=SettlementListResponse)
@@ -290,8 +287,7 @@ async def get_group_settlements(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail="Failed to fetch settlements")
+        raise HTTPException(status_code=500, detail="Failed to fetch settlements")
 
 
 @router.get("/settlements/{settlement_id}", response_model=Settlement)
@@ -309,8 +305,7 @@ async def get_single_settlement(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail="Failed to fetch settlement")
+        raise HTTPException(status_code=500, detail="Failed to fetch settlement")
 
 
 @router.patch("/settlements/{settlement_id}", response_model=Settlement)
@@ -329,8 +324,7 @@ async def mark_settlement_as_paid(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail="Failed to update settlement")
+        raise HTTPException(status_code=500, detail="Failed to update settlement")
 
 
 @router.delete("/settlements/{settlement_id}")
@@ -351,8 +345,7 @@ async def delete_settlement(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail="Failed to delete settlement")
+        raise HTTPException(status_code=500, detail="Failed to delete settlement")
 
 
 @router.post("/settlements/optimize", response_model=OptimizedSettlementsResponse)
@@ -412,8 +405,7 @@ async def get_cross_group_friend_balances(
         result = await expense_service.get_friends_balance_summary(current_user["_id"])
         return FriendsBalanceResponse(**result)
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail="Failed to fetch friends balance")
+        raise HTTPException(status_code=500, detail="Failed to fetch friends balance")
 
 
 @balance_router.get("/balance-summary", response_model=BalanceSummaryResponse)
@@ -425,8 +417,7 @@ async def get_overall_user_balance_summary(
         result = await expense_service.get_overall_balance_summary(current_user["_id"])
         return BalanceSummaryResponse(**result)
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail="Failed to fetch balance summary")
+        raise HTTPException(status_code=500, detail="Failed to fetch balance summary")
 
 
 # Group-specific user balance
@@ -445,8 +436,7 @@ async def get_user_balance_in_specific_group(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail="Failed to fetch user balance")
+        raise HTTPException(status_code=500, detail="Failed to fetch user balance")
 
 
 # Analytics
@@ -469,8 +459,7 @@ async def group_expense_analytics(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail="Failed to fetch analytics")
+        raise HTTPException(status_code=500, detail="Failed to fetch analytics")
 
 
 # Debug endpoint (remove in production)

@@ -65,8 +65,7 @@ def mock_firebase_admin(request):
 async def mock_db():
     print("mock_db fixture: Creating AsyncMongoMockClient")
     mock_mongo_client = AsyncMongoMockClient()
-    print(
-        f"mock_db fixture: mock_mongo_client type: {type(mock_mongo_client)}")
+    print(f"mock_db fixture: mock_mongo_client type: {type(mock_mongo_client)}")
     mock_database_instance = mock_mongo_client["test_db"]
     print(
         f"mock_db fixture: mock_database_instance type: {type(mock_database_instance)}, is None: {mock_database_instance is None}"
@@ -74,12 +73,9 @@ async def mock_db():
 
     # Patch get_database for all services that use it
     patches = [
-        patch("app.auth.service.get_database",
-              return_value=mock_database_instance),
-        patch("app.user.service.get_database",
-              return_value=mock_database_instance),
-        patch("app.groups.service.get_database",
-              return_value=mock_database_instance),
+        patch("app.auth.service.get_database", return_value=mock_database_instance),
+        patch("app.user.service.get_database", return_value=mock_database_instance),
+        patch("app.groups.service.get_database", return_value=mock_database_instance),
     ]
 
     # Start all patches

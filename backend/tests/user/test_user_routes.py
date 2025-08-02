@@ -55,8 +55,7 @@ async def setup_test_user(mocker):
             "updatedAt": iso_date2,
         },
     )
-    mocker.patch("app.user.service.user_service.delete_user",
-                 return_value=True)
+    mocker.patch("app.user.service.user_service.delete_user", return_value=True)
     yield
 
 
@@ -82,8 +81,7 @@ def test_get_current_user_profile_not_found(
     client: TestClient, auth_headers: dict, mocker
 ):
     """Test retrieval when user is not found in service layer."""
-    mocker.patch("app.user.service.user_service.get_user_by_id",
-                 return_value=None)
+    mocker.patch("app.user.service.user_service.get_user_by_id", return_value=None)
     response = client.get("/users/me", headers=auth_headers)
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {
@@ -101,8 +99,7 @@ def test_update_user_profile_success(client: TestClient, auth_headers: dict, moc
         "imageUrl": "http://example.com/avatar.png",
         "currency": "EUR",
     }
-    response = client.patch(
-        "/users/me", headers=auth_headers, json=update_payload)
+    response = client.patch("/users/me", headers=auth_headers, json=update_payload)
     assert response.status_code == status.HTTP_200_OK
     data = response.json()["user"]
     assert data["name"] == "Updated Test User"
@@ -132,8 +129,7 @@ def test_update_user_profile_partial_update(
             "updatedAt": iso_date3,
         },
     )
-    response = client.patch(
-        "/users/me", headers=auth_headers, json=update_payload)
+    response = client.patch("/users/me", headers=auth_headers, json=update_payload)
     assert response.status_code == status.HTTP_200_OK
     data = response.json()["user"]
     assert data["name"] == "Only Name Updated"
@@ -156,11 +152,9 @@ def test_update_user_profile_user_not_found(
     client: TestClient, auth_headers: dict, mocker
 ):
     """Test updating profile when user is not found by the service."""
-    mocker.patch(
-        "app.user.service.user_service.update_user_profile", return_value=None)
+    mocker.patch("app.user.service.user_service.update_user_profile", return_value=None)
     update_payload = {"name": "Attempted Update"}
-    response = client.patch(
-        "/users/me", headers=auth_headers, json=update_payload)
+    response = client.patch("/users/me", headers=auth_headers, json=update_payload)
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {
         "detail": {"error": "NotFound", "message": "User not found"}
@@ -181,8 +175,7 @@ def test_delete_user_account_success(client: TestClient, auth_headers: dict, moc
 
 def test_delete_user_account_not_found(client: TestClient, auth_headers: dict, mocker):
     """Test deleting a user account when the user is not found by the service."""
-    mocker.patch("app.user.service.user_service.delete_user",
-                 return_value=False)
+    mocker.patch("app.user.service.user_service.delete_user", return_value=False)
     response = client.delete("/users/me", headers=auth_headers)
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {

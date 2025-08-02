@@ -48,8 +48,7 @@ async def get_group_details(
     """Get group details including members"""
     group = await group_service.get_group_by_id(group_id, current_user["_id"])
     if not group:
-        raise HTTPException(
-            status_code=404, detail="Group not found or access denied")
+        raise HTTPException(status_code=404, detail="Group not found or access denied")
     return group
 
 
@@ -62,15 +61,13 @@ async def update_group_metadata(
     """Update group metadata (admin only)"""
     update_data = updates.model_dump(exclude_unset=True)
     if not update_data:
-        raise HTTPException(
-            status_code=400, detail="No update fields provided")
+        raise HTTPException(status_code=400, detail="No update fields provided")
 
     updated_group = await group_service.update_group(
         group_id, update_data, current_user["_id"]
     )
     if not updated_group:
-        raise HTTPException(
-            status_code=404, detail="Group not found or access denied")
+        raise HTTPException(status_code=404, detail="Group not found or access denied")
     return updated_group
 
 
@@ -81,8 +78,7 @@ async def delete_group(
     """Delete a group (admin only)"""
     deleted = await group_service.delete_group(group_id, current_user["_id"])
     if not deleted:
-        raise HTTPException(
-            status_code=404, detail="Group not found or access denied")
+        raise HTTPException(status_code=404, detail="Group not found or access denied")
     return DeleteGroupResponse(success=True, message="Group deleted successfully")
 
 
@@ -132,8 +128,7 @@ async def update_member_role(
         group_id, member_id, role_update.role, current_user["_id"]
     )
     if not updated:
-        raise HTTPException(
-            status_code=400, detail="Failed to update member role")
+        raise HTTPException(status_code=400, detail="Failed to update member role")
     return {"message": f"Member role updated to {role_update.role}"}
 
 

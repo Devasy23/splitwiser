@@ -36,8 +36,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
         access_token = create_access_token(
             data={"sub": str(result["user"]["_id"])},
-            expires_delta=timedelta(
-                minutes=settings.access_token_expire_minutes),
+            expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
         )
 
         return TokenResponse(access_token=access_token, token_type="bearer")
@@ -64,8 +63,7 @@ async def signup_with_email(request: EmailSignupRequest):
 
         access_token = create_access_token(
             data={"sub": str(result["user"]["_id"])},
-            expires_delta=timedelta(
-                minutes=settings.access_token_expire_minutes),
+            expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
         )
 
         result["user"]["_id"] = str(result["user"]["_id"])
@@ -98,8 +96,7 @@ async def login_with_email(request: EmailLoginRequest):
 
         access_token = create_access_token(
             data={"sub": str(result["user"]["_id"])},
-            expires_delta=timedelta(
-                minutes=settings.access_token_expire_minutes),
+            expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
         )
 
         result["user"]["_id"] = str(result["user"]["_id"])
@@ -128,8 +125,7 @@ async def login_with_google(request: GoogleLoginRequest):
 
         access_token = create_access_token(
             data={"sub": str(result["user"]["_id"])},
-            expires_delta=timedelta(
-                minutes=settings.access_token_expire_minutes),
+            expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
         )
 
         result["user"]["_id"] = str(result["user"]["_id"])
@@ -173,8 +169,7 @@ async def refresh_token(request: RefreshTokenRequest):
 
         access_token = create_access_token(
             data={"sub": str(token_record["user_id"])},
-            expires_delta=timedelta(
-                minutes=settings.access_token_expire_minutes),
+            expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
         )
 
         return TokenResponse(access_token=access_token, refresh_token=new_refresh_token)

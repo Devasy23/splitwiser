@@ -8,9 +8,15 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing with better bcrypt configuration
+try:
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+except Exception:
+    # Fallback for bcrypt version compatibility issues
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")  # Updated tokenUrl
+
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -67,7 +73,20 @@ def generate_reset_token() -> str:
 
 
 def get_current_user(token: str = Depends(oauth2_scheme)) -> Dict[str, Any]:
-    payload = verify_token(token)
+    """
+    Retrieves the current user based on the provided JWT token using centralized verification.
+
+    Args:
+        token: The JWT token from which to extract the user information.
+
+    Returns:
+        A dictionary containing the current user's information.
+
+    Raises:
+        HTTPException: If the token is invalid or user information cannot be extracted.
+    """
+    payload = verify_token(token)  # Centralized JWT validation and error handling
+
     user_id = payload.get("sub")
     if user_id is None:
         raise HTTPException(

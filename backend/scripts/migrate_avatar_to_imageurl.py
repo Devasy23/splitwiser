@@ -101,8 +101,7 @@ def migrate_avatar_to_imageurl():
             users_to_update.append(
                 UpdateOne(
                     {"_id": user["_id"]},
-                    {"$set": {"imageUrl": user["avatar"]}, "$unset": {
-                        "avatar": ""}},
+                    {"$set": {"imageUrl": user["avatar"]}, "$unset": {"avatar": ""}},
                 )
             )
 
@@ -129,8 +128,7 @@ def rollback_migration(backup_path):
 
         backup_file_path = os.path.join(backup_path, "users.json")
         if not os.path.exists(backup_file_path):
-            raise FileNotFoundError(
-                f"Backup file not found: {backup_file_path}")
+            raise FileNotFoundError(f"Backup file not found: {backup_file_path}")
 
         # Read users collection backup
         with open(backup_file_path, "r") as f:

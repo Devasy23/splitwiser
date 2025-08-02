@@ -91,8 +91,7 @@ async def test_create_expense_success(expense_service, mock_group_data):
             "totalSettlements": 1,
             "optimizedSettlements": [],
         }
-        mock_response.return_value = {
-            "id": "test_id", "description": "Test Dinner"}
+        mock_response.return_value = {"id": "test_id", "description": "Test Dinner"}
 
         result = await expense_service.create_expense(
             "65f1a2b3c4d5e6f7a8b9c0d0", expense_request, "user_a"
@@ -300,8 +299,7 @@ async def test_update_expense_success(expense_service, mock_expense_data):
     """Test successful expense update"""
     from app.expenses.schemas import ExpenseUpdateRequest
 
-    update_request = ExpenseUpdateRequest(
-        description="Updated Dinner", amount=120.0)
+    update_request = ExpenseUpdateRequest(description="Updated Dinner", amount=120.0)
 
     updated_expense_data = mock_expense_data.copy()
     updated_expense_data["description"] = "Updated Dinner"
@@ -318,15 +316,13 @@ async def test_update_expense_success(expense_service, mock_expense_data):
 
         # Mock user lookup
         mock_db.users.find_one = AsyncMock(
-            return_value={"_id": ObjectId(
-                "65f1a2b3c4d5e6f7a8b9c0d2"), "name": "Alice"}
+            return_value={"_id": ObjectId("65f1a2b3c4d5e6f7a8b9c0d2"), "name": "Alice"}
         )
 
         # Mock update operation
         mock_update_result = MagicMock()
         mock_update_result.matched_count = 1
-        mock_db.expenses.update_one = AsyncMock(
-            return_value=mock_update_result)
+        mock_db.expenses.update_one = AsyncMock(return_value=mock_update_result)
 
         with patch.object(expense_service, "_expense_doc_to_response") as mock_response:
             mock_response.return_value = {
@@ -617,8 +613,7 @@ async def test_list_group_expenses_pagination(
         mock_db.expenses.find.return_value.sort.return_value.skip.return_value.limit.return_value = (
             mock_expense_cursor
         )
-        mock_db.expenses.count_documents = AsyncMock(
-            return_value=5)  # Total 5 expenses
+        mock_db.expenses.count_documents = AsyncMock(return_value=5)  # Total 5 expenses
 
         mock_aggregate_cursor = AsyncMock()
         mock_aggregate_cursor.to_list.return_value = [
@@ -725,8 +720,7 @@ async def test_list_group_expenses_group_not_found(expense_service):
     with patch("app.expenses.service.mongodb") as mock_mongodb:
         mock_db = MagicMock()
         mock_mongodb.database = mock_db
-        mock_db.groups.find_one = AsyncMock(
-            return_value=None)  # Group not found
+        mock_db.groups.find_one = AsyncMock(return_value=None)  # Group not found
 
         with pytest.raises(ValueError, match="Group not found or user not a member"):
             await expense_service.list_group_expenses(
@@ -751,8 +745,7 @@ async def test_delete_expense_success(expense_service, mock_expense_data):
         # Mock successful deletion of expense
         mock_delete_expense_result = MagicMock()
         mock_delete_expense_result.deleted_count = 1
-        mock_db.expenses.delete_one = AsyncMock(
-            return_value=mock_delete_expense_result)
+        mock_db.expenses.delete_one = AsyncMock(return_value=mock_delete_expense_result)
 
         # Mock successful deletion of related settlements
         mock_delete_settlements_result = MagicMock()
@@ -765,8 +758,7 @@ async def test_delete_expense_success(expense_service, mock_expense_data):
 
         assert result is True
         mock_db.expenses.find_one.assert_called_once_with(
-            {"_id": ObjectId(expense_id), "groupId": group_id,
-             "createdBy": user_id}
+            {"_id": ObjectId(expense_id), "groupId": group_id, "createdBy": user_id}
         )
         mock_db.settlements.delete_many.assert_called_once_with(
             {"expenseId": expense_id}
@@ -829,8 +821,7 @@ async def test_delete_expense_failed_deletion(expense_service, mock_expense_data
 
         mock_delete_expense_result = MagicMock()
         mock_delete_expense_result.deleted_count = 0  # Simulate DB deletion failure
-        mock_db.expenses.delete_one = AsyncMock(
-            return_value=mock_delete_expense_result)
+        mock_db.expenses.delete_one = AsyncMock(return_value=mock_delete_expense_result)
 
         mock_db.settlements.delete_many = AsyncMock()
 
@@ -890,8 +881,7 @@ async def test_create_manual_settlement_success(expense_service, mock_group_data
 
         # mock_db.users.find is a MagicMock because .find() is a synchronous method.
         # Its side_effect (our factory) is called when mock_db.users.find() is invoked.
-        mock_db.users.find = MagicMock(
-            side_effect=sync_mock_user_find_cursor_factory)
+        mock_db.users.find = MagicMock(side_effect=sync_mock_user_find_cursor_factory)
 
         # Mock settlement insertion
         mock_db.settlements.insert_one = AsyncMock()
@@ -936,8 +926,7 @@ async def test_create_manual_settlement_group_not_found(expense_service):
     with patch("app.expenses.service.mongodb") as mock_mongodb:
         mock_db = MagicMock()
         mock_mongodb.database = mock_db
-        mock_db.groups.find_one = AsyncMock(
-            return_value=None)  # Group not found
+        mock_db.groups.find_one = AsyncMock(return_value=None)  # Group not found
 
         """with pytest.raises(ValueError, match="Group not found or user not a member"):
             await expense_service.create_manual_settlement(group_id, settlement_request, user_id)
@@ -1002,8 +991,7 @@ async def test_get_group_settlements_success(expense_service, mock_group_data):
         mock_db.settlements.find.assert_called_once()
         mock_db.settlements.count_documents.assert_called_once()
         # Check default sort, skip, limit
-        mock_db.settlements.find.return_value.sort.assert_called_with(
-            "createdAt", -1)
+        mock_db.settlements.find.return_value.sort.assert_called_with("createdAt", -1)
         mock_db.settlements.find.return_value.sort.return_value.skip.assert_called_with(
             0
         )  # (1-1)*50
@@ -1090,8 +1078,7 @@ async def test_get_group_settlements_group_not_found(expense_service):
     with patch("app.expenses.service.mongodb") as mock_mongodb:
         mock_db = MagicMock()
         mock_mongodb.database = mock_db
-        mock_db.groups.find_one = AsyncMock(
-            return_value=None)  # Group not found
+        mock_db.groups.find_one = AsyncMock(return_value=None)  # Group not found
 
         """with pytest.raises(ValueError, match="Group not found or user not a member"):
             await expense_service.get_group_settlements(group_id, user_id)"""
@@ -1132,8 +1119,7 @@ async def test_get_settlement_by_id_success(expense_service, mock_group_data):
         mock_mongodb.database = mock_db
 
         mock_db.groups.find_one = AsyncMock(return_value=mock_group_data)
-        mock_db.settlements.find_one = AsyncMock(
-            return_value=mock_settlement_doc)
+        mock_db.settlements.find_one = AsyncMock(return_value=mock_settlement_doc)
 
         result = await expense_service.get_settlement_by_id(
             group_id, settlement_id_str, user_id
@@ -1246,12 +1232,10 @@ async def test_update_settlement_status_success(expense_service):
 
         mock_update_result = MagicMock()
         mock_update_result.matched_count = 1
-        mock_db.settlements.update_one = AsyncMock(
-            return_value=mock_update_result)
+        mock_db.settlements.update_one = AsyncMock(return_value=mock_update_result)
 
         # find_one is called to retrieve the updated document
-        mock_db.settlements.find_one = AsyncMock(
-            return_value=updated_settlement_doc)
+        mock_db.settlements.find_one = AsyncMock(return_value=updated_settlement_doc)
 
         result = await expense_service.update_settlement_status(
             group_id, settlement_id_str, new_status, paid_at=paid_at_time
@@ -1274,8 +1258,7 @@ async def test_update_settlement_status_success(expense_service):
         assert set_doc["paidAt"] == paid_at_time
         assert "updatedAt" in set_doc
 
-        mock_db.settlements.find_one.assert_called_once_with(
-            {"_id": settlement_id_obj})
+        mock_db.settlements.find_one.assert_called_once_with({"_id": settlement_id_obj})
 
 
 @pytest.mark.asyncio
@@ -1293,8 +1276,7 @@ async def test_update_settlement_status_not_found(expense_service):
 
         mock_update_result = MagicMock()
         mock_update_result.matched_count = 0  # Simulate settlement not found
-        mock_db.settlements.update_one = AsyncMock(
-            return_value=mock_update_result)
+        mock_db.settlements.update_one = AsyncMock(return_value=mock_update_result)
 
         mock_db.settlements.find_one = AsyncMock(return_value=None)
 
@@ -1333,8 +1315,7 @@ async def test_delete_settlement_success(expense_service, mock_group_data):
         # Mock successful deletion
         mock_delete_result = MagicMock()
         mock_delete_result.deleted_count = 1
-        mock_db.settlements.delete_one = AsyncMock(
-            return_value=mock_delete_result)
+        mock_db.settlements.delete_one = AsyncMock(return_value=mock_delete_result)
 
         result = await expense_service.delete_settlement(
             group_id, settlement_id_str, user_id
@@ -1364,8 +1345,7 @@ async def test_delete_settlement_not_found(expense_service, mock_group_data):
 
         mock_delete_result = MagicMock()
         mock_delete_result.deleted_count = 0  # Simulate not found
-        mock_db.settlements.delete_one = AsyncMock(
-            return_value=mock_delete_result)
+        mock_db.settlements.delete_one = AsyncMock(return_value=mock_delete_result)
 
         result = await expense_service.delete_settlement(
             group_id, settlement_id_str, user_id
@@ -1385,8 +1365,7 @@ async def test_delete_settlement_group_access_denied(expense_service):
         mock_db = MagicMock()
         mock_mongodb.database = mock_db
 
-        mock_db.groups.find_one = AsyncMock(
-            return_value=None)  # User not in group
+        mock_db.groups.find_one = AsyncMock(return_value=None)  # User not in group
 
         """with pytest.raises(ValueError, match="Group not found or user not a member"):
             await expense_service.delete_settlement(group_id, settlement_id_str, user_id)"""
@@ -1416,8 +1395,7 @@ async def test_get_user_balance_in_group_success(expense_service, mock_group_dat
     # User B paid 100 for User A (User A owes User B 100)
     # User C paid 50 for User B (User B owes User C 50)
     # Net for User B: Paid 100, Owed 50. Net Balance = 50 (User B is owed 50 overall)
-    mock_settlements_aggregate = [
-        {"_id": None, "totalPaid": 100.0, "totalOwed": 50.0}]
+    mock_settlements_aggregate = [{"_id": None, "totalPaid": 100.0, "totalOwed": 50.0}]
     mock_pending_settlements_docs = [  # User B is payee, i.e. is owed
         {
             "_id": ObjectId(),
@@ -1502,8 +1480,7 @@ async def test_get_user_balance_in_group_success(expense_service, mock_group_dat
         mock_db.groups.find_one.assert_called_once_with(
             {"_id": ObjectId(group_id), "members.userId": current_user_id}
         )
-        mock_db.users.find_one.assert_called_once_with(
-            {"_id": target_user_id_obj})
+        mock_db.users.find_one.assert_called_once_with({"_id": target_user_id_obj})
         mock_db.settlements.aggregate.assert_called_once()
 
         # Check the two find calls to settlements and expenses collections
@@ -1657,8 +1634,7 @@ async def test_get_friends_balance_summary_success(expense_service):
             cursor_mock.to_list = AsyncMock(return_value=users_to_return)
             return cursor_mock
 
-        mock_db.users.find = MagicMock(
-            side_effect=mock_user_find_cursor_side_effect)
+        mock_db.users.find = MagicMock(side_effect=mock_user_find_cursor_side_effect)
 
         # Mock settlement aggregation logic
         # .aggregate() is sync, returns an async cursor.
@@ -1720,8 +1696,7 @@ async def test_get_friends_balance_summary_success(expense_service):
         assert summary["activeGroups"] == 2
 
         # Verify mocks
-        mock_db.groups.find.assert_called_once_with(
-            {"members.userId": user_id_str})
+        mock_db.groups.find.assert_called_once_with({"members.userId": user_id_str})
         # settlements.aggregate is called for each friend in each group they share with user_id_str
         # Friend1 is in 2 groups with user_id_str, Friend2 is in 1 group with user_id_str. Total 3 calls.
         assert mock_db.settlements.aggregate.call_count == 3
@@ -1807,18 +1782,15 @@ async def test_get_overall_balance_summary_success(expense_service):
 
         if group_id_pipeline == group1_id:
             cursor_mock.to_list = AsyncMock(
-                return_value=[
-                    {"_id": None, "totalPaid": 100.0, "totalOwed": 20.0}]
+                return_value=[{"_id": None, "totalPaid": 100.0, "totalOwed": 20.0}]
             )
         elif group_id_pipeline == group2_id:
             cursor_mock.to_list = AsyncMock(
-                return_value=[
-                    {"_id": None, "totalPaid": 50.0, "totalOwed": 150.0}]
+                return_value=[{"_id": None, "totalPaid": 50.0, "totalOwed": 150.0}]
             )
         elif group_id_pipeline == group3_id:  # Zero balance
             cursor_mock.to_list = AsyncMock(
-                return_value=[
-                    {"_id": None, "totalPaid": 50.0, "totalOwed": 50.0}]
+                return_value=[{"_id": None, "totalPaid": 50.0, "totalOwed": 50.0}]
             )
         else:  # Should not happen in this test
             cursor_mock.to_list = AsyncMock(return_value=[])
@@ -1869,8 +1841,7 @@ async def test_get_overall_balance_summary_success(expense_service):
         assert abs(group2_summary["yourBalanceInGroup"] - (-100.0)) < 0.01
 
         # Verify mocks
-        mock_db.groups.find.assert_called_once_with(
-            {"members.userId": user_id})
+        mock_db.groups.find.assert_called_once_with({"members.userId": user_id})
         assert mock_db.settlements.aggregate.call_count == 3  # Called for each group
 
 
@@ -1901,8 +1872,7 @@ async def test_get_overall_balance_summary_no_groups(expense_service):
 @pytest.mark.asyncio
 async def test_get_group_analytics_success(expense_service, mock_group_data):
     """Test successful retrieval of group analytics"""
-    group_id_str = str(mock_group_data["_id"]
-                       )  # Changed variable name for clarity
+    group_id_str = str(mock_group_data["_id"])  # Changed variable name for clarity
     user_a_obj = ObjectId()  # This is the user making the request and also a member
     user_b_obj = ObjectId()
     user_c_obj = ObjectId()  # In group but no expenses
@@ -1995,8 +1965,7 @@ async def test_get_group_analytics_success(expense_service, mock_group_data):
         mock_expenses_cursor.to_list.return_value = mock_expenses_in_period
         mock_db.expenses.find.return_value = mock_expenses_cursor
         # Mock user lookups for member names
-        mock_db.users.find_one = AsyncMock(
-            side_effect=mock_users_find_one_side_effect)
+        mock_db.users.find_one = AsyncMock(side_effect=mock_users_find_one_side_effect)
 
         result = await expense_service.get_group_analytics(
             group_id_str, user_a_str, period="month", year=year, month=month
@@ -2014,17 +1983,14 @@ async def test_get_group_analytics_success(expense_service, mock_group_data):
         # household: 70
         # entertainment: 30
         food_cat = next(c for c in top_categories if c["tag"] == "food")
-        household_cat = next(
-            c for c in top_categories if c["tag"] == "household")
+        household_cat = next(c for c in top_categories if c["tag"] == "household")
         entertainment_cat = next(
             c for c in top_categories if c["tag"] == "entertainment"
         )
 
-        assert abs(food_cat["amount"] -
-                   100.0) < 0.01 and food_cat["count"] == 2
+        assert abs(food_cat["amount"] - 100.0) < 0.01 and food_cat["count"] == 2
         assert (
-            abs(household_cat["amount"] -
-                70.0) < 0.01 and household_cat["count"] == 1
+            abs(household_cat["amount"] - 70.0) < 0.01 and household_cat["count"] == 1
         )
         assert (
             abs(entertainment_cat["amount"] - 30.0) < 0.01
@@ -2035,12 +2001,9 @@ async def test_get_group_analytics_success(expense_service, mock_group_data):
         member_contribs = result["memberContributions"]
         assert len(member_contribs) == 3  # user_a_str, user_b_str, user_c_str
 
-        user_a_contrib = next(
-            m for m in member_contribs if m["userId"] == user_a_str)
-        user_b_contrib = next(
-            m for m in member_contribs if m["userId"] == user_b_str)
-        user_c_contrib = next(
-            m for m in member_contribs if m["userId"] == user_c_str)
+        user_a_contrib = next(m for m in member_contribs if m["userId"] == user_a_str)
+        user_b_contrib = next(m for m in member_contribs if m["userId"] == user_b_str)
+        user_c_contrib = next(m for m in member_contribs if m["userId"] == user_c_str)
 
         # User A: Paid 70 (Groceries). Owed 35 (Groceries) + 15 (Movies) = 50. Net = 70 - 50 = 20
         assert user_a_contrib["userName"] == "User A"
@@ -2066,13 +2029,11 @@ async def test_get_group_analytics_success(expense_service, mock_group_data):
         day5_trend = next(
             d for d in result["expenseTrends"] if d["date"] == f"{year}-{month:02d}-05"
         )
-        assert abs(day5_trend["amount"] -
-                   70.0) < 0.01 and day5_trend["count"] == 1
+        assert abs(day5_trend["amount"] - 70.0) < 0.01 and day5_trend["count"] == 1
         day15_trend = next(
             d for d in result["expenseTrends"] if d["date"] == f"{year}-{month:02d}-15"
         )
-        assert abs(day15_trend["amount"] -
-                   30.0) < 0.01 and day15_trend["count"] == 1
+        assert abs(day15_trend["amount"] - 30.0) < 0.01 and day15_trend["count"] == 1
         day10_trend = next(
             d for d in result["expenseTrends"] if d["date"] == f"{year}-{month:02d}-10"
         )  # No expense
@@ -2096,8 +2057,7 @@ async def test_get_group_analytics_group_not_found(expense_service):
     with patch("app.expenses.service.mongodb") as mock_mongodb:
         mock_db = MagicMock()
         mock_mongodb.database = mock_db
-        mock_db.groups.find_one = AsyncMock(
-            return_value=None)  # Group not found
+        mock_db.groups.find_one = AsyncMock(return_value=None)  # Group not found
 
         """with pytest.raises(ValueError, match="Group not found or user not a member"):
             await expense_service.get_group_analytics(group_id, user_id)"""

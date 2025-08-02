@@ -87,8 +87,7 @@ with st.sidebar:
         if status_response.status_code == 200:
             st.success("API Connection: Online")
         else:
-            st.error(
-                f"API Connection: Error (Status {status_response.status_code})")
+            st.error(f"API Connection: Error (Status {status_response.status_code})")
     except Exception as e:
         st.error(f"API Connection: Offline")
         if st.session_state.debug_mode:
@@ -105,8 +104,7 @@ with refresh_col2:
 def fetch_user_groups():
     try:
         headers = {"Authorization": f"Bearer {st.session_state.access_token}"}
-        response = make_api_request(
-            "get", f"{API_URL}/groups", headers=headers)
+        response = make_api_request("get", f"{API_URL}/groups", headers=headers)
 
         if st.session_state.debug_mode:
             st.sidebar.subheader("Debug: /groups response")
@@ -209,11 +207,9 @@ def calculate_friend_balance(
 
                 if current_user_split or friend_split:
                     current_user_owes = (
-                        current_user_split.get(
-                            "amount", 0) if current_user_split else 0
+                        current_user_split.get("amount", 0) if current_user_split else 0
                     )
-                    friend_owes = friend_split.get(
-                        "amount", 0) if friend_split else 0
+                    friend_owes = friend_split.get("amount", 0) if friend_split else 0
 
                     current_user_paid = (
                         total_amount if payer_id == current_user_id else 0
@@ -303,10 +299,8 @@ if friends_data:
     )
 
     # Summary cards
-    total_owed_to_you = sum(max(0, data["balance"])
-                            for data in friends_data.values())
-    total_you_owe = sum(abs(min(0, data["balance"]))
-                        for data in friends_data.values())
+    total_owed_to_you = sum(max(0, data["balance"]) for data in friends_data.values())
+    total_you_owe = sum(abs(min(0, data["balance"])) for data in friends_data.values())
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -325,8 +319,7 @@ if friends_data:
 
             with col1:
                 st.subheader(friend_data["name"])
-                shared_groups_text = ", ".join(
-                    sorted(friend_data["shared_groups"]))
+                shared_groups_text = ", ".join(sorted(friend_data["shared_groups"]))
                 st.caption(f"Shared groups: {shared_groups_text}")
 
             with col2:

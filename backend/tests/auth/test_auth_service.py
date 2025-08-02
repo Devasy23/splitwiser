@@ -137,8 +137,7 @@ async def test_create_user_with_email_refresh_token_error(monkeypatch):
     async def fail_refresh_token(*args, **kwargs):
         raise Exception("Token generation failed")
 
-    monkeypatch.setattr(
-        service, "_create_refresh_token_record", fail_refresh_token)
+    monkeypatch.setattr(service, "_create_refresh_token_record", fail_refresh_token)
 
     with pytest.raises(HTTPException) as exc:
         await service.create_user_with_email("fail@example.com", "pass", "User")
@@ -185,8 +184,7 @@ async def test_authenticate_user_success(monkeypatch):
         "app.auth.service.verify_password", lambda pwd, hash: pwd == "correct-password"
     )
     monkeypatch.setattr(
-        service, "_create_refresh_token_record", AsyncMock(
-            return_value="refresh-token")
+        service, "_create_refresh_token_record", AsyncMock(return_value="refresh-token")
     )
 
     result = await service.authenticate_user_with_email(
@@ -240,8 +238,7 @@ async def test_authenticate_user_password_incorrect(monkeypatch):
     mock_db.users.find_one.return_value = mock_user
 
     monkeypatch.setattr(service, "get_db", lambda: mock_db)
-    monkeypatch.setattr("app.auth.service.verify_password",
-                        lambda pwd, hash: False)
+    monkeypatch.setattr("app.auth.service.verify_password", lambda pwd, hash: False)
 
     with pytest.raises(HTTPException) as e:
         await service.authenticate_user_with_email("email", "wrongpass")
@@ -260,8 +257,7 @@ async def test_authenticate_user_missing_hashed_password(monkeypatch):
     mock_db.users.find_one.return_value = mock_user
 
     monkeypatch.setattr(service, "get_db", lambda: mock_db)
-    monkeypatch.setattr("app.auth.service.verify_password",
-                        lambda pwd, hash: False)
+    monkeypatch.setattr("app.auth.service.verify_password", lambda pwd, hash: False)
 
     with pytest.raises(HTTPException) as e:
         await service.authenticate_user_with_email("email", "pass")
@@ -282,8 +278,7 @@ async def test_authenticate_user_refresh_token_error(monkeypatch):
     mock_db.users.find_one.return_value = mock_user
 
     monkeypatch.setattr(service, "get_db", lambda: mock_db)
-    monkeypatch.setattr("app.auth.service.verify_password",
-                        lambda pwd, hash: True)
+    monkeypatch.setattr("app.auth.service.verify_password", lambda pwd, hash: True)
     monkeypatch.setattr(
         service,
         "_create_refresh_token_record",
@@ -425,8 +420,7 @@ async def test_refresh_access_token_success():
     mock_db.users.find_one = AsyncMock(return_value=mock_user)
     mock_db.refresh_tokens.update_one = AsyncMock()
 
-    service._create_refresh_token_record = AsyncMock(
-        return_value="new_refresh_token")
+    service._create_refresh_token_record = AsyncMock(return_value="new_refresh_token")
 
     token = await service.refresh_access_token("valid_refresh_token")
     assert token == "new_refresh_token"
@@ -474,8 +468,7 @@ async def test_refresh_access_token_db_failure_on_token():
     service = AuthService()
     mock_db = MagicMock()
     service.get_db = MagicMock(return_value=mock_db)
-    mock_db.refresh_tokens.find_one = AsyncMock(
-        side_effect=PyMongoError("DB error"))
+    mock_db.refresh_tokens.find_one = AsyncMock(side_effect=PyMongoError("DB error"))
 
     with pytest.raises(HTTPException) as e:
         await service.refresh_access_token("any_token")
@@ -644,8 +637,7 @@ async def test_request_password_reset_user_exists(monkeypatch, caplog):
     assert result is True
     assert "mocktoken" in caplog.text
     assert "Reset link" in caplog.text
-    mock_db.users.find_one.assert_awaited_once_with(
-        {"email": "test@example.com"})
+    mock_db.users.find_one.assert_awaited_once_with({"email": "test@example.com"})
     mock_db.password_resets.insert_one.assert_awaited_once()
 
 
@@ -684,8 +676,7 @@ async def test_request_password_reset_db_error_on_insert(monkeypatch):
     mock_db = AsyncMock()
     mock_user = {"_id": "mock_user_id", "email": "test@example.com"}
     mock_db.users.find_one.return_value = mock_user
-    mock_db.password_resets.insert_one.side_effect = PyMongoError(
-        "Insert failure")
+    mock_db.password_resets.insert_one.side_effect = PyMongoError("Insert failure")
 
     monkeypatch.setattr(service, "get_db", lambda: mock_db)
 
@@ -718,8 +709,7 @@ async def test_confirm_password_reset_success():
         )
 
         # Mock user update
-        mock_db.users.update_one = AsyncMock(
-            return_value=MagicMock(modified_count=1))
+        mock_db.users.update_one = AsyncMock(return_value=MagicMock(modified_count=1))
         mock_db.password_resets.update_one = AsyncMock()
         mock_db.refresh_tokens.update_many = AsyncMock()
 

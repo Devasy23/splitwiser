@@ -164,8 +164,7 @@ async def test_get_user_by_id_found(mock_db_client, mock_get_database):
 
     user = await user_service.get_user_by_id(TEST_OBJECT_ID_STR)
 
-    mock_db_client.users.find_one.assert_called_once_with(
-        {"_id": TEST_OBJECT_ID})
+    mock_db_client.users.find_one.assert_called_once_with({"_id": TEST_OBJECT_ID})
     assert user == TRANSFORMED_USER_EXPECTED
 
 
@@ -175,8 +174,7 @@ async def test_get_user_by_id_not_found(mock_db_client, mock_get_database):
 
     user = await user_service.get_user_by_id(TEST_OBJECT_ID_STR)
 
-    mock_db_client.users.find_one.assert_called_once_with(
-        {"_id": TEST_OBJECT_ID})
+    mock_db_client.users.find_one.assert_called_once_with({"_id": TEST_OBJECT_ID})
     assert user is None
 
 
@@ -276,8 +274,7 @@ async def test_delete_user_success(mock_db_client, mock_get_database):
 
     result = await user_service.delete_user(TEST_OBJECT_ID_STR)
 
-    mock_db_client.users.delete_one.assert_called_once_with(
-        {"_id": TEST_OBJECT_ID})
+    mock_db_client.users.delete_one.assert_called_once_with({"_id": TEST_OBJECT_ID})
     assert result is True
 
 
@@ -289,8 +286,7 @@ async def test_delete_user_not_found(mock_db_client, mock_get_database):
 
     result = await user_service.delete_user(TEST_OBJECT_ID_STR)
 
-    mock_db_client.users.delete_one.assert_called_once_with(
-        {"_id": TEST_OBJECT_ID})
+    mock_db_client.users.delete_one.assert_called_once_with({"_id": TEST_OBJECT_ID})
     assert result is False
 
 

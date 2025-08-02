@@ -118,8 +118,7 @@ async def test_list_expenses_endpoint(
     )
 
     # This test would need proper authentication mocking to work
-    assert response.status_code in [
-        status.HTTP_200_OK, status.HTTP_401_UNAUTHORIZED]
+    assert response.status_code in [status.HTTP_200_OK, status.HTTP_401_UNAUTHORIZED]
 
 
 @pytest.mark.asyncio
@@ -151,8 +150,7 @@ async def test_optimized_settlements_endpoint(
     )
 
     # This test would need proper authentication mocking to work
-    assert response.status_code in [
-        status.HTTP_200_OK, status.HTTP_401_UNAUTHORIZED]
+    assert response.status_code in [status.HTTP_200_OK, status.HTTP_401_UNAUTHORIZED]
 
 
 @pytest.mark.asyncio

@@ -86,8 +86,7 @@ with st.sidebar:
         if status_response.status_code == 200:
             st.success("API Connection: Online")
         else:
-            st.error(
-                f"API Connection: Error (Status {status_response.status_code})")
+            st.error(f"API Connection: Error (Status {status_response.status_code})")
     except Exception as e:
         st.error(f"API Connection: Offline")
         if st.session_state.debug_mode:
@@ -104,8 +103,7 @@ with refresh_col2:
 def fetch_user_groups():
     try:
         headers = {"Authorization": f"Bearer {st.session_state.access_token}"}
-        response = make_api_request(
-            "get", f"{API_URL}/groups", headers=headers)
+        response = make_api_request("get", f"{API_URL}/groups", headers=headers)
 
         # Debug info
         if st.session_state.debug_mode:
@@ -255,14 +253,12 @@ if "selected_group_id" not in st.session_state:
 # Join Group Expander
 with st.expander("Join a Group", expanded=False):
     with st.form("join_group_form_page", clear_on_submit=True):
-        group_code = st.text_input(
-            "Enter Group Code", key="join_group_code_page")
+        group_code = st.text_input("Enter Group Code", key="join_group_code_page")
         submit_button = st.form_submit_button("Join Group")
 
         if submit_button and group_code:
             try:
-                headers = {
-                    "Authorization": f"Bearer {st.session_state.access_token}"}
+                headers = {"Authorization": f"Bearer {st.session_state.access_token}"}
                 response = make_api_request(
                     "post",
                     f"{API_URL}/groups/join",
@@ -290,8 +286,7 @@ with st.expander("Create a New Group", expanded=False):
 
         if submit_button and group_name:
             try:
-                headers = {
-                    "Authorization": f"Bearer {st.session_state.access_token}"}
+                headers = {"Authorization": f"Bearer {st.session_state.access_token}"}
                 # Fix: Remove description field as it's not in the schema
                 group_data = {"name": group_name}
                 if group_description:
@@ -362,8 +357,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
 
     # Group Info
     with st.expander("Group Information", expanded=True):
-        st.write(
-            f"**Description:** {group.get('description', 'No description')}")
+        st.write(f"**Description:** {group.get('description', 'No description')}")
         st.write(
             f"**Created On:** {datetime.fromisoformat(group.get('createdAt').replace('Z', '+00:00')).strftime('%Y-%m-%d')}"
         )
@@ -373,8 +367,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
         members = fetch_group_members(group.get("_id"))
         if members:
             for member in members:
-                st.write(
-                    f"• {member.get('user', {}).get('name', 'Unknown User')}")
+                st.write(f"• {member.get('user', {}).get('name', 'Unknown User')}")
         else:
             st.write("No members found.")
 
@@ -426,8 +419,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
             st.info(split_method_tooltip)
 
             # Set up tab tracking - make the radio button visually match the tabs
-            tab_options = ["Equally", "By Percentages",
-                           "By Shares", "By Exact Value"]
+            tab_options = ["Equally", "By Percentages", "By Shares", "By Exact Value"]
             tab_key = f"active_tab_{group.get('_id')}"
 
             if tab_key not in st.session_state:
@@ -457,15 +449,13 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
                 # Initialize selected members dict if not exists
                 tab_key = f"equal_members_{group.get('_id')}"
                 if tab_key not in st.session_state:
-                    st.session_state[tab_key] = {
-                        m.get("userId"): True for m in members}
+                    st.session_state[tab_key] = {m.get("userId"): True for m in members}
 
                 # Select/Deselect All checkbox
                 all_selected_key = f"all_members_equal_{group.get('_id')}"
 
                 # Check if all are currently selected
-                all_currently_selected = all(
-                    st.session_state[tab_key].values())
+                all_currently_selected = all(st.session_state[tab_key].values())
 
                 # The checkbox for Select All / Deselect All
                 all_selected = st.checkbox(
@@ -477,16 +467,14 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
                 # If the checkbox state changes, update all members
                 if all_selected != all_currently_selected:
                     for member in members:
-                        st.session_state[tab_key][member.get(
-                            "userId")] = all_selected
+                        st.session_state[tab_key][member.get("userId")] = all_selected
 
                 # Individual member checkboxes
                 member_cols = st.columns(
                     2
                 )  # Display in 2 columns for better space usage
                 for i, member in enumerate(members):
-                    user_name = member.get("user", {}).get(
-                        "name", "Unknown User")
+                    user_name = member.get("user", {}).get("name", "Unknown User")
                     with member_cols[i % 2]:
                         is_selected = st.checkbox(
                             user_name,
@@ -495,8 +483,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
                             ),
                             key=f"equal_member_{member.get('userId')}_{group.get('_id')}",
                         )
-                        st.session_state[tab_key][member.get(
-                            "userId")] = is_selected
+                        st.session_state[tab_key][member.get("userId")] = is_selected
 
                 # Get list of selected member IDs
                 selected_member_ids = [
@@ -520,8 +507,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
                 total_percentage = 0
 
                 for member in members:
-                    user_name = member.get("user", {}).get(
-                        "name", "Unknown User")
+                    user_name = member.get("user", {}).get("name", "Unknown User")
                     default_value = (
                         round(100 / len(members), 2) if len(members) > 0 else 0
                     )
@@ -554,8 +540,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
                 total_shares = 0
 
                 for member in members:
-                    user_name = member.get("user", {}).get(
-                        "name", "Unknown User")
+                    user_name = member.get("user", {}).get("name", "Unknown User")
                     shares = st.number_input(
                         f"{user_name} (shares)",
                         min_value=0,
@@ -575,12 +560,10 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
                     # Show preview of amount per person
                     st.write("### Preview:")
                     for member in members:
-                        user_name = member.get("user", {}).get(
-                            "name", "Unknown User")
+                        user_name = member.get("user", {}).get("name", "Unknown User")
                         user_id = member.get("userId")
                         if user_id in share_inputs and total_shares > 0:
-                            share_percentage = share_inputs[user_id] / \
-                                total_shares
+                            share_percentage = share_inputs[user_id] / total_shares
                             amount = expense_amount * share_percentage
                             st.write(
                                 f"{user_name}: ₹{amount:.2f} ({share_percentage*100:.2f}%)"
@@ -595,8 +578,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
                 total_exact = 0
 
                 for member in members:
-                    user_name = member.get("user", {}).get(
-                        "name", "Unknown User")
+                    user_name = member.get("user", {}).get("name", "Unknown User")
                     exact_amount = st.number_input(
                         f"{user_name} (₹)",
                         min_value=0.0,
@@ -645,11 +627,9 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
                         expense_amount / len(selected_member_ids), 2
                     )
                     for member in members:
-                        user_name = member.get("user", {}).get(
-                            "name", "Unknown User")
+                        user_name = member.get("user", {}).get("name", "Unknown User")
                         if member.get("userId") in selected_member_ids:
-                            st.write(
-                                f"• {user_name}: ₹{equal_split_amount:.2f}")
+                            st.write(f"• {user_name}: ₹{equal_split_amount:.2f}")
                         else:
                             st.write(f"• {user_name}: ₹0.00")
                 else:
@@ -657,8 +637,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
 
             elif active_tab == "By Percentages":
                 for member in members:
-                    user_name = member.get("user", {}).get(
-                        "name", "Unknown User")
+                    user_name = member.get("user", {}).get("name", "Unknown User")
                     percentage = percentage_inputs.get(member.get("userId"), 0)
                     amount = round(expense_amount * percentage / 100, 2)
                     st.write(f"• {user_name}: ₹{amount:.2f} ({percentage}%)")
@@ -666,30 +645,26 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
             elif active_tab == "By Shares":
                 if total_shares > 0:
                     for member in members:
-                        user_name = member.get("user", {}).get(
-                            "name", "Unknown User")
+                        user_name = member.get("user", {}).get("name", "Unknown User")
                         shares = share_inputs.get(member.get("userId"), 0)
                         amount = (
                             round(expense_amount * shares / total_shares, 2)
                             if shares > 0
                             else 0
                         )
-                        st.write(
-                            f"• {user_name}: ₹{amount:.2f} ({shares} shares)")
+                        st.write(f"• {user_name}: ₹{amount:.2f} ({shares} shares)")
                 else:
                     st.warning("Total shares must be greater than 0")
 
             elif active_tab == "By Exact Value":
                 for member in members:
-                    user_name = member.get("user", {}).get(
-                        "name", "Unknown User")
+                    user_name = member.get("user", {}).get("name", "Unknown User")
                     amount = exact_inputs.get(member.get("userId"), 0)
                     st.write(f"• {user_name}: ₹{amount:.2f}")
 
                 if abs(total_exact - expense_amount) > 0.01:
                     remaining = expense_amount - total_exact
-                    st.warning(
-                        f"Remaining amount to be allocated: ₹{remaining:.2f}")
+                    st.warning(f"Remaining amount to be allocated: ₹{remaining:.2f}")
 
             submit_button = st.form_submit_button("Add Expense")
 
@@ -817,8 +792,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
                         }
 
                         if st.session_state.debug_mode:
-                            st.sidebar.subheader(
-                                "Debug: Expense data being sent")
+                            st.sidebar.subheader("Debug: Expense data being sent")
                             st.sidebar.json(expense_data)
                     except Exception as e:
                         st.error(f"Error creating expense data: {str(e)}")
@@ -868,8 +842,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
     with col2:
         # Calculate total amount of all expenses
         total_amount = (
-            sum(expense.get("amount", 0)
-                for expense in expenses) if expenses else 0
+            sum(expense.get("amount", 0) for expense in expenses) if expenses else 0
         )
         st.metric("Total Amount", f"₹{total_amount:.2f}")
 
@@ -890,8 +863,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
     with st.expander("See everyone's balance"):
         balance_cols = st.columns(2)
         i = 0
-        sorted_balances = sorted(
-            balances.items(), key=lambda x: x[1], reverse=True)
+        sorted_balances = sorted(balances.items(), key=lambda x: x[1], reverse=True)
 
         for user_id, balance in sorted_balances:
             user_name = member_names.get(user_id, "Unknown User")
@@ -902,11 +874,9 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
 
             with balance_cols[i % 2]:
                 if balance > 0:
-                    st.markdown(
-                        f"**{display_name}**: :green[Is owed ₹{balance:.2f}]")
+                    st.markdown(f"**{display_name}**: :green[Is owed ₹{balance:.2f}]")
                 elif balance < 0:
-                    st.markdown(
-                        f"**{display_name}**: :red[Owes ₹{abs(balance):.2f}]")
+                    st.markdown(f"**{display_name}**: :red[Owes ₹{abs(balance):.2f}]")
                 else:
                     st.markdown(f"**{display_name}**: Settled up")
             i += 1
@@ -943,8 +913,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
 
             with col2:
                 if user_to_receive_total > 0:
-                    st.metric("You will receive",
-                              f"₹{user_to_receive_total:.2f}")
+                    st.metric("You will receive", f"₹{user_to_receive_total:.2f}")
                 else:
                     st.metric("You will receive", "₹0.00")
 
@@ -986,8 +955,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
                     with col1:
                         if from_user_id == current_user_id:
                             # Current user needs to pay
-                            st.markdown(
-                                f"**:red[You pay {to_name} ₹{amount:.2f}]**")
+                            st.markdown(f"**:red[You pay {to_name} ₹{amount:.2f}]**")
 
                             # Add payment details as an expandable section
                             with st.expander("Payment details"):
@@ -1027,8 +995,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
                         to_user_id = settlement.get("toUserId")
                         amount = settlement.get("amount", 0)
                         to_name = settlement.get(
-                            "toUserName", member_names.get(
-                                to_user_id, "Unknown")
+                            "toUserName", member_names.get(to_user_id, "Unknown")
                         )
 
                         st.markdown(f"• Pays {to_name} ₹{amount:.2f}")
@@ -1043,8 +1010,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
             with st.container():
                 col1, col2, col3 = st.columns([3, 1, 1])
                 with col1:
-                    st.write(
-                        f"**{expense.get('description', 'Unnamed Expense')}**")
+                    st.write(f"**{expense.get('description', 'Unnamed Expense')}**")
                 with col2:
                     st.write(f"**₹{expense.get('amount', 0):.2f}**")
                 with col3:
@@ -1096,13 +1062,11 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
                         if net_balance > 0:
                             # User gets money back (green)
                             st.markdown(f":green[Paid by: {payer_name}]")
-                            st.markdown(
-                                f":green[You get back: ₹{net_balance:.2f}]")
+                            st.markdown(f":green[You get back: ₹{net_balance:.2f}]")
                         elif net_balance < 0:
                             # User owes money (red)
                             st.markdown(f":red[Paid by: {payer_name}]")
-                            st.markdown(
-                                f":red[You owe: ₹{abs(net_balance):.2f}]")
+                            st.markdown(f":red[You owe: ₹{abs(net_balance):.2f}]")
                         else:
                             # User is even
                             st.caption(f"Paid by: {payer_name}")
@@ -1110,8 +1074,7 @@ elif st.session_state.groups_view == "detail" and st.session_state.selected_grou
                     else:
                         # User is not included in the expense (grey)
                         st.markdown(f":gray[Paid by: {payer_name}]")
-                        st.markdown(
-                            f":gray[You are not included in this expense]")
+                        st.markdown(f":gray[You are not included in this expense]")
                 else:
                     # Fallback if user ID not available
                     st.caption(f"Paid by: {payer_name}")
