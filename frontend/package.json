@@ -1,0 +1,38 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~5.0.4",
+    "@react-navigation/bottom-tabs": "^7.4.4",
+    "@react-navigation/native": "^7.1.16",
+    "@react-navigation/native-stack": "^7.3.23",
+    "axios": "^1.11.0",
+    "expo": "~53.0.20",
+    "expo-status-bar": "~2.2.3",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-native": "0.79.5",
+    "react-native-paper": "^5.14.5",
+    "react-native-safe-area-context": "^5.5.2",
+    "react-native-screens": "^4.13.1",
+    "react-native-vector-icons": "^10.3.0",
+    "react-native-web": "^0.20.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0",
+    "@types/node": "^24.1.0",
+    "@types/react": "^19.1.9",
+    "@types/react-native": "^0.73.0",
+    "babel-plugin-module-resolver": "^5.0.2",
+    "react-native-sass-transformer": "^3.0.0",
+    "typescript": "^5.8.3"
+  },
+  "private": true
+}
