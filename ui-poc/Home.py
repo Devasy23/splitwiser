@@ -1,8 +1,9 @@
-from streamlit_cookies_manager import EncryptedCookieManager
-import requests
-from datetime import datetime
 import json
+from datetime import datetime
+
+import requests
 import streamlit as st
+from streamlit_cookies_manager import EncryptedCookieManager
 
 # Configure the page – must come immediately after importing Streamlit
 st.set_page_config(
