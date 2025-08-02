@@ -54,8 +54,7 @@ if not firebase_admin._apps:
                 "projectId": settings.firebase_project_id,
             },
         )
-        logger.info(
-            "Firebase initialized with credentials from environment variables")
+        logger.info("Firebase initialized with credentials from environment variables")
     # Fall back to service account JSON file if env vars are not available
     elif os.path.exists(settings.firebase_service_account_path):
         cred = credentials.Certificate(settings.firebase_service_account_path)
@@ -67,8 +66,7 @@ if not firebase_admin._apps:
         )
         logger.info("Firebase initialized with service account file")
     else:
-        logger.warning(
-            "Firebase service account not found. Google auth will not work.")
+        logger.warning("Firebase service account not found. Google auth will not work.")
 
 
 class AuthService:
@@ -208,8 +206,7 @@ class AuthService:
 
             firebase_uid = decoded_token["uid"]
             email = decoded_token.get("email")
-            name = decoded_token.get(
-                "name", email.split("@")[0] if email else "User")
+            name = decoded_token.get("name", email.split("@")[0] if email else "User")
             picture = decoded_token.get("picture")
 
             if not email:
@@ -246,8 +243,7 @@ class AuthService:
                         )
                         user.update(update_data)
                     except PyMongoError as e:
-                        logger.warning(
-                            "Failed to update user profile: %s", str(e))
+                        logger.warning("Failed to update user profile: %s", str(e))
             else:
                 # Create new user
                 user_doc = {
@@ -265,8 +261,7 @@ class AuthService:
                     user_doc["_id"] = result.inserted_id
                     user = user_doc
                 except PyMongoError as e:
-                    logger.error(
-                        "Failed to create new Google user: %s", str(e))
+                    logger.error("Failed to create new Google user: %s", str(e))
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         detail="Failed to create user",
@@ -279,8 +274,7 @@ class AuthService:
                 )
             except Exception as e:
                 logger.error(
-                    "Failed to issue refresh token for Google login: %s", str(
-                        e)
+                    "Failed to issue refresh token for Google login: %s", str(e)
                 )
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -321,8 +315,7 @@ class AuthService:
                 }
             )
         except PyMongoError as e:
-            logger.error(
-                "Database error while validating refresh token: %s", str(e))
+            logger.error("Database error while validating refresh token: %s", str(e))
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Internal server error",
@@ -442,8 +435,7 @@ class AuthService:
 
         # Generate reset token
         reset_token = generate_reset_token()
-        reset_expires = datetime.now(
-            timezone.utc) + timedelta(hours=1)  # 1 hour expiry
+        reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)  # 1 hour expiry
 
         try:
             # Store reset token
@@ -522,8 +514,7 @@ class AuthService:
 
             # Revoke all refresh tokens for this user (force re-login)
             await db.refresh_tokens.update_many(
-                {"user_id": reset_record["user_id"]}, {
-                    "$set": {"revoked": True}}
+                {"user_id": reset_record["user_id"]}, {"$set": {"revoked": True}}
             )
             logger.info(
                 f"Password reset successful for user_id: {reset_record['user_id']}"
@@ -533,8 +524,7 @@ class AuthService:
         except HTTPException:
             raise  # Raising HTTPException to avoid logging again
         except Exception as e:
-            logger.exception(
-                f"Unexpected error during password reset: {str(e)}")
+            logger.exception(f"Unexpected error during password reset: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Internal server error during password reset",
@@ -564,8 +554,7 @@ class AuthService:
                 {
                     "token": refresh_token,
                     "user_id": (
-                        ObjectId(user_id) if isinstance(
-                            user_id, str) else user_id
+                        ObjectId(user_id) if isinstance(user_id, str) else user_id
                     ),
                     "expires_at": expires_at,
                     "revoked": False,

@@ -54,8 +54,7 @@ async def test_signup_with_email_success(mock_db):
     created_user = await mock_db.users.find_one({"email": signup_data["email"]})
     assert created_user is not None
     assert created_user["name"] == signup_data["name"]
-    assert verify_password(
-        signup_data["password"], created_user["hashed_password"])
+    assert verify_password(signup_data["password"], created_user["hashed_password"])
 
     # Verify refresh token creation
     refresh_token_record = await mock_db.refresh_tokens.find_one(
@@ -102,10 +101,8 @@ async def test_signup_with_existing_email(mock_db):
         (lambda p: p.pop("email"), "email", "missing_email"),
         (lambda p: p.pop("password"), "password", "missing_password"),
         (lambda p: p.pop("name"), "name", "missing_name"),
-        (lambda p: p.update({"password": "short"}),
-         "password", "short_password"),
-        (lambda p: p.update({"email": "invalidemail"}),
-         "email", "invalid_email"),
+        (lambda p: p.update({"password": "short"}), "password", "short_password"),
+        (lambda p: p.update({"email": "invalidemail"}), "email", "invalid_email"),
     ],
 )
 async def test_signup_invalid_input_refined(
@@ -189,8 +186,7 @@ async def test_login_with_email_success(mock_db):
     assert "refresh_token" in response_data
     assert "user" in response_data
     assert response_data["user"]["email"] == user_email
-    assert response_data["user"]["_id"] == str(
-        user_obj_id)  # Changed 'id' to '_id'
+    assert response_data["user"]["_id"] == str(user_obj_id)  # Changed 'id' to '_id'
 
     # Verify refresh token creation for this user
     # Refresh token service stores user_id as ObjectId
@@ -235,8 +231,7 @@ async def test_login_with_non_existent_email(mock_db):
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:
-        login_data = {"email": "nosuchuser@example.com",
-                      "password": "anypassword"}
+        login_data = {"email": "nosuchuser@example.com", "password": "anypassword"}
         response = await ac.post("/auth/login/email", json=login_data)
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -263,8 +258,7 @@ async def test_login_with_non_existent_email(mock_db):
 async def test_login_invalid_input(
     mock_db, payload_modifier, affected_field, description
 ):
-    base_payload = {"email": "validuser@example.com",
-                    "password": "validpassword123"}
+    base_payload = {"email": "validuser@example.com", "password": "validpassword123"}
     # It doesn't matter if the user exists or not for input validation,
     # as validation happens before DB lookup for these kinds of errors.
     payload_modifier(base_payload)

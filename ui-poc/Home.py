@@ -5,6 +5,17 @@ import requests
 import streamlit as st
 from streamlit_cookies_manager import EncryptedCookieManager
 
+# Configure the page – must come immediately after importing Streamlit
+st.set_page_config(
+    page_title="Splitwiser",
+    page_icon="💰",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+
+# 3rd-party / std-lib imports – safe after the call above
+
 # Configure the page
 st.set_page_config(
     page_title="Splitwiser",
@@ -12,6 +23,11 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+# NOTE:
+# set_page_config() must be the very first Streamlit command,
+# placed right after `import streamlit as st` and before any
+# other `st.` calls (even indirectly via imports).
+
 
 # Initialize session state variables
 if "access_token" not in st.session_state:
@@ -144,8 +160,7 @@ def display_auth_page():
     with login_tab:
         with st.form("login_form", clear_on_submit=False):
             email = st.text_input("Email", key="login_email")
-            password = st.text_input(
-                "Password", type="password", key="login_password")
+            password = st.text_input("Password", type="password", key="login_password")
             submit_button = st.form_submit_button("Login")
 
             if submit_button:
@@ -164,8 +179,7 @@ def display_auth_page():
         with st.form("signup_form", clear_on_submit=True):
             username = st.text_input("Username", key="signup_username")
             email = st.text_input("Email", key="signup_email")
-            password = st.text_input(
-                "Password", type="password", key="signup_password")
+            password = st.text_input("Password", type="password", key="signup_password")
             confirm_password = st.text_input(
                 "Confirm Password", type="password", key="signup_confirm_password"
             )
@@ -179,6 +193,14 @@ def display_auth_page():
                         success, message = signup(username, email, password)
                         if success:
                             st.success(message)
+                            login_success, login_message = login(email, password)
+                            if login_success:
+                                st.success("Logged in successfully!")
+                                st.rerun()  # Redirect to the main dashboard
+                            else:
+                                st.error(
+                                    f"Signup succeeded, but login failed: {login_message}"
+                                )
                         else:
                             st.error(message)
                 else:
@@ -226,10 +248,8 @@ def display_main_app():
                     with st.container():
                         col1, col2 = st.columns([3, 1])
                         with col1:
-                            st.write(
-                                f"**{group.get('name', 'Unnamed Group')}**")
-                            st.caption(
-                                f"Group Code: {group.get('joinCode', 'N/A')}")
+                            st.write(f"**{group.get('name', 'Unnamed Group')}**")
+                            st.caption(f"Group Code: {group.get('joinCode', 'N/A')}")
                         with col2:
                             if st.button(
                                 "View", key=f"view_group_home_{group.get('_id')}"
