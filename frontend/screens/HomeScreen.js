@@ -185,10 +185,10 @@ const HomeScreen = ({ navigation }) => {
 
       {isLoading ? (
           <View style={styles.loaderContainer}>
-              <ActivityIndicator size="large" testID="loading-indicator" />
+              <ActivityIndicator size="large" />
           </View>
       ) : (
-          <FlatList testID="groups-flatlist"
+          <FlatList
               data={groups}
               renderItem={renderGroup}
               keyExtractor={(item) => item._id}
