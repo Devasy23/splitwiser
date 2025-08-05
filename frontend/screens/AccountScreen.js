@@ -1,13 +1,11 @@
 import React, { useContext } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import { Text, Appbar, Avatar, List, Divider, useTheme, Switch } from 'react-native-paper';
+import { Text, Appbar, Avatar, List, Divider, useTheme } from 'react-native-paper';
 import { AuthContext } from '../context/AuthContext';
-import { PreferencesContext } from '../styles/theme';
 
 const AccountScreen = ({ navigation }) => {
     const theme = useTheme();
     const { user, logout } = useContext(AuthContext);
-    const { toggleTheme, isThemeDark } = useContext(PreferencesContext);
 
     const handleLogout = () => {
         logout();
@@ -56,12 +54,6 @@ const AccountScreen = ({ navigation }) => {
                 title="Edit Profile"
                 left={() => <List.Icon icon="account-edit" />}
                 onPress={() => navigation.navigate('EditProfile')}
-            />
-            <Divider />
-            <List.Item
-                title="Dark Mode"
-                left={() => <List.Icon icon="theme-light-dark" />}
-                right={() => <Switch value={isThemeDark} onValueChange={toggleTheme} />}
             />
             <Divider />
             <List.Item

@@ -1,10 +1,12 @@
 import { useMaterial3Theme } from '@pchmn/expo-material3-theme';
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useColorScheme } from 'react-native';
 import {
   MD3DarkTheme,
   MD3LightTheme,
 } from 'react-native-paper';
+
+export const PreferencesContext = React.createContext(null);
 
 export const useAppTheme = () => {
     const colorScheme = useColorScheme();
