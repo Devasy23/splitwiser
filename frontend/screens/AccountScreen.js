@@ -1,9 +1,10 @@
 import React, { useContext } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import { Text, Appbar, Avatar, List, Divider } from 'react-native-paper';
+import { Text, Appbar, Avatar, List, Divider, useTheme } from 'react-native-paper';
 import { AuthContext } from '../context/AuthContext';
 
 const AccountScreen = ({ navigation }) => {
+    const theme = useTheme();
     const { user, logout } = useContext(AuthContext);
 
     const handleLogout = () => {
@@ -13,6 +14,28 @@ const AccountScreen = ({ navigation }) => {
     const handleComingSoon = () => {
         Alert.alert('Coming Soon', 'This feature is not yet implemented.');
     };
+
+    const styles = StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: theme.colors.background,
+        },
+        content: {
+          padding: 16,
+        },
+        profileSection: {
+          alignItems: 'center',
+          marginBottom: 24,
+        },
+        name: {
+            marginTop: 16,
+            color: theme.colors.onSurface,
+        },
+          email: {
+              marginTop: 4,
+              color: theme.colors.onSurfaceVariant,
+          }
+      });
 
   return (
     <View style={styles.container}>
@@ -55,25 +78,5 @@ const AccountScreen = ({ navigation }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
-  profileSection: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  name: {
-      marginTop: 16,
-  },
-    email: {
-        marginTop: 4,
-        color: 'gray',
-    }
-});
 
 export default AccountScreen;

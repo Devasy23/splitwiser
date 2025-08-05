@@ -1,10 +1,11 @@
 import { useContext, useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Appbar, Avatar, Button, Card, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Avatar, Button, Card, Modal, Portal, Text, TextInput, useTheme } from 'react-native-paper';
 import { createGroup, getGroups, getOptimizedSettlements } from '../api/groups';
 import { AuthContext } from '../context/AuthContext';
 
 const HomeScreen = ({ navigation }) => {
+  const theme = useTheme();
   const { token, logout, user } = useContext(AuthContext);
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -127,16 +128,16 @@ const HomeScreen = ({ navigation }) => {
     // Get text color based on settlement status
     const getStatusColor = () => {
       if (!settlementStatus || settlementStatus.isSettled) {
-        return '#4CAF50'; // Green for settled
+        return theme.colors.primary;
       }
       
       if (settlementStatus.netBalance > 0) {
-        return '#4CAF50'; // Green for being owed money
+        return theme.colors.primary;
       } else if (settlementStatus.netBalance < 0) {
-        return '#F44336'; // Red for owing money
+        return theme.colors.error;
       }
       
-      return '#4CAF50'; // Default green
+      return theme.colors.primary;
     };
 
     return (
@@ -155,11 +156,49 @@ const HomeScreen = ({ navigation }) => {
     );
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    loaderContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    list: {
+      padding: 16,
+    },
+    card: {
+      marginBottom: 16,
+    },
+    settlementStatus: {
+      marginTop: 4,
+    },
+    emptyText: {
+      textAlign: 'center',
+      marginTop: 20,
+    },
+    modalContainer: {
+      backgroundColor: theme.colors.background,
+      padding: 20,
+      margin: 20,
+      borderRadius: 8,
+    },
+    modalTitle: {
+      fontSize: 20,
+      marginBottom: 20,
+      textAlign: 'center',
+    },
+    input: {
+      marginBottom: 20,
+    }
+  });
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Portal>
         <Modal visible={modalVisible} onDismiss={hideModal} contentContainerStyle={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Create a New Group</Text>
+          <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>Create a New Group</Text>
           <TextInput
             label="Group Name"
             value={newGroupName}
@@ -193,7 +232,7 @@ const HomeScreen = ({ navigation }) => {
               renderItem={renderGroup}
               keyExtractor={(item) => item._id}
               contentContainerStyle={styles.list}
-              ListEmptyComponent={<Text style={styles.emptyText}>No groups found. Create or join one!</Text>}
+              ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.colors.onSurface }]}>No groups found. Create or join one!</Text>}
               onRefresh={fetchGroups}
               refreshing={isLoading}
           />
@@ -201,44 +240,5 @@ const HomeScreen = ({ navigation }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  list: {
-    padding: 16,
-  },
-  card: {
-    marginBottom: 16,
-  },
-  settlementStatus: {
-    fontWeight: '500',
-    marginTop: 4,
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  modalContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-    margin: 20,
-    borderRadius: 8,
-  },
-  modalTitle: {
-    fontSize: 20,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  input: {
-    marginBottom: 20,
-  }
-});
 
 export default HomeScreen;

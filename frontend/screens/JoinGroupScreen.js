@@ -1,10 +1,11 @@
 import React, { useState, useContext } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import { Button, TextInput, Appbar, Title } from 'react-native-paper';
+import { Button, TextInput, Appbar, Title, useTheme } from 'react-native-paper';
 import { AuthContext } from '../context/AuthContext';
 import { joinGroup } from '../api/groups';
 
 const JoinGroupScreen = ({ navigation, route }) => {
+  const theme = useTheme();
   const { token } = useContext(AuthContext);
   const [joinCode, setJoinCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
@@ -28,6 +29,22 @@ const JoinGroupScreen = ({ navigation, route }) => {
       setIsJoining(false);
     }
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    content: {
+      padding: 16,
+    },
+    input: {
+      marginBottom: 16,
+    },
+    button: {
+      marginTop: 8,
+    },
+  });
 
   return (
     <View style={styles.container}>
@@ -57,20 +74,5 @@ const JoinGroupScreen = ({ navigation, route }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
-  input: {
-    marginBottom: 16,
-  },
-  button: {
-    marginTop: 8,
-  },
-});
 
 export default JoinGroupScreen;
