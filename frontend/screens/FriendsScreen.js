@@ -48,7 +48,7 @@ const FriendsScreen = () => {
     }, [token, isFocused]);
 
     const renderFriend = ({ item }) => {
-        const balanceColor = item.netBalance < 0 ? theme.colors.error : theme.colors.primary;
+        const balanceColor = item.netBalance < 0 ? theme.colors.error : '#4CAF50';
         const balanceText = item.netBalance < 0
             ? `You owe $${Math.abs(item.netBalance).toFixed(2)}`
             : `Owes you $${item.netBalance.toFixed(2)}`;

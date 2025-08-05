@@ -128,16 +128,16 @@ const HomeScreen = ({ navigation }) => {
     // Get text color based on settlement status
     const getStatusColor = () => {
       if (!settlementStatus || settlementStatus.isSettled) {
-        return theme.colors.primary;
+        return '#4CAF50';
       }
       
       if (settlementStatus.netBalance > 0) {
-        return theme.colors.primary;
+        return '#4CAF50';
       } else if (settlementStatus.netBalance < 0) {
         return theme.colors.error;
       }
       
-      return theme.colors.primary;
+      return '#4CAF50';
     };
 
     return (

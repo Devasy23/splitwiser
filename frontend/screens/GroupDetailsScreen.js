@@ -62,7 +62,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
 
     if (net > 0) {
       balanceText = `You are owed ${formatCurrency(net)}`;
-      balanceColor = theme.colors.primary;
+      balanceColor = '#4CAF50';
     } else if (net < 0) {
       balanceText = `You borrowed ${formatCurrency(Math.abs(net))}`;
       balanceColor = theme.colors.error;

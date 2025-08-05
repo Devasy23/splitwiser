@@ -1,25 +1,25 @@
-import React from 'react';
-import {
-  NavigationContainer,
-  DarkTheme as NavigationDarkTheme,
-  DefaultTheme as NavigationDefaultTheme,
-} from '@react-navigation/native';
+import { useMaterial3Theme } from '@pchmn/expo-material3-theme';
+import { useMemo } from 'react';
+import { useColorScheme } from 'react-native';
 import {
   MD3DarkTheme,
   MD3LightTheme,
-  adaptNavigationTheme,
 } from 'react-native-paper';
-import merge from 'deepmerge';
 
-export const PreferencesContext = React.createContext({
-    toggleTheme: () => {},
-    isThemeDark: false,
-});
+export const useAppTheme = () => {
+    const colorScheme = useColorScheme();
+    const { theme } = useMaterial3Theme();
 
-const { LightTheme, DarkTheme } = adaptNavigationTheme({
-    reactNavigationLight: NavigationDefaultTheme,
-    reactNavigationDark: NavigationDarkTheme,
-});
+    const paperTheme = useMemo(() => {
+      const baseTheme = colorScheme === 'dark' ? MD3DarkTheme : MD3LightTheme;
+      return {
+        ...baseTheme,
+        colors: {
+          ...baseTheme.colors,
+          ...theme.light,
+        },
+      };
+    }, [colorScheme, theme]);
 
-export const CombinedDefaultTheme = merge(MD3LightTheme, LightTheme);
-export const CombinedDarkTheme = merge(MD3DarkTheme, DarkTheme);
+    return paperTheme;
+  };
