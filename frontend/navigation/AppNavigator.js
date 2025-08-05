@@ -1,5 +1,4 @@
 import React, { useContext } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import AuthNavigator from './AuthNavigator';
@@ -16,11 +15,7 @@ const AppNavigator = () => {
     );
   }
 
-  return (
-    <NavigationContainer>
-      {token ? <MainNavigator /> : <AuthNavigator />}
-    </NavigationContainer>
-  );
+  return token ? <MainNavigator /> : <AuthNavigator />;
 };
 
 const styles = StyleSheet.create({
