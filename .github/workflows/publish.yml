@@ -35,5 +35,5 @@ jobs:
         working-directory: ./frontend
 
       - name: 🚀 Create update
-        run: npx eas update --auto --non-interactive
+        run: eas update --auto --non-interactive
         working-directory: ./frontend
