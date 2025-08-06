@@ -1,16 +1,60 @@
 import { useIsFocused } from '@react-navigation/native';
 import { useContext, useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Appbar, Divider, IconButton, List, Text } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Divider, IconButton, List, Text, useTheme } from 'react-native-paper';
 import { getFriendsBalance } from '../api/groups';
 import { AuthContext } from '../context/AuthContext';
 
 const FriendsScreen = () => {
     const { token, user } = useContext(AuthContext);
+    const theme = useTheme();
     const [friends, setFriends] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showTooltip, setShowTooltip] = useState(true);
     const isFocused = useIsFocused();
+
+    // Create styles inside component to access theme
+    const styles = StyleSheet.create({
+        container: {
+            flex: 1,
+        },
+        loaderContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        explanationContainer: {
+            backgroundColor: '#f8fafc',
+            margin: 8,
+            borderRadius: theme?.custom?.borderRadius || 8, // Safe access with fallback
+            borderLeftWidth: 3,
+            borderLeftColor: '#3b82f6',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 2,
+            elevation: 1,
+        },
+        explanationContent: {
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            padding: 12,
+        },
+        explanationText: {
+            fontSize: 12,
+            color: '#555',
+            lineHeight: 16,
+            flex: 1,
+            paddingRight: 8,
+        },
+        closeButton: {
+            margin: 0,
+            marginTop: -4,
+        },
+        emptyText: {
+            textAlign: 'center',
+            marginTop: 20,
+        }
+    });
 
     useEffect(() => {
         const fetchData = async () => {
@@ -118,43 +162,5 @@ const FriendsScreen = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loaderContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-  },
-  explanationContainer: {
-      backgroundColor: '#f0f8ff',
-      margin: 8,
-      borderRadius: 8,
-      borderLeftWidth: 4,
-      borderLeftColor: '#2196f3',
-  },
-  explanationContent: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      padding: 12,
-  },
-  explanationText: {
-      fontSize: 12,
-      color: '#555',
-      lineHeight: 16,
-      flex: 1,
-      paddingRight: 8,
-  },
-  closeButton: {
-      margin: 0,
-      marginTop: -4,
-  },
-  emptyText: {
-      textAlign: 'center',
-      marginTop: 20,
-  }
-});
 
 export default FriendsScreen;
