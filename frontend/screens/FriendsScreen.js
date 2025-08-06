@@ -26,7 +26,7 @@ const FriendsScreen = () => {
         explanationContainer: {
             backgroundColor: '#f8fafc',
             margin: 8,
-            borderRadius: theme.custom.borderRadius,
+            borderRadius: theme?.custom?.borderRadius || 8, // Safe access with fallback
             borderLeftWidth: 3,
             borderLeftColor: '#3b82f6',
             shadowOffset: { width: 0, height: 1 },

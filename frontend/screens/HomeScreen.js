@@ -44,7 +44,7 @@ const HomeScreen = ({ navigation }) => {
       backgroundColor: 'white',
       padding: 20,
       margin: 20,
-      borderRadius: theme.custom.borderRadiusLarge || 12,
+      borderRadius: theme?.custom?.borderRadiusLarge || 12, // Safe access with fallback
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.08,
       shadowRadius: 8,

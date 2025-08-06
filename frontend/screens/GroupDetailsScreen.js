@@ -61,7 +61,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     },
     owedSection: {
       backgroundColor: '#fef7f7',
-      borderRadius: theme.custom.borderRadius,
+      borderRadius: theme?.custom?.borderRadius || 8, // Safe access with fallback
       padding: 16,
       borderLeftWidth: 3,
       borderLeftColor: '#ef4444',
@@ -72,7 +72,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     },
     receiveSection: {
       backgroundColor: '#f0fdf4',
-      borderRadius: theme.custom.borderRadius,
+      borderRadius: theme?.custom?.borderRadius || 8, // Safe access with fallback
       padding: 16,
       borderLeftWidth: 3,
       borderLeftColor: '#22c55e',

@@ -10,7 +10,7 @@ const ModernButton = ({ style, mode = 'contained', children, ...props }) => {
 
   const getButtonStyle = () => {
     const baseStyle = {
-      borderRadius: theme.custom.borderRadius,
+      borderRadius: theme?.custom?.borderRadius || 8, // Safe access with fallback
     };
 
     switch (mode) {
