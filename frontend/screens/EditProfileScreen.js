@@ -1,10 +1,11 @@
 import React, { useState, useContext } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import { Button, TextInput, Appbar, Title } from 'react-native-paper';
+import { Button, TextInput, Appbar, Title, useTheme } from 'react-native-paper';
 import { AuthContext } from '../context/AuthContext';
 import { updateUser } from '../api/auth';
 
 const EditProfileScreen = ({ navigation }) => {
+  const theme = useTheme();
   const { user, token, updateUserInContext } = useContext(AuthContext);
   const [name, setName] = useState(user?.name || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,6 +28,22 @@ const EditProfileScreen = ({ navigation }) => {
       setIsSubmitting(false);
     }
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    content: {
+      padding: 16,
+    },
+    input: {
+      marginBottom: 16,
+    },
+    button: {
+      marginTop: 8,
+    },
+  });
 
   return (
     <View style={styles.container}>
@@ -55,20 +72,5 @@ const EditProfileScreen = ({ navigation }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
-  input: {
-    marginBottom: 16,
-  },
-  button: {
-    marginTop: 8,
-  },
-});
 
 export default EditProfileScreen;

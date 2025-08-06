@@ -1,9 +1,10 @@
 import React, { useState, useContext } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import { Button, Text, TextInput } from 'react-native-paper';
+import { Button, Text, TextInput, useTheme } from 'react-native-paper';
 import { AuthContext } from '../context/AuthContext';
 
 const LoginScreen = ({ navigation }) => {
+  const theme = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +22,26 @@ const LoginScreen = ({ navigation }) => {
       Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
     }
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      padding: 16,
+      backgroundColor: theme.colors.background,
+    },
+    title: {
+      textAlign: 'center',
+      marginBottom: 24,
+      color: theme.colors.primary,
+    },
+    input: {
+      marginBottom: 16,
+    },
+    button: {
+      marginTop: 8,
+    },
+  });
 
   return (
     <View style={styles.container}>
@@ -55,23 +76,5 @@ const LoginScreen = ({ navigation }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 16,
-  },
-  title: {
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  input: {
-    marginBottom: 16,
-  },
-  button: {
-    marginTop: 8,
-  },
-});
 
 export default LoginScreen;

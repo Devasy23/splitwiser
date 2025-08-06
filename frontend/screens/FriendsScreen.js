@@ -1,11 +1,12 @@
 import { useIsFocused } from '@react-navigation/native';
 import { useContext, useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Appbar, Divider, IconButton, List, Text } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Divider, IconButton, List, Text, useTheme } from 'react-native-paper';
 import { getFriendsBalance } from '../api/groups';
 import { AuthContext } from '../context/AuthContext';
 
 const FriendsScreen = () => {
+    const theme = useTheme();
     const { token, user } = useContext(AuthContext);
     const [friends, setFriends] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -47,7 +48,7 @@ const FriendsScreen = () => {
     }, [token, isFocused]);
 
     const renderFriend = ({ item }) => {
-        const balanceColor = item.netBalance < 0 ? 'red' : 'green';
+        const balanceColor = item.netBalance < 0 ? theme.colors.error : '#4CAF50';
         const balanceText = item.netBalance < 0
             ? `You owe $${Math.abs(item.netBalance).toFixed(2)}`
             : `Owes you $${item.netBalance.toFixed(2)}`;
@@ -56,11 +57,11 @@ const FriendsScreen = () => {
             <List.Accordion
                 title={item.name}
                 description={item.netBalance !== 0 ? balanceText : 'Settled up'}
-                descriptionStyle={{ color: item.netBalance !== 0 ? balanceColor : 'gray' }}
+                descriptionStyle={{ color: item.netBalance !== 0 ? balanceColor : theme.colors.onSurfaceVariant }}
                 left={props => <List.Icon {...props} icon="account" />}
             >
                 {item.groups.map(group => {
-                    const groupBalanceColor = group.balance < 0 ? 'red' : 'green';
+                    const groupBalanceColor = group.balance < 0 ? theme.colors.error : theme.colors.primary;
                     const groupBalanceText = group.balance < 0 
                         ? `You owe $${Math.abs(group.balance).toFixed(2)}` 
                         : `Owes you $${group.balance.toFixed(2)}`;
@@ -78,6 +79,47 @@ const FriendsScreen = () => {
             </List.Accordion>
         );
     };
+
+    const styles = StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: theme.colors.background,
+        },
+        loaderContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: theme.colors.background,
+        },
+        explanationContainer: {
+            backgroundColor: theme.colors.surfaceVariant,
+            margin: 8,
+            borderRadius: 8,
+            borderLeftWidth: 4,
+            borderLeftColor: theme.colors.primary,
+        },
+        explanationContent: {
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            padding: 12,
+        },
+        explanationText: {
+            fontSize: 12,
+            color: theme.colors.onSurfaceVariant,
+            lineHeight: 16,
+            flex: 1,
+            paddingRight: 8,
+        },
+        closeButton: {
+            margin: 0,
+            marginTop: -4,
+        },
+        emptyText: {
+            textAlign: 'center',
+            marginTop: 20,
+            color: theme.colors.onSurfaceVariant,
+        }
+      });
 
     if (isLoading) {
         return (
@@ -118,43 +160,5 @@ const FriendsScreen = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loaderContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-  },
-  explanationContainer: {
-      backgroundColor: '#f0f8ff',
-      margin: 8,
-      borderRadius: 8,
-      borderLeftWidth: 4,
-      borderLeftColor: '#2196f3',
-  },
-  explanationContent: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      padding: 12,
-  },
-  explanationText: {
-      fontSize: 12,
-      color: '#555',
-      lineHeight: 16,
-      flex: 1,
-      paddingRight: 8,
-  },
-  closeButton: {
-      margin: 0,
-      marginTop: -4,
-  },
-  emptyText: {
-      textAlign: 'center',
-      marginTop: 20,
-  }
-});
 
 export default FriendsScreen;

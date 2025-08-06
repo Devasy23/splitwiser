@@ -1,15 +1,26 @@
-import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import React from 'react';
+import { useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import GroupsStackNavigator from './GroupsStackNavigator';
-import FriendsScreen from '../screens/FriendsScreen';
 import AccountStackNavigator from './AccountStackNavigator';
+import FriendsScreen from '../screens/FriendsScreen';
+import GroupsStackNavigator from './GroupsStackNavigator';
 
 const Tab = createBottomTabNavigator();
 
 const MainNavigator = () => {
+  const theme = useTheme();
   return (
-    <Tab.Navigator screenOptions={{ headerShown: false }}>
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+        tabBarStyle: {
+          backgroundColor: theme.colors.surface,
+        },
+      }}
+    >
       <Tab.Screen
         name="Groups"
         component={GroupsStackNavigator}

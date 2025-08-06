@@ -1,10 +1,11 @@
 import { useContext, useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Button, Checkbox, Menu, Paragraph, SegmentedButtons, Text, TextInput, Title } from 'react-native-paper';
+import { ActivityIndicator, Button, Checkbox, Menu, Paragraph, SegmentedButtons, Text, TextInput, Title, useTheme } from 'react-native-paper';
 import { createExpense, getGroupMembers } from '../api/groups';
 import { AuthContext } from '../context/AuthContext';
 
 const AddExpenseScreen = ({ route, navigation }) => {
+  const theme = useTheme();
   const { groupId } = route.params;
   const { token, user } = useContext(AuthContext);
   const [description, setDescription] = useState('');
@@ -272,6 +273,50 @@ const AddExpenseScreen = ({ route, navigation }) => {
     }
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    content: {
+      flex: 1,
+      padding: 16,
+      paddingBottom: 32,
+    },
+    loaderContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.colors.background,
+    },
+    input: {
+      marginBottom: 16,
+    },
+    button: {
+      marginTop: 24,
+    },
+    splitTitle: {
+      marginTop: 16,
+      marginBottom: 8,
+      color: theme.colors.onSurface,
+    },
+    splitInputsContainer: {
+      marginTop: 8,
+    },
+    splitInput: {
+      marginBottom: 8,
+    },
+    helperText: {
+      fontSize: 12,
+      marginBottom: 8,
+      color: theme.colors.onSurfaceVariant,
+    },
+    totalText: {
+      fontWeight: 'bold',
+      color: theme.colors.primary,
+    }
+  });
+
   if (isLoading) {
     return (
       <View style={styles.loaderContainer}>
@@ -374,46 +419,5 @@ const AddExpenseScreen = ({ route, navigation }) => {
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-    paddingBottom: 32,
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  input: {
-    marginBottom: 16,
-  },
-  button: {
-    marginTop: 24,
-  },
-  splitTitle: {
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  splitInputsContainer: {
-    marginTop: 8,
-  },
-  splitInput: {
-    marginBottom: 8,
-  },
-  helperText: {
-    fontSize: 12,
-    marginBottom: 8,
-    opacity: 0.7,
-  },
-  totalText: {
-    fontWeight: 'bold',
-    opacity: 1,
-  }
-});
 
 export default AddExpenseScreen;
