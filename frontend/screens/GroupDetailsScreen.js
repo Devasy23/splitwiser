@@ -1,16 +1,20 @@
 import { useContext, useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
-import { ActivityIndicator, Card, FAB, Paragraph, Title } from 'react-native-paper';
+import { ActivityIndicator, Card, FAB, Paragraph, Title, useTheme } from 'react-native-paper';
 import { getGroupExpenses, getGroupMembers, getOptimizedSettlements } from '../api/groups';
 import { AuthContext } from '../context/AuthContext';
 
 const GroupDetailsScreen = ({ route, navigation }) => {
   const { groupId, groupName, groupIcon } = route.params;
   const { token, user } = useContext(AuthContext);
+  const theme = useTheme();
   const [members, setMembers] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [settlements, setSettlements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Create styles with theme access
+  const styles = createStyles(theme);
 
   // Currency configuration - can be made configurable later
   const currency = '₹'; // Default to INR, can be changed to '$' for USD
@@ -187,7 +191,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -234,14 +238,14 @@ const styles = StyleSheet.create({
   },
   owedSection: {
     backgroundColor: '#ffebee',
-    borderRadius: 8,
+    borderRadius: theme.custom.borderRadius,
     padding: 12,
     borderLeftWidth: 4,
     borderLeftColor: '#d32f2f',
   },
   receiveSection: {
     backgroundColor: '#e8f5e8',
-    borderRadius: 8,
+    borderRadius: theme.custom.borderRadius,
     padding: 12,
     borderLeftWidth: 4,
     borderLeftColor: '#2e7d32',

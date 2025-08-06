@@ -1,11 +1,12 @@
 import { useContext, useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Appbar, Avatar, Button, Card, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Avatar, Button, Card, Modal, Portal, Text, TextInput, useTheme } from 'react-native-paper';
 import { createGroup, getGroups, getOptimizedSettlements } from '../api/groups';
 import { AuthContext } from '../context/AuthContext';
 
 const HomeScreen = ({ navigation }) => {
   const { token, logout, user } = useContext(AuthContext);
+  const theme = useTheme();
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [groupSettlements, setGroupSettlements] = useState({}); // Track settlement status for each group
@@ -158,7 +159,7 @@ const HomeScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Portal>
-        <Modal visible={modalVisible} onDismiss={hideModal} contentContainerStyle={styles.modalContainer}>
+        <Modal visible={modalVisible} onDismiss={hideModal} contentContainerStyle={createModalContainerStyle(theme)}>
           <Text style={styles.modalTitle}>Create a New Group</Text>
           <TextInput
             label="Group Name"
@@ -225,12 +226,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
   },
-  modalContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-    margin: 20,
-    borderRadius: 8,
-  },
   modalTitle: {
     fontSize: 20,
     marginBottom: 20,
@@ -239,6 +234,14 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 20,
   }
+});
+
+// Create modalContainer style using theme
+const createModalContainerStyle = (theme) => ({
+  backgroundColor: 'white',
+  padding: 20,
+  margin: 20,
+  borderRadius: theme.custom.borderRadius,
 });
 
 export default HomeScreen;
