@@ -191,7 +191,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   );
 };
 
-const createStyles = (theme) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -237,18 +237,20 @@ const createStyles = (theme) => StyleSheet.create({
     fontWeight: '500',
   },
   owedSection: {
-    backgroundColor: '#ffebee',
+    backgroundColor: '#fef7f7', // More subtle background
     borderRadius: theme.custom.borderRadius,
-    padding: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#d32f2f',
+    padding: 16,
+    borderLeftWidth: 3, // Reduced border width for modern look
+    borderLeftColor: '#ef4444',
+    ...theme.custom.shadow.small,
   },
   receiveSection: {
-    backgroundColor: '#e8f5e8',
+    backgroundColor: '#f0fdf4', // More subtle background
     borderRadius: theme.custom.borderRadius,
-    padding: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#2e7d32',
+    padding: 16,
+    borderLeftWidth: 3, // Reduced border width for modern look
+    borderLeftColor: '#22c55e',
+    ...theme.custom.shadow.small,
   },
   sectionTitle: {
     fontSize: 16,

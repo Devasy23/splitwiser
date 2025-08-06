@@ -1,20 +1,16 @@
 import { useIsFocused } from '@react-navigation/native';
 import { useContext, useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Appbar, Divider, IconButton, List, Text, useTheme } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Divider, IconButton, List, Text } from 'react-native-paper';
 import { getFriendsBalance } from '../api/groups';
 import { AuthContext } from '../context/AuthContext';
 
 const FriendsScreen = () => {
     const { token, user } = useContext(AuthContext);
-    const theme = useTheme();
     const [friends, setFriends] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showTooltip, setShowTooltip] = useState(true);
     const isFocused = useIsFocused();
-
-    // Create styles with theme access
-    const styles = createStyles(theme);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -123,7 +119,7 @@ const FriendsScreen = () => {
   );
 };
 
-const createStyles = (theme) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -133,11 +129,12 @@ const createStyles = (theme) => StyleSheet.create({
       alignItems: 'center',
   },
   explanationContainer: {
-      backgroundColor: '#f0f8ff',
+      backgroundColor: '#f8fafc', // More subtle blue-gray background
       margin: 8,
       borderRadius: theme.custom.borderRadius,
-      borderLeftWidth: 4,
-      borderLeftColor: '#2196f3',
+      borderLeftWidth: 3, // Reduced border width
+      borderLeftColor: '#3b82f6', // Modern blue
+      ...theme.custom.shadow.small,
   },
   explanationContent: {
       flexDirection: 'row',

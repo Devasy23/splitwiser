@@ -13,9 +13,11 @@ export const useAppTheme = () => {
     borderRadius: theme.custom.borderRadius,
     spacing: theme.custom.spacing,
     
-    // Common container styles
+    // Common container styles with modern design
     getCardStyle: (customStyles = {}) => ({
       borderRadius: theme.custom.borderRadius,
+      backgroundColor: theme.colors.surface,
+      ...theme.custom.shadow.small,
       ...customStyles,
     }),
     
@@ -23,16 +25,29 @@ export const useAppTheme = () => {
       backgroundColor: theme.colors.surface,
       padding: theme.custom.spacing.lg,
       margin: theme.custom.spacing.lg,
-      borderRadius: theme.custom.borderRadius,
+      borderRadius: theme.custom.borderRadiusLarge, // Use larger radius only for modals
+      ...theme.custom.shadow.medium,
       ...customStyles,
     }),
     
     getSectionStyle: (backgroundColor, borderColor, customStyles = {}) => ({
-      backgroundColor,
+      backgroundColor: backgroundColor || theme.colors.surfaceVariant,
       borderRadius: theme.custom.borderRadius,
       padding: theme.custom.spacing.md,
-      borderLeftWidth: 4,
+      borderLeftWidth: 3, // Reduced from 4 for more subtle accent
       borderLeftColor: borderColor,
+      ...customStyles,
+    }),
+
+    // Modern input styles
+    getInputStyle: (customStyles = {}) => ({
+      backgroundColor: theme.colors.surface,
+      ...customStyles,
+    }),
+
+    // Clean button styles
+    getButtonStyle: (variant = 'contained', customStyles = {}) => ({
+      borderRadius: theme.custom.borderRadius,
       ...customStyles,
     }),
   };
