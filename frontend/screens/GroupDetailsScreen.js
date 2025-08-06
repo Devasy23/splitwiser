@@ -13,8 +13,108 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   const [settlements, setSettlements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Create styles with theme access
-  const styles = createStyles(theme);
+  // Create styles inside component to access theme
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    contentContainer: {
+        flex: 1,
+        padding: 16,
+    },
+    loaderContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    card: {
+      marginBottom: 16,
+    },
+    expensesTitle: {
+        marginTop: 16,
+        marginBottom: 8,
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
+    memberText: {
+        fontSize: 16,
+        lineHeight: 24,
+    },
+    fab: {
+      position: 'absolute',
+      margin: 16,
+      right: 0,
+      bottom: 0,
+    },
+    // Settlement Summary Styles
+    settlementContainer: {
+      gap: 16,
+    },
+    settledContainer: {
+      alignItems: 'center',
+      paddingVertical: 12,
+    },
+    settledText: {
+      fontSize: 16,
+      color: '#2e7d32',
+      fontWeight: '500',
+    },
+    owedSection: {
+      backgroundColor: '#fef7f7',
+      borderRadius: theme.custom.borderRadius,
+      padding: 16,
+      borderLeftWidth: 3,
+      borderLeftColor: '#ef4444',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    receiveSection: {
+      backgroundColor: '#f0fdf4',
+      borderRadius: theme.custom.borderRadius,
+      padding: 16,
+      borderLeftWidth: 3,
+      borderLeftColor: '#22c55e',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 8,
+      color: '#333',
+    },
+    amountOwed: {
+      color: '#d32f2f',
+      fontWeight: 'bold',
+    },
+    amountReceive: {
+      color: '#2e7d32',
+      fontWeight: 'bold',
+    },
+    settlementItem: {
+      marginVertical: 4,
+    },
+    personInfo: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 4,
+    },
+    personName: {
+      fontSize: 14,
+      color: '#555',
+      flex: 1,
+    },
+    settlementAmount: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: '#333',
+    },
+  });
 
   // Currency configuration - can be made configurable later
   const currency = '₹'; // Default to INR, can be changed to '$' for USD
@@ -190,101 +290,5 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  contentContainer: {
-      flex: 1,
-      padding: 16,
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  card: {
-    marginBottom: 16,
-  },
-  expensesTitle: {
-      marginTop: 16,
-      marginBottom: 8,
-      fontSize: 20,
-      fontWeight: 'bold',
-  },
-  memberText: {
-      fontSize: 16,
-      lineHeight: 24,
-  },
-  fab: {
-    position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 0,
-  },
-  // Settlement Summary Styles
-  settlementContainer: {
-    gap: 16,
-  },
-  settledContainer: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  settledText: {
-    fontSize: 16,
-    color: '#2e7d32',
-    fontWeight: '500',
-  },
-  owedSection: {
-    backgroundColor: '#fef7f7', // More subtle background
-    borderRadius: theme.custom.borderRadius,
-    padding: 16,
-    borderLeftWidth: 3, // Reduced border width for modern look
-    borderLeftColor: '#ef4444',
-    ...theme.custom.shadow.small,
-  },
-  receiveSection: {
-    backgroundColor: '#f0fdf4', // More subtle background
-    borderRadius: theme.custom.borderRadius,
-    padding: 16,
-    borderLeftWidth: 3, // Reduced border width for modern look
-    borderLeftColor: '#22c55e',
-    ...theme.custom.shadow.small,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: '#333',
-  },
-  amountOwed: {
-    color: '#d32f2f',
-    fontWeight: 'bold',
-  },
-  amountReceive: {
-    color: '#2e7d32',
-    fontWeight: 'bold',
-  },
-  settlementItem: {
-    marginVertical: 4,
-  },
-  personInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  personName: {
-    fontSize: 14,
-    color: '#555',
-    flex: 1,
-  },
-  settlementAmount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-});
 
 export default GroupDetailsScreen;
