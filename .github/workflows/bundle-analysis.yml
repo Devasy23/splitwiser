@@ -153,7 +153,7 @@ jobs:
         retention-days: 30
     
     - name: Upload Bundle Analysis to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       if: github.actor != 'dependabot[bot]' && hashFiles('frontend/bundle-analysis.md') != ''
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
