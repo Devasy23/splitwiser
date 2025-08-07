@@ -20,7 +20,7 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.5",
-    "react-native-paper": "^5.14.5",
+    "react-native-paper": "latest",
     "react-native-safe-area-context": "^5.5.2",
     "react-native-screens": "^4.13.1",
     "react-native-web": "^0.20.0"

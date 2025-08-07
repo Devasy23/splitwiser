@@ -1,8 +1,20 @@
 import { useContext, useEffect, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
-import { ActivityIndicator, Card, FAB, Paragraph, Title } from 'react-native-paper';
+import { Alert, FlatList, ImageBackground, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FAB, Paragraph, Title } from 'react-native-paper';
 import { getGroupExpenses, getGroupMembers, getOptimizedSettlements } from '../api/groups';
 import { AuthContext } from '../context/AuthContext';
+
+
+// A placeholder background image
+const BACKGROUND_IMAGE = { uri: 'https://picsum.photos/id/40/800/1200' };
+
+// ModernCard component for consistent styling
+const ModernCard = ({ children }) => (
+    <View style={styles.card}>
+        {children}
+    </View>
+);
+
 
 const GroupDetailsScreen = ({ route, navigation }) => {
   const { groupId, groupName, groupIcon } = route.params;
@@ -12,8 +24,8 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   const [settlements, setSettlements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Currency configuration - can be made configurable later
-  const currency = '₹'; // Default to INR, can be changed to '$' for USD
+  // Currency configuration
+  const currency = '₹'; // Default to INR
 
   // Helper function to format currency amounts
   const formatCurrency = (amount) => `${currency}${amount.toFixed(2)}`;
@@ -21,7 +33,6 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      // Fetch members, expenses, and settlements in parallel
       const [membersResponse, expensesResponse, settlementsResponse] = await Promise.all([
         getGroupMembers(token, groupId),
         getGroupExpenses(token, groupId),
@@ -39,11 +50,19 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   };
 
   useEffect(() => {
-    navigation.setOptions({ title: groupName });
+    navigation.setOptions({
+        title: groupName,
+        headerStyle: {
+            backgroundColor: 'transparent',
+        },
+        headerTintColor: 'white',
+        headerTransparent: true,
+
+    });
     if (token && groupId) {
       fetchData();
     }
-  }, [token, groupId]);
+  }, [token, groupId, navigation, groupName]);
 
   const getMemberName = (userId) => {
     const member = members.find(m => m.userId === userId);
@@ -57,27 +76,25 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     const net = paidByMe ? item.amount - userShare : -userShare;
 
     let balanceText;
-    let balanceColor = 'black';
+    let balanceColor = '#E0E0E0';
 
     if (net > 0) {
       balanceText = `You are owed ${formatCurrency(net)}`;
-      balanceColor = 'green';
+      balanceColor = '#A5D6A7';
     } else if (net < 0) {
       balanceText = `You borrowed ${formatCurrency(Math.abs(net))}`;
-      balanceColor = 'red';
+      balanceColor = '#EF9A9A';
     } else {
       balanceText = "You are settled for this expense.";
     }
 
     return (
-        <Card style={styles.card}>
-        <Card.Content>
-            <Title>{item.description}</Title>
-            <Paragraph>Amount: {formatCurrency(item.amount)}</Paragraph>
-            <Paragraph>Paid by: {getMemberName(item.paidBy || item.createdBy)}</Paragraph>
-            <Paragraph style={{ color: balanceColor }}>{balanceText}</Paragraph>
-        </Card.Content>
-        </Card>
+        <ModernCard>
+            <Title style={styles.cardTitle}>{item.description}</Title>
+            <Paragraph style={styles.cardText}>Amount: {formatCurrency(item.amount)}</Paragraph>
+            <Paragraph style={styles.cardText}>Paid by: {getMemberName(item.paidBy || item.createdBy)}</Paragraph>
+            <Paragraph style={{ color: balanceColor, fontWeight: 'bold' }}>{balanceText}</Paragraph>
+        </ModernCard>
     );
   };
 
@@ -87,7 +104,6 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     const totalOwed = userOwes.reduce((sum, s) => sum + s.amount, 0);
     const totalToReceive = userIsOwed.reduce((sum, s) => sum + s.amount, 0);
 
-    // If user is all settled up
     if (userOwes.length === 0 && userIsOwed.length === 0) {
       return (
         <View style={styles.settledContainer}>
@@ -98,31 +114,25 @@ const GroupDetailsScreen = ({ route, navigation }) => {
 
     return (
       <View style={styles.settlementContainer}>
-        {/* You owe section - only show if totalOwed > 0 */}
         {totalOwed > 0 && (
-          <View style={styles.owedSection}>
+          <View>
             <Text style={styles.sectionTitle}>You need to pay: <Text style={styles.amountOwed}>{formatCurrency(totalOwed)}</Text></Text>
             {userOwes.map((s, index) => (
               <View key={`owes-${index}`} style={styles.settlementItem}>
-                <View style={styles.personInfo}>
                   <Text style={styles.personName}>{getMemberName(s.toUserId)}</Text>
-                  <Text style={styles.settlementAmount}>{formatCurrency(s.amount)}</Text>
-                </View>
+                  <Text style={styles.settlementAmountOwed}>{formatCurrency(s.amount)}</Text>
               </View>
             ))}
           </View>
         )}
 
-        {/* You receive section - only show if totalToReceive > 0 */}
         {totalToReceive > 0 && (
-          <View style={styles.receiveSection}>
+          <View>
             <Text style={styles.sectionTitle}>You will receive: <Text style={styles.amountReceive}>{formatCurrency(totalToReceive)}</Text></Text>
             {userIsOwed.map((s, index) => (
               <View key={`is-owed-${index}`} style={styles.settlementItem}>
-                <View style={styles.personInfo}>
                   <Text style={styles.personName}>{getMemberName(s.fromUserId)}</Text>
-                  <Text style={styles.settlementAmount}>{formatCurrency(s.amount)}</Text>
-                </View>
+                  <Text style={styles.settlementAmountReceive}>{formatCurrency(s.amount)}</Text>
               </View>
             ))}
           </View>
@@ -133,36 +143,32 @@ const GroupDetailsScreen = ({ route, navigation }) => {
 
   if (isLoading) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" />
-      </View>
+      <ImageBackground source={BACKGROUND_IMAGE} style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="white"/>
+      </ImageBackground>
     );
   }
 
   const renderHeader = () => (
     <>
-      <Card style={styles.card}>
-        <Card.Content>
-          <Title>Settlement Summary</Title>
+      <ModernCard>
+          <Title style={styles.cardTitle}>Settlement Summary</Title>
           {renderSettlementSummary()}
-        </Card.Content>
-      </Card>
+      </ModernCard>
 
-      <Card style={styles.card}>
-        <Card.Content>
-          <Title>Members</Title>
+      <ModernCard>
+          <Title style={styles.cardTitle}>Members</Title>
           {members.map((item) => (
             <Paragraph key={item.userId} style={styles.memberText}>• {item.user.name}</Paragraph>
           ))}
-        </Card.Content>
-      </Card>
+      </ModernCard>
 
       <Title style={styles.expensesTitle}>Expenses</Title>
     </>
   );
 
   return (
-    <View style={styles.container}>
+    <ImageBackground source={BACKGROUND_IMAGE} style={styles.container}>
         <FlatList
             style={styles.contentContainer}
             data={expenses}
@@ -172,18 +178,19 @@ const GroupDetailsScreen = ({ route, navigation }) => {
             ListEmptyComponent={
               <View>
                 {renderHeader()}
-                <Text>No expenses recorded yet.</Text>
+                <Text style={styles.emptyText}>No expenses recorded yet.</Text>
               </View>
             }
-            contentContainerStyle={{ paddingBottom: 80 }} // To avoid FAB overlap
+            contentContainerStyle={{ paddingBottom: 80 }}
         />
 
         <FAB
             style={styles.fab}
             icon="plus"
+            color='white'
             onPress={() => navigation.navigate('AddExpense', { groupId: groupId })}
         />
-    </View>
+    </ImageBackground>
   );
 };
 
@@ -201,25 +208,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
     marginBottom: 16,
+    padding: 16,
+  },
+  cardTitle: {
+      color: 'white',
+      fontWeight: 'bold',
+      marginBottom: 8,
+  },
+  cardText: {
+      color: '#E0E0E0',
   },
   expensesTitle: {
       marginTop: 16,
       marginBottom: 8,
       fontSize: 20,
       fontWeight: 'bold',
+      color: 'white',
   },
   memberText: {
       fontSize: 16,
       lineHeight: 24,
+      color: 'white',
   },
   fab: {
     position: 'absolute',
     margin: 16,
     right: 0,
     bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
-  // Settlement Summary Styles
   settlementContainer: {
     gap: 16,
   },
@@ -229,41 +251,24 @@ const styles = StyleSheet.create({
   },
   settledText: {
     fontSize: 16,
-    color: '#2e7d32',
-    fontWeight: '500',
-  },
-  owedSection: {
-    backgroundColor: '#ffebee',
-    borderRadius: 8,
-    padding: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#d32f2f',
-  },
-  receiveSection: {
-    backgroundColor: '#e8f5e8',
-    borderRadius: 8,
-    padding: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#2e7d32',
+    color: '#A5D6A7',
+    fontWeight: 'bold',
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     marginBottom: 8,
-    color: '#333',
+    color: 'white',
   },
   amountOwed: {
-    color: '#d32f2f',
+    color: '#EF9A9A',
     fontWeight: 'bold',
   },
   amountReceive: {
-    color: '#2e7d32',
+    color: '#A5D6A7',
     fontWeight: 'bold',
   },
   settlementItem: {
-    marginVertical: 4,
-  },
-  personInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -271,14 +276,23 @@ const styles = StyleSheet.create({
   },
   personName: {
     fontSize: 14,
-    color: '#555',
+    color: '#E0E0E0',
     flex: 1,
   },
-  settlementAmount: {
+  settlementAmountOwed: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: 'bold',
+    color: '#EF9A9A',
   },
+  settlementAmountReceive: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      color: '#A5D6A7',
+  },
+  emptyText: {
+      color: 'white',
+      textAlign: 'center',
+  }
 });
 
 export default GroupDetailsScreen;
