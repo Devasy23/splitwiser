@@ -49,60 +49,64 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const fetchGroups = async () => {
-    try {
-      setIsLoading(true);
-      const response = await getGroups(token);
-      const groupsList = response.data.groups;
-      setGroups(groupsList);
-      
-      // Fetch settlement status for each group
-      if (user?._id) {
-        const settlementPromises = groupsList.map(async (group) => {
-          const status = await calculateSettlementStatus(group._id, user._id);
-          return { groupId: group._id, status };
-        });
-        
-        const settlementResults = await Promise.all(settlementPromises);
-        const settlementMap = {};
-        settlementResults.forEach(({ groupId, status }) => {
-          settlementMap[groupId] = status;
-        });
-        setGroupSettlements(settlementMap);
-      }
-    } catch (error) {
-      console.error('Failed to fetch groups:', error);
-      Alert.alert('Error', 'Failed to fetch groups.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  setIsLoading(true);
+  try {
+    const response = await getGroups(token);
+    const groupsData = response.data.groups || [];
+    setGroups(groupsData);
 
-  useEffect(() => {
+    // Fetch settlement status for all groups
+    const settlements = {};
+    for (const group of groupsData) {
+      settlements[group._id] = await calculateSettlementStatus(group._id, user._id);
+    }
+    setGroupSettlements(settlements);
+  } catch (error) {
+    console.error('Failed to fetch groups:', error);
+    Alert.alert('Error', 'Failed to load groups.');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+   useEffect(() => {
     if (token) {
       fetchGroups();
     }
   }, [token]);
 
-  const handleCreateGroup = async () => {
-    if (!newGroupName) {
-      Alert.alert('Error', 'Please enter a group name.');
-      return;
-    }
-    setIsCreatingGroup(true);
-    try {
-      await createGroup(token, newGroupName);
-      hideModal();
-      setNewGroupName('');
-      await fetchGroups(); // Refresh the groups list
-    } catch (error) {
-      console.error('Failed to create group:', error);
-      Alert.alert('Error', 'Failed to create group.');
-    } finally {
-      setIsCreatingGroup(false);
-    }
-  };
+const handleCreateGroup = async () => {
+  const trimmedName = newGroupName.trim();
 
-  const renderGroup = ({ item }) => {
+  if (!trimmedName) {
+    Alert.alert('Validation Error', 'Group name is required.');
+    return;
+  }
+
+  if (trimmedName.length < 3) {
+    Alert.alert('Validation Error', 'Group name must be at least 3 characters long.');
+    return;
+  }
+
+
+  setIsCreatingGroup(true);
+  try {
+    await createGroup(token, trimmedName);
+    hideModal();
+    setNewGroupName('');
+    await fetchGroups(); // Refresh the groups list
+  } catch (error) {
+    console.error('Failed to create group:', error);
+    Alert.alert('Error', 'Failed to create group.');
+  } finally {
+    setIsCreatingGroup(false);
+  }
+};
+
+
+ 
+
+    const renderGroup = ({ item }) => {
     const settlementStatus = groupSettlements[item._id];
     
     // Generate settlement status text
