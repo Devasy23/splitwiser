@@ -156,7 +156,8 @@ const HomeScreen = ({ navigation }) => {
       return "#4CAF50"; // Default green
     };
 
-    const isImage = item.imageUrl && /^(https?:)/.test(item.imageUrl);
+    const isImage =
+      item.imageUrl && /^(https?:|data:image)/.test(item.imageUrl);
     const groupIcon = item.imageUrl || item.name?.charAt(0) || "?";
     return (
       <Card
@@ -180,7 +181,6 @@ const HomeScreen = ({ navigation }) => {
           }
         />
         <Card.Content>
-          <Text>Join Code: {item.joinCode}</Text>
           <Text style={[styles.settlementStatus, { color: getStatusColor() }]}>
             {getSettlementStatusText()}
           </Text>

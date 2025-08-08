@@ -84,10 +84,22 @@ const GroupSettingsScreen = ({ route, navigation }) => {
     if (!isAdmin) return;
     const updates = {};
     if (name && name !== group?.name) updates.name = name;
-    // Prefer picked image (base64 -> data URL). If none, ignore unless we had previous URL change via choices.
+
+    // Handle different icon types
     if (pickedImage?.base64) {
+      // If user picked an image, use it as imageUrl
       updates.imageUrl = `data:image/jpeg;base64,${pickedImage.base64}`;
+    } else if (icon && icon !== (group?.imageUrl || group?.icon || "")) {
+      // If user selected an emoji and it's different from current
+      // Check if it's an emoji (not a URL)
+      const isEmoji = ICON_CHOICES.includes(icon);
+      if (isEmoji) {
+        updates.imageUrl = icon; // Store emoji as imageUrl for now
+      } else {
+        updates.imageUrl = icon; // Store other text/URL as imageUrl
+      }
     }
+
     if (Object.keys(updates).length === 0)
       return Alert.alert("Nothing to update");
     try {
@@ -320,12 +332,20 @@ const GroupSettingsScreen = ({ route, navigation }) => {
               >
                 {pickedImage ? "Change Image" : "Upload Image"}
               </Button>
-              {(pickedImage?.uri || group?.imageUrl) && (
+              {pickedImage?.uri ? (
                 <Image
-                  source={{ uri: pickedImage?.uri || group?.imageUrl }}
+                  source={{ uri: pickedImage.uri }}
                   style={{ width: 48, height: 48, borderRadius: 24 }}
                 />
-              )}
+              ) : group?.imageUrl &&
+                /^(https?:|data:image)/.test(group.imageUrl) ? (
+                <Image
+                  source={{ uri: group.imageUrl }}
+                  style={{ width: 48, height: 48, borderRadius: 24 }}
+                />
+              ) : group?.imageUrl ? (
+                <Text style={{ fontSize: 32 }}>{group.imageUrl}</Text>
+              ) : null}
             </View>
             {isAdmin && (
               <Button
