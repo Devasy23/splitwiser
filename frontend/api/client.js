@@ -61,9 +61,8 @@ async function performRefresh() {
       return accessToken;
     } finally {
       isRefreshing = false;
-      const p = refreshPromise; // preserve for awaiting callers
+      // allow GC of the completed promise
       refreshPromise = null;
-      return p; // not used
     }
   })();
   return refreshPromise;

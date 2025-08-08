@@ -1,28 +1,28 @@
-import React, { useState, useContext } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
-import { Button, TextInput, Appbar, Title } from 'react-native-paper';
-import { AuthContext } from '../context/AuthContext';
-import { updateUser } from '../api/auth';
+import { useContext, useState } from "react";
+import { Alert, StyleSheet, View } from "react-native";
+import { Appbar, Button, TextInput, Title } from "react-native-paper";
+import { updateUser } from "../api/auth";
+import { AuthContext } from "../context/AuthContext";
 
 const EditProfileScreen = ({ navigation }) => {
   const { user, token, updateUserInContext } = useContext(AuthContext);
-  const [name, setName] = useState(user?.name || '');
+  const [name, setName] = useState(user?.name || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleUpdateProfile = async () => {
     if (!name) {
-      Alert.alert('Error', 'Name cannot be empty.');
+      Alert.alert("Error", "Name cannot be empty.");
       return;
     }
     setIsSubmitting(true);
     try {
-      const response = await updateUser(token, { name });
+      const response = await updateUser({ name });
       updateUserInContext(response.data);
-      Alert.alert('Success', 'Profile updated successfully.');
+      Alert.alert("Success", "Profile updated successfully.");
       navigation.goBack();
     } catch (error) {
-      console.error('Failed to update profile:', error);
-      Alert.alert('Error', 'Failed to update profile.');
+      console.error("Failed to update profile:", error);
+      Alert.alert("Error", "Failed to update profile.");
     } finally {
       setIsSubmitting(false);
     }

@@ -1,30 +1,37 @@
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from "expo-image-picker";
 import {
-    useContext,
-    useEffect,
-    useLayoutEffect,
-    useMemo,
-    useState,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
 } from "react";
-import { Alert, Image, ScrollView, Share, StyleSheet, View } from "react-native";
 import {
-    ActivityIndicator,
-    Avatar,
-    Button,
-    Card,
-    IconButton,
-    List,
-    Text,
-    TextInput,
+  Alert,
+  Image,
+  ScrollView,
+  Share,
+  StyleSheet,
+  View,
+} from "react-native";
+import {
+  ActivityIndicator,
+  Avatar,
+  Button,
+  Card,
+  IconButton,
+  List,
+  Text,
+  TextInput,
 } from "react-native-paper";
 import {
-    deleteGroup as apiDeleteGroup,
-    leaveGroup as apiLeaveGroup,
-    removeMember as apiRemoveMember,
-    updateGroup as apiUpdateGroup,
-    getGroupById,
-    getGroupMembers,
-    getOptimizedSettlements,
+  deleteGroup as apiDeleteGroup,
+  leaveGroup as apiLeaveGroup,
+  removeMember as apiRemoveMember,
+  updateGroup as apiUpdateGroup,
+  getGroupById,
+  getGroupMembers,
+  getOptimizedSettlements,
 } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 
@@ -104,8 +111,11 @@ const GroupSettingsScreen = ({ route, navigation }) => {
     if (!isAdmin) return;
     // Ask permissions
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission required', 'We need media library permission to select an image.');
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission required",
+        "We need media library permission to select an image."
+      );
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -145,10 +155,18 @@ const GroupSettingsScreen = ({ route, navigation }) => {
           try {
             // Pre-check balances using optimized settlements
             const settlementsRes = await getOptimizedSettlements(groupId);
-            const settlements = settlementsRes?.data?.optimizedSettlements || [];
-            const hasUnsettled = settlements.some(s => (s.fromUserId === memberId || s.toUserId === memberId) && (s.amount || 0) > 0);
+            const settlements =
+              settlementsRes?.data?.optimizedSettlements || [];
+            const hasUnsettled = settlements.some(
+              (s) =>
+                (s.fromUserId === memberId || s.toUserId === memberId) &&
+                (s.amount || 0) > 0
+            );
             if (hasUnsettled) {
-              Alert.alert('Cannot remove', 'This member has unsettled balances in the group.');
+              Alert.alert(
+                "Cannot remove",
+                "This member has unsettled balances in the group."
+              );
               return;
             }
             await apiRemoveMember(groupId, memberId);
@@ -268,96 +286,109 @@ const GroupSettingsScreen = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-      <Card style={styles.card}>
-        <Card.Title title="Group Info" />
-        <Card.Content>
-          <TextInput
-            label="Group Name"
-            value={name}
-            onChangeText={setName}
-            editable={!!isAdmin}
-            style={{ marginBottom: 12 }}
-          />
-          <Text style={{ marginBottom: 8 }}>Icon</Text>
-          <View style={styles.iconRow}>
-            {ICON_CHOICES.map((i) => (
+        <Card style={styles.card}>
+          <Card.Title title="Group Info" />
+          <Card.Content>
+            <TextInput
+              label="Group Name"
+              value={name}
+              onChangeText={setName}
+              editable={!!isAdmin}
+              style={{ marginBottom: 12 }}
+            />
+            <Text style={{ marginBottom: 8 }}>Icon</Text>
+            <View style={styles.iconRow}>
+              {ICON_CHOICES.map((i) => (
+                <Button
+                  key={i}
+                  mode={icon === i ? "contained" : "outlined"}
+                  style={styles.iconBtn}
+                  onPress={() => setIcon(i)}
+                  disabled={!isAdmin}
+                >
+                  {i}
+                </Button>
+              ))}
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Button
-                key={i}
-                mode={icon === i ? "contained" : "outlined"}
-                style={styles.iconBtn}
-                onPress={() => setIcon(i)}
+                mode="outlined"
+                onPress={pickImage}
                 disabled={!isAdmin}
+                icon="image"
+                style={{ marginRight: 12 }}
               >
-                {i}
+                {pickedImage ? "Change Image" : "Upload Image"}
               </Button>
-            ))}
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Button mode="outlined" onPress={pickImage} disabled={!isAdmin} icon="image">
-              {pickedImage ? 'Change Image' : 'Upload Image'}
-            </Button>
-            {(pickedImage?.uri || group?.imageUrl) && (
-              <Image
-                source={{ uri: pickedImage?.uri || group?.imageUrl }}
-                style={{ width: 48, height: 48, borderRadius: 24 }}
-              />
-            )}
-          </View>
-          {isAdmin && (
-            <Button
-              mode="contained"
-              style={{ marginTop: 12 }}
-              loading={saving}
-              disabled={saving}
-              onPress={onSave}
-            >
-              Save Changes
-            </Button>
-          )}
-        </Card.Content>
-      </Card>
-
-      <Card style={styles.card}>
-        <Card.Title title="Members" />
-        <Card.Content>{members.map(renderMemberItem)}</Card.Content>
-      </Card>
-
-      <Card style={styles.card}>
-        <Card.Title title="Invite" />
-        <Card.Content>
-          <Text style={{ marginBottom: 8 }}>Join Code: {group?.joinCode}</Text>
-          <Button mode="outlined" onPress={onShareInvite} icon="share-variant">
-            Share invite
-          </Button>
-        </Card.Content>
-      </Card>
-
-      <Card style={styles.card}>
-        <Card.Title title="Danger Zone" />
-        <Card.Content>
-          <View style={{ gap: 8 }}>
-            <Button
-              mode="outlined"
-              buttonColor="#fff"
-              textColor="#d32f2f"
-              onPress={onLeave}
-              icon="logout-variant"
-            >
-              Leave Group
-            </Button>
+              {(pickedImage?.uri || group?.imageUrl) && (
+                <Image
+                  source={{ uri: pickedImage?.uri || group?.imageUrl }}
+                  style={{ width: 48, height: 48, borderRadius: 24 }}
+                />
+              )}
+            </View>
             {isAdmin && (
               <Button
                 mode="contained"
-                buttonColor="#d32f2f"
-                onPress={onDeleteGroup}
-                icon="delete"
+                style={{ marginTop: 12 }}
+                loading={saving}
+                disabled={saving}
+                onPress={onSave}
               >
-                Delete Group
+                Save Changes
               </Button>
             )}
-          </View>
-        </Card.Content>
-      </Card>
+          </Card.Content>
+        </Card>
+
+        <Card style={styles.card}>
+          <Card.Title title="Members" />
+          <Card.Content>{members.map(renderMemberItem)}</Card.Content>
+        </Card>
+
+        <Card style={styles.card}>
+          <Card.Title title="Invite" />
+          <Card.Content>
+            <Text style={{ marginBottom: 8 }}>
+              Join Code: {group?.joinCode}
+            </Text>
+            <Button
+              mode="outlined"
+              onPress={onShareInvite}
+              icon="share-variant"
+            >
+              Share invite
+            </Button>
+          </Card.Content>
+        </Card>
+
+        <Card style={styles.card}>
+          <Card.Title title="Danger Zone" />
+          <Card.Content>
+            <View>
+              <Button
+                mode="outlined"
+                buttonColor="#fff"
+                textColor="#d32f2f"
+                onPress={onLeave}
+                icon="logout-variant"
+              >
+                Leave Group
+              </Button>
+              {isAdmin && (
+                <Button
+                  mode="contained"
+                  buttonColor="#d32f2f"
+                  onPress={onDeleteGroup}
+                  icon="delete"
+                  style={{ marginTop: 8 }}
+                >
+                  Delete Group
+                </Button>
+              )}
+            </View>
+          </Card.Content>
+        </Card>
       </ScrollView>
     </View>
   );
@@ -368,7 +399,7 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 16 },
   loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   card: { marginBottom: 16 },
-  iconRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
+  iconRow: { flexDirection: "row", flexWrap: "wrap", marginBottom: 8 },
   iconBtn: { marginRight: 8, marginBottom: 8 },
 });
 

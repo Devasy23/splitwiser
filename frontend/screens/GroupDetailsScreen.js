@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   },
   // Settlement Summary Styles
   settlementContainer: {
-    gap: 16,
+    marginBottom: 16,
   },
   settledContainer: {
     alignItems: "center",

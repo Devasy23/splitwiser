@@ -208,7 +208,10 @@ class TestGroupService:
                 {"userId": member_id, "role": "member"},
             ],
         }
-        settlements.count_documents.return_value = 2  # pending exists
+        settlements.find_one.return_value = {
+            "_id": ObjectId(),
+            "status": "pending",
+        }  # Has pending settlements
 
         with patch.object(self.service, "get_db", return_value=mock_db):
             with pytest.raises(HTTPException) as exc:
@@ -239,7 +242,7 @@ class TestGroupService:
                 ],
             }
         ]
-        settlements.count_documents.return_value = 0
+        settlements.find_one.return_value = None  # No pending settlements
         groups.update_one.return_value = MagicMock(modified_count=1)
 
         with patch.object(self.service, "get_db", return_value=mock_db):
@@ -266,7 +269,7 @@ class TestGroupService:
                 {"userId": "other", "role": "admin"},
             ],
         }
-        settlements.count_documents.return_value = 1
+        settlements.find_one.return_value = {"_id": ObjectId(), "status": "pending"}
 
         with patch.object(self.service, "get_db", return_value=mock_db):
             with pytest.raises(HTTPException) as exc:
@@ -296,7 +299,7 @@ class TestGroupService:
                 ],
             }
         ]
-        settlements.count_documents.return_value = 0
+        settlements.find_one.return_value = None  # No pending settlements
         groups.update_one.return_value = MagicMock(modified_count=1)
 
         with patch.object(self.service, "get_db", return_value=mock_db):
@@ -527,7 +530,9 @@ class TestGroupService:
         """Test allowing regular members to leave"""
         mock_db = AsyncMock()
         mock_collection = AsyncMock()
+        mock_settlements = AsyncMock()
         mock_db.groups = mock_collection
+        mock_db.settlements = mock_settlements
 
         group = {
             "_id": ObjectId("642f1e4a9b3c2d1f6a1b2c3d"),
@@ -547,6 +552,7 @@ class TestGroupService:
         }
 
         mock_collection.find_one.return_value = group
+        mock_settlements.find_one.return_value = None  # No pending settlements
         mock_result = MagicMock()
         mock_result.modified_count = 1
         mock_collection.update_one.return_value = mock_result

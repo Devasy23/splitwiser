@@ -313,21 +313,24 @@ class GroupService:
                 )
 
         # Block leaving when there are unsettled balances involving this user
-        pending_count = 0
         try:
-            result = await db.settlements.count_documents(
+            pending = await db.settlements.find_one(
                 {
-                    "groupId": group_id,
+                    "groupId": group_id,  # settlements store string groupId
                     "status": "pending",
                     "$or": [{"payerId": user_id}, {"payeeId": user_id}],
-                }
+                },
+                {"_id": 1},
             )
-            pending_count = result if isinstance(result, int) else 0
         except Exception as e:
-            logger.warning(
-                f"Skipping unsettled check on leave due to error: {e} (defaulting to 0)"
+            logger.error(
+                f"Failed to verify unsettled balances for group {group_id}: {e}"
             )
-        if pending_count > 0:
+            raise HTTPException(
+                status_code=503,
+                detail="Unable to verify unsettled balances right now. Please try again later.",
+            )
+        if pending:
             raise HTTPException(
                 status_code=400,
                 detail="Cannot leave group with unsettled balances. Please settle up first.",
@@ -442,21 +445,24 @@ class GroupService:
             )
 
         # Block removal when there are unsettled balances involving the target member
-        pending_count = 0
         try:
-            result = await db.settlements.count_documents(
+            pending = await db.settlements.find_one(
                 {
-                    "groupId": group_id,
+                    "groupId": group_id,  # settlements store string groupId
                     "status": "pending",
                     "$or": [{"payerId": member_id}, {"payeeId": member_id}],
-                }
+                },
+                {"_id": 1},
             )
-            pending_count = result if isinstance(result, int) else 0
         except Exception as e:
-            logger.warning(
-                f"Skipping unsettled check on removal due to error: {e} (defaulting to 0)"
+            logger.error(
+                f"Failed to verify unsettled balances on removal for group {group_id}: {e}"
             )
-        if pending_count > 0:
+            raise HTTPException(
+                status_code=503,
+                detail="Unable to verify unsettled balances right now. Please try again later.",
+            )
+        if pending:
             raise HTTPException(
                 status_code=400,
                 detail="Cannot remove member with unsettled balances. Please settle up first.",
