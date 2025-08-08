@@ -139,11 +139,17 @@ const HomeScreen = ({ navigation }) => {
       return '#4CAF50'; // Default green
     };
 
+    const isImage = item.imageUrl && /^(https?:)/.test(item.imageUrl);
+    const groupIcon = item.imageUrl || (item.name?.charAt(0) || '?');
     return (
-      <Card style={styles.card} onPress={() => navigation.navigate('GroupDetails', { groupId: item._id, groupName: item.name, groupIcon: item.icon })}>
+      <Card style={styles.card} onPress={() => navigation.navigate('GroupDetails', { groupId: item._id, groupName: item.name, groupIcon })}>
         <Card.Title
           title={item.name}
-          left={(props) => <Avatar.Text {...props} label={item.icon || item.name.charAt(0)} />}
+          left={(props) => isImage ? (
+            <Avatar.Image {...props} source={{ uri: item.imageUrl }} />
+          ) : (
+            <Avatar.Text {...props} label={groupIcon} />
+          )}
         />
         <Card.Content>
           <Text>Join Code: {item.joinCode}</Text>

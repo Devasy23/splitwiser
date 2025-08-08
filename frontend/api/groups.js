@@ -90,3 +90,52 @@ export const getFriendsBalance = (token) => {
     },
   });
 };
+
+// New APIs for Group Settings
+export const getGroupById = (token, groupId) => {
+  return apiClient.get(`/groups/${groupId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const updateGroup = (token, groupId, updates) => {
+  return apiClient.patch(`/groups/${groupId}`, updates, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const deleteGroup = (token, groupId) => {
+  return apiClient.delete(`/groups/${groupId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const leaveGroup = (token, groupId) => {
+  return apiClient.post(`/groups/${groupId}/leave`, {}, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const updateMemberRole = (token, groupId, memberId, role) => {
+  return apiClient.patch(`/groups/${groupId}/members/${memberId}`, { role }, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const removeMember = (token, groupId, memberId) => {
+  return apiClient.delete(`/groups/${groupId}/members/${memberId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};

@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
-import { ActivityIndicator, Card, FAB, Paragraph, Title } from 'react-native-paper';
+import { ActivityIndicator, Avatar, Card, FAB, IconButton, Paragraph, Title } from 'react-native-paper';
 import { getGroupExpenses, getGroupMembers, getOptimizedSettlements } from '../api/groups';
 import { AuthContext } from '../context/AuthContext';
 
@@ -39,7 +39,12 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   };
 
   useEffect(() => {
-    navigation.setOptions({ title: groupName });
+    navigation.setOptions({
+      title: groupName,
+      headerRight: () => (
+        <IconButton icon="cog" onPress={() => navigation.navigate('GroupSettings', { groupId })} />
+      ),
+    });
     if (token && groupId) {
       fetchData();
     }
@@ -151,9 +156,18 @@ const GroupDetailsScreen = ({ route, navigation }) => {
       <Card style={styles.card}>
         <Card.Content>
           <Title>Members</Title>
-          {members.map((item) => (
-            <Paragraph key={item.userId} style={styles.memberText}>• {item.user.name}</Paragraph>
-          ))}
+          <View style={styles.memberList}>
+            {members.map((item) => (
+              <View key={item.userId} style={styles.memberRow}>
+                {item.user?.imageUrl ? (
+                  <Avatar.Image size={32} source={{ uri: item.user.imageUrl }} />
+                ) : (
+                  <Avatar.Text size={32} label={(item.user?.name || '?').charAt(0)} />
+                )}
+                <Text style={styles.memberName}>{item.user?.name}</Text>
+              </View>
+            ))}
+          </View>
         </Card.Content>
       </Card>
 
@@ -212,6 +226,18 @@ const styles = StyleSheet.create({
   memberText: {
       fontSize: 16,
       lineHeight: 24,
+  },
+  memberList: {
+    gap: 8,
+  },
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 2,
+  },
+  memberName: {
+    fontSize: 14,
   },
   fab: {
     position: 'absolute',
