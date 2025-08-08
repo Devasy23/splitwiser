@@ -2,7 +2,6 @@ import { useContext, useEffect, useState } from "react";
 import { Alert, FlatList, StyleSheet, Text, View } from "react-native";
 import {
   ActivityIndicator,
-  Avatar,
   Card,
   FAB,
   IconButton,
@@ -17,7 +16,7 @@ import {
 import { AuthContext } from "../context/AuthContext";
 
 const GroupDetailsScreen = ({ route, navigation }) => {
-  const { groupId, groupName, groupIcon } = route.params;
+  const { groupId, groupName } = route.params;
   const { token, user } = useContext(AuthContext);
   const [members, setMembers] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -187,30 +186,6 @@ const GroupDetailsScreen = ({ route, navigation }) => {
         </Card.Content>
       </Card>
 
-      <Card style={styles.card}>
-        <Card.Content>
-          <Title>Members</Title>
-          <View style={styles.memberList}>
-            {members.map((item) => (
-              <View key={item.userId} style={styles.memberRow}>
-                {item.user?.imageUrl ? (
-                  <Avatar.Image
-                    size={32}
-                    source={{ uri: item.user.imageUrl }}
-                  />
-                ) : (
-                  <Avatar.Text
-                    size={32}
-                    label={(item.user?.name || "?").charAt(0)}
-                  />
-                )}
-                <Text style={styles.memberName}>{item.user?.name}</Text>
-              </View>
-            ))}
-          </View>
-        </Card.Content>
-      </Card>
-
       <Title style={styles.expensesTitle}>Expenses</Title>
     </>
   );
@@ -266,18 +241,6 @@ const styles = StyleSheet.create({
   memberText: {
     fontSize: 16,
     lineHeight: 24,
-  },
-  memberList: {
-    gap: 8,
-  },
-  memberRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: 2,
-  },
-  memberName: {
-    fontSize: 14,
   },
   fab: {
     position: "absolute",

@@ -1,3 +1,4 @@
+import * as ImagePicker from 'expo-image-picker';
 import {
     useContext,
     useEffect,
@@ -5,7 +6,7 @@ import {
     useMemo,
     useState,
 } from "react";
-import { Alert, ScrollView, Share, StyleSheet, View } from "react-native";
+import { Alert, Image, ScrollView, Share, StyleSheet, View } from "react-native";
 import {
     ActivityIndicator,
     Avatar,
@@ -38,6 +39,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
   const [group, setGroup] = useState(null);
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
+  const [pickedImage, setPickedImage] = useState(null); // { uri, base64 }
 
   const isAdmin = useMemo(() => {
     const me = members.find((m) => m.userId === user?._id);
@@ -75,10 +77,9 @@ const GroupSettingsScreen = ({ route, navigation }) => {
     if (!isAdmin) return;
     const updates = {};
     if (name && name !== group?.name) updates.name = name;
-    // Only set imageUrl if it looks like a valid URL; ignore emoji-only selections
-    const isUrl = typeof icon === 'string' && /^(https?:)\/\//i.test(icon);
-    if (isUrl && icon !== (group?.imageUrl || '')) {
-      updates.imageUrl = icon;
+    // Prefer picked image (base64 -> data URL). If none, ignore unless we had previous URL change via choices.
+    if (pickedImage?.base64) {
+      updates.imageUrl = `data:image/jpeg;base64,${pickedImage.base64}`;
     }
     if (Object.keys(updates).length === 0)
       return Alert.alert("Nothing to update");
@@ -86,6 +87,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
       setSaving(true);
       const res = await apiUpdateGroup(groupId, updates);
       setGroup(res.data);
+      if (pickedImage) setPickedImage(null);
       Alert.alert("Updated", "Group updated successfully.");
     } catch (e) {
       console.error("Update failed", e);
@@ -95,6 +97,27 @@ const GroupSettingsScreen = ({ route, navigation }) => {
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  const pickImage = async () => {
+    if (!isAdmin) return;
+    // Ask permissions
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'We need media library permission to select an image.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      base64: true,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      setPickedImage({ uri: asset.uri, base64: asset.base64 });
     }
   };
 
@@ -255,7 +278,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
             editable={!!isAdmin}
             style={{ marginBottom: 12 }}
           />
-          <Text style={{ marginBottom: 8 }}>Icon (emoji or image URL)</Text>
+          <Text style={{ marginBottom: 8 }}>Icon</Text>
           <View style={styles.iconRow}>
             {ICON_CHOICES.map((i) => (
               <Button
@@ -269,12 +292,17 @@ const GroupSettingsScreen = ({ route, navigation }) => {
               </Button>
             ))}
           </View>
-          <TextInput
-            placeholder="Or paste image URL..."
-            value={icon}
-            onChangeText={setIcon}
-            editable={!!isAdmin}
-          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Button mode="outlined" onPress={pickImage} disabled={!isAdmin} icon="image">
+              {pickedImage ? 'Change Image' : 'Upload Image'}
+            </Button>
+            {(pickedImage?.uri || group?.imageUrl) && (
+              <Image
+                source={{ uri: pickedImage?.uri || group?.imageUrl }}
+                style={{ width: 48, height: 48, borderRadius: 24 }}
+              />
+            )}
+          </View>
           {isAdmin && (
             <Button
               mode="contained"
