@@ -2,13 +2,13 @@ import { useIsFocused } from "@react-navigation/native";
 import { useContext, useEffect, useState } from "react";
 import { Alert, FlatList, StyleSheet, View } from "react-native";
 import {
-  ActivityIndicator,
-  Appbar,
-  Avatar,
-  Divider,
-  IconButton,
-  List,
-  Text,
+    ActivityIndicator,
+    Appbar,
+    Avatar,
+    Divider,
+    IconButton,
+    List,
+    Text,
 } from "react-native-paper";
 import { getFriendsBalance, getGroupMembers, getGroups } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
@@ -35,9 +35,10 @@ const FriendsScreen = () => {
         // Create a map of userId to user details by fetching all group members
         const userDetailsMap = new Map();
 
-        for (const group of groups) {
+    for (const group of groups) {
           try {
-            const membersResponse = await getGroupMembers(group.id);
+      // Use backend group id key `_id` when fetching members
+      const membersResponse = await getGroupMembers(group._id || group.id);
             const members = membersResponse.data || [];
 
             members.forEach((member) => {
@@ -91,8 +92,17 @@ const FriendsScreen = () => {
         ? `You owe $${Math.abs(item.netBalance).toFixed(2)}`
         : `Owes you $${item.netBalance.toFixed(2)}`;
 
-    const isImage =
-      item.imageUrl && /^(https?:|data:image)/.test(item.imageUrl);
+    // Determine if we have an image URL or a base64 payload
+    const hasImage = !!item.imageUrl;
+    let imageUri = null;
+    if (hasImage) {
+      // If it's a raw base64 string without prefix, add a default MIME prefix
+      if (/^data:image/.test(item.imageUrl) || /^https?:\/\//.test(item.imageUrl)) {
+        imageUri = item.imageUrl;
+      } else if (/^[A-Za-z0-9+/=]+$/.test(item.imageUrl.substring(0, 50))) {
+        imageUri = `data:image/jpeg;base64,${item.imageUrl}`;
+      }
+    }
 
     return (
       <List.Accordion
@@ -102,12 +112,8 @@ const FriendsScreen = () => {
           color: item.netBalance !== 0 ? balanceColor : "gray",
         }}
         left={(props) =>
-          isImage ? (
-            <Avatar.Image
-              {...props}
-              size={40}
-              source={{ uri: item.imageUrl }}
-            />
+          imageUri ? (
+            <Avatar.Image {...props} size={40} source={{ uri: imageUri }} />
           ) : (
             <Avatar.Text
               {...props}

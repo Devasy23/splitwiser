@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const storedToken = await AsyncStorage.getItem("auth_token");
         const storedRefresh = await AsyncStorage.getItem("refresh_token");
-        const storedUser = await AsyncStorage.getItem("user_data");
+  const storedUser = await AsyncStorage.getItem("user_data");
 
         if (storedToken && storedUser) {
           setToken(storedToken);
@@ -30,7 +30,14 @@ export const AuthProvider = ({ children }) => {
             newAccessToken: storedToken,
             newRefreshToken: storedRefresh,
           });
-          setUser(JSON.parse(storedUser));
+          // Normalize user id shape: ensure `_id` exists even if API stored `id`
+          const parsed = JSON.parse(storedUser);
+          const normalized = parsed?._id
+            ? parsed
+            : parsed?.id
+            ? { ...parsed, _id: parsed.id }
+            : parsed;
+          setUser(normalized);
         }
       } catch (error) {
         console.error("Failed to load stored authentication:", error);
@@ -109,7 +116,13 @@ export const AuthProvider = ({ children }) => {
         newAccessToken: access_token,
         newRefreshToken: refresh_token,
       });
-      setUser(userData);
+      // Normalize user id shape: ensure `_id` exists even if backend returns `id`
+      const normalizedUser = userData?._id
+        ? userData
+        : userData?.id
+        ? { ...userData, _id: userData.id }
+        : userData;
+      setUser(normalizedUser);
       return true;
     } catch (error) {
       console.error(
@@ -150,7 +163,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUserInContext = (updatedUser) => {
-    setUser(updatedUser);
+    // Normalize on updates too
+    const normalizedUser = updatedUser?._id
+      ? updatedUser
+      : updatedUser?.id
+      ? { ...updatedUser, _id: updatedUser.id }
+      : updatedUser;
+    setUser(normalizedUser);
   };
 
   return (
