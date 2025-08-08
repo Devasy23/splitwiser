@@ -189,6 +189,122 @@ class TestGroupService:
             assert "Invalid join code" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
+    async def test_remove_member_blocked_when_unsettled(self):
+        """Admin cannot remove member if pending settlements exist"""
+        mock_db = AsyncMock()
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
+
+        group_id = str(ObjectId())
+        admin_id = "admin123"
+        member_id = "member456"
+
+        groups.find_one.return_value = {
+            "_id": ObjectId(group_id),
+            "members": [
+                {"userId": admin_id, "role": "admin"},
+                {"userId": member_id, "role": "member"},
+            ],
+        }
+        settlements.count_documents.return_value = 2  # pending exists
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            with pytest.raises(HTTPException) as exc:
+                await self.service.remove_member(group_id, member_id, admin_id)
+
+        assert exc.value.status_code == 400
+        assert "unsettled balances" in str(exc.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_remove_member_allowed_when_settled(self):
+        """Admin can remove member when no pending settlements"""
+        mock_db = AsyncMock()
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
+
+        group_id = str(ObjectId())
+        admin_id = "admin123"
+        member_id = "member456"
+
+        groups.find_one.side_effect = [
+            {
+                "_id": ObjectId(group_id),
+                "members": [
+                    {"userId": admin_id, "role": "admin"},
+                    {"userId": member_id, "role": "member"},
+                ],
+            }
+        ]
+        settlements.count_documents.return_value = 0
+        groups.update_one.return_value = MagicMock(modified_count=1)
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            ok = await self.service.remove_member(group_id, member_id, admin_id)
+
+        assert ok is True
+
+    @pytest.mark.asyncio
+    async def test_leave_group_blocked_when_unsettled(self):
+        """Member cannot leave when they have pending settlements"""
+        mock_db = AsyncMock()
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
+
+        group_id = str(ObjectId())
+        user_id = "user123"
+
+        groups.find_one.return_value = {
+            "_id": ObjectId(group_id),
+            "members": [
+                {"userId": user_id, "role": "member"},
+                {"userId": "other", "role": "admin"},
+            ],
+        }
+        settlements.count_documents.return_value = 1
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            with pytest.raises(HTTPException) as exc:
+                await self.service.leave_group(group_id, user_id)
+
+        assert exc.value.status_code == 400
+        assert "unsettled balances" in str(exc.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_leave_group_allowed_when_settled(self):
+        """Member can leave when no pending settlements and not sole admin"""
+        mock_db = AsyncMock()
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
+
+        group_id = str(ObjectId())
+        user_id = "user123"
+
+        groups.find_one.side_effect = [
+            {
+                "_id": ObjectId(group_id),
+                "members": [
+                    {"userId": user_id, "role": "member"},
+                    {"userId": "admin2", "role": "admin"},
+                ],
+            }
+        ]
+        settlements.count_documents.return_value = 0
+        groups.update_one.return_value = MagicMock(modified_count=1)
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            ok = await self.service.leave_group(group_id, user_id)
+
+        assert ok is True
+
+    @pytest.mark.asyncio
     async def test_join_group_already_member(self):
         """Test joining group when already a member"""
         mock_db = AsyncMock()

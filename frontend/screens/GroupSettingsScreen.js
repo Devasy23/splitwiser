@@ -1,28 +1,29 @@
 import {
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useState,
+    useContext,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useState,
 } from "react";
-import { Alert, Share, StyleSheet, View } from "react-native";
+import { Alert, ScrollView, Share, StyleSheet, View } from "react-native";
 import {
-  ActivityIndicator,
-  Avatar,
-  Button,
-  Card,
-  IconButton,
-  List,
-  Text,
-  TextInput,
+    ActivityIndicator,
+    Avatar,
+    Button,
+    Card,
+    IconButton,
+    List,
+    Text,
+    TextInput,
 } from "react-native-paper";
 import {
-  deleteGroup as apiDeleteGroup,
-  leaveGroup as apiLeaveGroup,
-  removeMember as apiRemoveMember,
-  updateGroup as apiUpdateGroup,
-  getGroupById,
-  getGroupMembers,
+    deleteGroup as apiDeleteGroup,
+    leaveGroup as apiLeaveGroup,
+    removeMember as apiRemoveMember,
+    updateGroup as apiUpdateGroup,
+    getGroupById,
+    getGroupMembers,
+    getOptimizedSettlements,
 } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 
@@ -74,8 +75,11 @@ const GroupSettingsScreen = ({ route, navigation }) => {
     if (!isAdmin) return;
     const updates = {};
     if (name && name !== group?.name) updates.name = name;
-    if (icon && icon !== (group?.imageUrl || group?.icon))
+    // Only set imageUrl if it looks like a valid URL; ignore emoji-only selections
+    const isUrl = typeof icon === 'string' && /^(https?:)\/\//i.test(icon);
+    if (isUrl && icon !== (group?.imageUrl || '')) {
       updates.imageUrl = icon;
+    }
     if (Object.keys(updates).length === 0)
       return Alert.alert("Nothing to update");
     try {
@@ -116,6 +120,14 @@ const GroupSettingsScreen = ({ route, navigation }) => {
         style: "destructive",
         onPress: async () => {
           try {
+            // Pre-check balances using optimized settlements
+            const settlementsRes = await getOptimizedSettlements(groupId);
+            const settlements = settlementsRes?.data?.optimizedSettlements || [];
+            const hasUnsettled = settlements.some(s => (s.fromUserId === memberId || s.toUserId === memberId) && (s.amount || 0) > 0);
+            if (hasUnsettled) {
+              Alert.alert('Cannot remove', 'This member has unsettled balances in the group.');
+              return;
+            }
             await apiRemoveMember(groupId, memberId);
             await load();
           } catch (e) {
@@ -232,6 +244,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
       <Card style={styles.card}>
         <Card.Title title="Group Info" />
         <Card.Content>
@@ -239,6 +252,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
             label="Group Name"
             value={name}
             onChangeText={setName}
+            editable={!!isAdmin}
             style={{ marginBottom: 12 }}
           />
           <Text style={{ marginBottom: 8 }}>Icon (emoji or image URL)</Text>
@@ -249,6 +263,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
                 mode={icon === i ? "contained" : "outlined"}
                 style={styles.iconBtn}
                 onPress={() => setIcon(i)}
+                disabled={!isAdmin}
               >
                 {i}
               </Button>
@@ -258,6 +273,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
             placeholder="Or paste image URL..."
             value={icon}
             onChangeText={setIcon}
+            editable={!!isAdmin}
           />
           {isAdmin && (
             <Button
@@ -314,12 +330,14 @@ const GroupSettingsScreen = ({ route, navigation }) => {
           </View>
         </Card.Content>
       </Card>
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { flex: 1 },
+  scrollContent: { padding: 16 },
   loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   card: { marginBottom: 16 },
   iconRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
