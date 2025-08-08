@@ -8,7 +8,7 @@ export const signup = (name, email, password) => {
   return apiClient.post("/auth/signup/email", { name, email, password });
 };
 
-export const updateUser = (userData) => apiClient.patch("/user/", userData);
+export const updateUser = (userData) => apiClient.patch("/users/me", userData);
 
 export const refresh = (refresh_token) => {
   return apiClient.post("/auth/refresh", { refresh_token });

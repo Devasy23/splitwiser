@@ -4,12 +4,13 @@ import { Alert, FlatList, StyleSheet, View } from "react-native";
 import {
   ActivityIndicator,
   Appbar,
+  Avatar,
   Divider,
   IconButton,
   List,
   Text,
 } from "react-native-paper";
-import { getFriendsBalance } from "../api/groups";
+import { getFriendsBalance, getGroupMembers, getGroups } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 
 const FriendsScreen = () => {
@@ -23,20 +24,51 @@ const FriendsScreen = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
+        // Fetch friends balance data
         const friendsResponse = await getFriendsBalance();
         const friendsData = friendsResponse.data.friendsBalance || [];
 
-        // Transform the backend data to match the expected frontend format
-        const transformedFriends = friendsData.map((friend) => ({
-          id: friend.userId,
-          name: friend.userName,
-          netBalance: friend.netBalance,
-          groups: friend.breakdown.map((group) => ({
-            id: group.groupId,
-            name: group.groupName,
-            balance: group.balance,
-          })),
-        }));
+        // Fetch all groups to get member details with user images
+        const groupsResponse = await getGroups();
+        const groups = groupsResponse.data.groups || [];
+
+        // Create a map of userId to user details by fetching all group members
+        const userDetailsMap = new Map();
+
+        for (const group of groups) {
+          try {
+            const membersResponse = await getGroupMembers(group.id);
+            const members = membersResponse.data || [];
+
+            members.forEach((member) => {
+              if (member.user && member.userId) {
+                userDetailsMap.set(member.userId, member.user);
+              }
+            });
+          } catch (error) {
+            console.warn(
+              `Failed to fetch members for group ${group.id}:`,
+              error
+            );
+          }
+        }
+
+        // Transform the backend data and enrich with user details
+        const transformedFriends = friendsData.map((friend) => {
+          const userDetails = userDetailsMap.get(friend.userId);
+
+          return {
+            id: friend.userId,
+            name: friend.userName,
+            imageUrl: userDetails?.imageUrl || null,
+            netBalance: friend.netBalance,
+            groups: friend.breakdown.map((group) => ({
+              id: group.groupId,
+              name: group.groupName,
+              balance: group.balance,
+            })),
+          };
+        });
 
         setFriends(transformedFriends);
       } catch (error) {
@@ -59,6 +91,9 @@ const FriendsScreen = () => {
         ? `You owe $${Math.abs(item.netBalance).toFixed(2)}`
         : `Owes you $${item.netBalance.toFixed(2)}`;
 
+    const isImage =
+      item.imageUrl && /^(https?:|data:image)/.test(item.imageUrl);
+
     return (
       <List.Accordion
         title={item.name}
@@ -66,7 +101,21 @@ const FriendsScreen = () => {
         descriptionStyle={{
           color: item.netBalance !== 0 ? balanceColor : "gray",
         }}
-        left={(props) => <List.Icon {...props} icon="account" />}
+        left={(props) =>
+          isImage ? (
+            <Avatar.Image
+              {...props}
+              size={40}
+              source={{ uri: item.imageUrl }}
+            />
+          ) : (
+            <Avatar.Text
+              {...props}
+              size={40}
+              label={(item.name || "?").charAt(0)}
+            />
+          )
+        }
       >
         {item.groups.map((group) => {
           const groupBalanceColor = group.balance < 0 ? "red" : "green";
