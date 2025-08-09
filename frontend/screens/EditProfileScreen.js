@@ -22,7 +22,12 @@ const EditProfileScreen = ({ navigation }) => {
 
       // Add image if picked
       if (pickedImage?.base64) {
-        updates.imageUrl = `data:image/jpeg;base64,${pickedImage.base64}`;
+        // Dynamically determine MIME type from picker metadata
+        const mime =
+          pickedImage.mimeType && /image\//.test(pickedImage.mimeType)
+            ? pickedImage.mimeType
+            : "image/jpeg"; // fallback
+        updates.imageUrl = `data:${mime};base64,${pickedImage.base64}`;
       }
 
       const response = await updateUser(updates);
@@ -56,7 +61,22 @@ const EditProfileScreen = ({ navigation }) => {
     });
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const asset = result.assets[0];
-      setPickedImage({ uri: asset.uri, base64: asset.base64 });
+      // Capture mimeType (expo-image-picker provides mimeType on iOS/Android SDK 49+)
+      let mimeType = asset.mimeType || asset.type; // expo sometimes supplies type like 'image'
+      if (mimeType && !/image\//.test(mimeType)) {
+        // if it's just 'image', normalize
+        if (mimeType === 'image') mimeType = 'image/jpeg';
+      }
+      if (!mimeType || !/image\//.test(mimeType)) {
+        // Attempt to infer from file extension as a lightweight fallback
+        const ext = (asset.uri || "").split(".").pop()?.toLowerCase();
+        if (ext === "png") mimeType = "image/png";
+        else if (ext === "webp") mimeType = "image/webp";
+        else if (ext === "gif") mimeType = "image/gif";
+        else if (ext === "jpg" || ext === "jpeg") mimeType = "image/jpeg";
+        else mimeType = "image/jpeg"; // safe default
+      }
+      setPickedImage({ uri: asset.uri, base64: asset.base64, mimeType });
     }
   };
 

@@ -30,6 +30,14 @@ export const apiClient = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+// Basic retry configuration
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 300; // base backoff
+
+function sleep(ms) {
+  return new Promise((res) => setTimeout(res, ms));
+}
+
 // Attach Authorization header
 apiClient.interceptors.request.use((config) => {
   if (accessToken && !config.headers?.Authorization) {
@@ -78,20 +86,32 @@ apiClient.interceptors.response.use(
     // Avoid refresh loop
     const isAuthRefreshCall = originalRequest.url?.includes("/auth/refresh");
 
+    // 1. Handle 401 with refresh
     if (status === 401 && !originalRequest._retry && !isAuthRefreshCall) {
       originalRequest._retry = true;
       try {
         await performRefresh();
-        // Set new Authorization and retry
         originalRequest.headers = originalRequest.headers || {};
         if (accessToken)
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return apiClient(originalRequest);
       } catch (e) {
-        // Propagate original error; caller should handle logout
         return Promise.reject(error);
       }
     }
+
+  // 2. Retry on network errors or 5xx (all methods; caller should ensure idempotency where needed)
+  const transientError = !status || (status >= 500 && status < 600);
+  if (transientError) {
+      originalRequest._retryCount = originalRequest._retryCount || 0;
+      if (originalRequest._retryCount < MAX_RETRIES) {
+        originalRequest._retryCount += 1;
+        const delay = BASE_DELAY_MS * 2 ** (originalRequest._retryCount - 1);
+        await sleep(delay + Math.random() * 100); // jitter
+        return apiClient(originalRequest);
+      }
+    }
+
     return Promise.reject(error);
   }
 );

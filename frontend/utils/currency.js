@@ -9,6 +9,9 @@ export const formatCurrency = (amount) => {
   if (amount == null || isNaN(Number(amount)))
     return `${DEFAULT_CURRENCY_SYMBOL}0.00`;
   const num = Number(amount);
+  if (!Number.isFinite(num)) {
+    return `${DEFAULT_CURRENCY_SYMBOL}0.00`;
+  }
   return `${DEFAULT_CURRENCY_SYMBOL}${num.toFixed(2)}`;
 };
 
