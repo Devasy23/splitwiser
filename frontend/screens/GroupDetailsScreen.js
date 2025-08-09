@@ -199,10 +199,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
         keyExtractor={(item) => item._id}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={
-          <View>
-            {renderHeader()}
-            <Text>No expenses recorded yet.</Text>
-          </View>
+          <Text style={styles.emptyText}>No expenses recorded yet.</Text>
         }
         contentContainerStyle={{ paddingBottom: 80 }} // To avoid FAB overlap
       />
@@ -307,6 +304,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#333",
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "#666",
+    paddingVertical: 8,
   },
 });
 
