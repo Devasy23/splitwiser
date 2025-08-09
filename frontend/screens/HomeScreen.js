@@ -13,6 +13,7 @@ import {
 } from "react-native-paper";
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
+import { formatCurrency, getCurrencySymbol } from "../utils/currency";
 
 const HomeScreen = ({ navigation }) => {
   const { token, logout, user } = useContext(AuthContext);
@@ -119,6 +120,8 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  const currencySymbol = getCurrencySymbol();
+
   const renderGroup = ({ item }) => {
     const settlementStatus = groupSettlements[item._id];
 
@@ -133,9 +136,11 @@ const HomeScreen = ({ navigation }) => {
       }
 
       if (settlementStatus.netBalance > 0) {
-        return `You are owed $${settlementStatus.netBalance.toFixed(2)}.`;
+        return `You are owed ${formatCurrency(settlementStatus.netBalance)}.`;
       } else if (settlementStatus.netBalance < 0) {
-        return `You owe $${Math.abs(settlementStatus.netBalance).toFixed(2)}.`;
+        return `You owe ${formatCurrency(
+          Math.abs(settlementStatus.netBalance)
+        )}.`;
       }
 
       return "You are settled up.";

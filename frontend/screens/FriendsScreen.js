@@ -1,9 +1,17 @@
 import { useIsFocused } from "@react-navigation/native";
 import { useContext, useEffect, useRef, useState } from "react";
 import { Alert, Animated, FlatList, StyleSheet, View } from "react-native";
-import { Appbar, Avatar, Divider, IconButton, List, Text } from "react-native-paper";
+import {
+  Appbar,
+  Avatar,
+  Divider,
+  IconButton,
+  List,
+  Text,
+} from "react-native-paper";
 import { getFriendsBalance, getGroups } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
+import { formatCurrency } from "../utils/currency";
 
 const FriendsScreen = () => {
   const { token, user } = useContext(AuthContext);
@@ -27,15 +35,15 @@ const FriendsScreen = () => {
 
         const transformedFriends = friendsData.map((friend) => ({
           id: friend.userId,
-            name: friend.userName,
-            imageUrl: friend.userImageUrl || null,
-            netBalance: friend.netBalance,
-            groups: (friend.breakdown || []).map((group) => ({
-              id: group.groupId,
-              name: group.groupName,
-                balance: group.balance,
-                imageUrl: groupMeta.get(group.groupId)?.imageUrl || null,
-            })),
+          name: friend.userName,
+          imageUrl: friend.userImageUrl || null,
+          netBalance: friend.netBalance,
+          groups: (friend.breakdown || []).map((group) => ({
+            id: group.groupId,
+            name: group.groupName,
+            balance: group.balance,
+            imageUrl: groupMeta.get(group.groupId)?.imageUrl || null,
+          })),
         }));
 
         setFriends(transformedFriends);
@@ -56,15 +64,18 @@ const FriendsScreen = () => {
     const balanceColor = item.netBalance < 0 ? "red" : "green";
     const balanceText =
       item.netBalance < 0
-        ? `You owe $${Math.abs(item.netBalance).toFixed(2)}`
-        : `Owes you $${item.netBalance.toFixed(2)}`;
+        ? `You owe ${formatCurrency(Math.abs(item.netBalance))}`
+        : `Owes you ${formatCurrency(item.netBalance)}`;
 
     // Determine if we have an image URL or a base64 payload
     const hasImage = !!item.imageUrl;
     let imageUri = null;
     if (hasImage) {
       // If it's a raw base64 string without prefix, add a default MIME prefix
-      if (/^data:image/.test(item.imageUrl) || /^https?:\/\//.test(item.imageUrl)) {
+      if (
+        /^data:image/.test(item.imageUrl) ||
+        /^https?:\/\//.test(item.imageUrl)
+      ) {
         imageUri = item.imageUrl;
       } else if (/^[A-Za-z0-9+/=]+$/.test(item.imageUrl.substring(0, 50))) {
         imageUri = `data:image/jpeg;base64,${item.imageUrl}`;
@@ -94,14 +105,19 @@ const FriendsScreen = () => {
           const groupBalanceColor = group.balance < 0 ? "red" : "green";
           const groupBalanceText =
             group.balance < 0
-              ? `You owe $${Math.abs(group.balance).toFixed(2)}`
-              : `Owes you $${group.balance.toFixed(2)}`;
+              ? `You owe ${formatCurrency(Math.abs(group.balance))}`
+              : `Owes you ${formatCurrency(group.balance)}`;
           // Prepare group icon (imageUrl may be base64 or URL)
           let groupImageUri = null;
           if (group.imageUrl) {
-            if (/^data:image/.test(group.imageUrl) || /^https?:\/\//.test(group.imageUrl)) {
+            if (
+              /^data:image/.test(group.imageUrl) ||
+              /^https?:\/\//.test(group.imageUrl)
+            ) {
               groupImageUri = group.imageUrl;
-            } else if (/^[A-Za-z0-9+/=]+$/.test(group.imageUrl.substring(0, 50))) {
+            } else if (
+              /^[A-Za-z0-9+/=]+$/.test(group.imageUrl.substring(0, 50))
+            ) {
               groupImageUri = `data:image/jpeg;base64,${group.imageUrl}`;
             }
           }
@@ -114,7 +130,11 @@ const FriendsScreen = () => {
               descriptionStyle={{ color: groupBalanceColor }}
               left={(props) =>
                 groupImageUri ? (
-                  <Avatar.Image {...props} size={36} source={{ uri: groupImageUri }} />
+                  <Avatar.Image
+                    {...props}
+                    size={36}
+                    source={{ uri: groupImageUri }}
+                  />
                 ) : (
                   <Avatar.Text
                     {...props}
@@ -153,10 +173,19 @@ const FriendsScreen = () => {
 
   const SkeletonRow = () => (
     <View style={styles.skeletonRow}>
-      <Animated.View style={[styles.skeletonAvatar, { opacity: opacityAnim }]} />
+      <Animated.View
+        style={[styles.skeletonAvatar, { opacity: opacityAnim }]}
+      />
       <View style={{ flex: 1, marginLeft: 12 }}>
-        <Animated.View style={[styles.skeletonLine, { width: '60%', opacity: opacityAnim }]} />
-        <Animated.View style={[styles.skeletonLineSmall, { width: '40%', opacity: opacityAnim }]} />
+        <Animated.View
+          style={[styles.skeletonLine, { width: "60%", opacity: opacityAnim }]}
+        />
+        <Animated.View
+          style={[
+            styles.skeletonLineSmall,
+            { width: "40%", opacity: opacityAnim },
+          ]}
+        />
       </View>
     </View>
   );
@@ -247,31 +276,31 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
   },
-    skeletonContainer: {
-        padding: 16,
-    },
-    skeletonRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 14,
-    },
-    skeletonAvatar: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: '#e0e0e0',
-    },
-    skeletonLine: {
-        height: 14,
-        backgroundColor: '#e0e0e0',
-        borderRadius: 6,
-        marginBottom: 6,
-    },
-    skeletonLineSmall: {
-        height: 12,
-        backgroundColor: '#e0e0e0',
-        borderRadius: 6,
-    },
+  skeletonContainer: {
+    padding: 16,
+  },
+  skeletonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  skeletonAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#e0e0e0",
+  },
+  skeletonLine: {
+    height: 14,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  skeletonLineSmall: {
+    height: 12,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 6,
+  },
 });
 
 export default FriendsScreen;

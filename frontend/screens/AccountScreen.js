@@ -43,13 +43,13 @@ const AccountScreen = ({ navigation }) => {
           <Divider />
           <List.Item
             title="Email Settings"
-            left={() => <List.Icon icon="email-settings" />}
+            left={() => <List.Icon icon="email-edit-outline" />}
             onPress={handleComingSoon}
           />
           <Divider />
           <List.Item
             title="Send Feedback"
-            left={() => <List.Icon icon="feedback" />}
+            left={() => <List.Icon icon="message-alert-outline" />}
             onPress={handleComingSoon}
           />
           <Divider />
