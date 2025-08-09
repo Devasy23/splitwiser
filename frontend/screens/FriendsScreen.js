@@ -1,16 +1,8 @@
 import { useIsFocused } from "@react-navigation/native";
-import { useContext, useEffect, useState } from "react";
-import { Alert, FlatList, StyleSheet, View } from "react-native";
-import {
-    ActivityIndicator,
-    Appbar,
-    Avatar,
-    Divider,
-    IconButton,
-    List,
-    Text,
-} from "react-native-paper";
-import { getFriendsBalance, getGroupMembers, getGroups } from "../api/groups";
+import { useContext, useEffect, useRef, useState } from "react";
+import { Alert, Animated, FlatList, StyleSheet, View } from "react-native";
+import { Appbar, Avatar, Divider, IconButton, List, Text } from "react-native-paper";
+import { getFriendsBalance, getGroups } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 
 const FriendsScreen = () => {
@@ -24,52 +16,27 @@ const FriendsScreen = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch friends balance data
+        // Fetch friends balance + groups concurrently for group icons
         const friendsResponse = await getFriendsBalance();
         const friendsData = friendsResponse.data.friendsBalance || [];
-
-        // Fetch all groups to get member details with user images
         const groupsResponse = await getGroups();
-        const groups = groupsResponse.data.groups || [];
+        const groups = groupsResponse?.data?.groups || [];
+        const groupMeta = new Map(
+          groups.map((g) => [g._id, { name: g.name, imageUrl: g.imageUrl }])
+        );
 
-        // Create a map of userId to user details by fetching all group members
-        const userDetailsMap = new Map();
-
-    for (const group of groups) {
-          try {
-      // Use backend group id key `_id` when fetching members
-      const membersResponse = await getGroupMembers(group._id || group.id);
-            const members = membersResponse.data || [];
-
-            members.forEach((member) => {
-              if (member.user && member.userId) {
-                userDetailsMap.set(member.userId, member.user);
-              }
-            });
-          } catch (error) {
-            console.warn(
-              `Failed to fetch members for group ${group.id}:`,
-              error
-            );
-          }
-        }
-
-        // Transform the backend data and enrich with user details
-        const transformedFriends = friendsData.map((friend) => {
-          const userDetails = userDetailsMap.get(friend.userId);
-
-          return {
-            id: friend.userId,
+        const transformedFriends = friendsData.map((friend) => ({
+          id: friend.userId,
             name: friend.userName,
-            imageUrl: userDetails?.imageUrl || null,
+            imageUrl: friend.userImageUrl || null,
             netBalance: friend.netBalance,
-            groups: friend.breakdown.map((group) => ({
+            groups: (friend.breakdown || []).map((group) => ({
               id: group.groupId,
               name: group.groupName,
-              balance: group.balance,
+                balance: group.balance,
+                imageUrl: groupMeta.get(group.groupId)?.imageUrl || null,
             })),
-          };
-        });
+        }));
 
         setFriends(transformedFriends);
       } catch (error) {
@@ -129,6 +96,15 @@ const FriendsScreen = () => {
             group.balance < 0
               ? `You owe $${Math.abs(group.balance).toFixed(2)}`
               : `Owes you $${group.balance.toFixed(2)}`;
+          // Prepare group icon (imageUrl may be base64 or URL)
+          let groupImageUri = null;
+          if (group.imageUrl) {
+            if (/^data:image/.test(group.imageUrl) || /^https?:\/\//.test(group.imageUrl)) {
+              groupImageUri = group.imageUrl;
+            } else if (/^[A-Za-z0-9+/=]+$/.test(group.imageUrl.substring(0, 50))) {
+              groupImageUri = `data:image/jpeg;base64,${group.imageUrl}`;
+            }
+          }
 
           return (
             <List.Item
@@ -136,7 +112,17 @@ const FriendsScreen = () => {
               title={group.name}
               description={groupBalanceText}
               descriptionStyle={{ color: groupBalanceColor }}
-              left={(props) => <List.Icon {...props} icon="group" />}
+              left={(props) =>
+                groupImageUri ? (
+                  <Avatar.Image {...props} size={36} source={{ uri: groupImageUri }} />
+                ) : (
+                  <Avatar.Text
+                    {...props}
+                    size={36}
+                    label={(group.name || "?").charAt(0)}
+                  />
+                )
+              }
             />
           );
         })}
@@ -144,10 +130,48 @@ const FriendsScreen = () => {
     );
   };
 
+  // Shimmer skeleton components
+  const opacityAnim = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0.3,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [opacityAnim]);
+
+  const SkeletonRow = () => (
+    <View style={styles.skeletonRow}>
+      <Animated.View style={[styles.skeletonAvatar, { opacity: opacityAnim }]} />
+      <View style={{ flex: 1, marginLeft: 12 }}>
+        <Animated.View style={[styles.skeletonLine, { width: '60%', opacity: opacityAnim }]} />
+        <Animated.View style={[styles.skeletonLineSmall, { width: '40%', opacity: opacityAnim }]} />
+      </View>
+    </View>
+  );
+
   if (isLoading) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" />
+      <View style={styles.container}>
+        <Appbar.Header>
+          <Appbar.Content title="Friends" />
+        </Appbar.Header>
+        <View style={styles.skeletonContainer}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonRow key={i} />
+          ))}
+        </View>
       </View>
     );
   }
@@ -223,6 +247,31 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
   },
+    skeletonContainer: {
+        padding: 16,
+    },
+    skeletonRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 14,
+    },
+    skeletonAvatar: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#e0e0e0',
+    },
+    skeletonLine: {
+        height: 14,
+        backgroundColor: '#e0e0e0',
+        borderRadius: 6,
+        marginBottom: 6,
+    },
+    skeletonLineSmall: {
+        height: 12,
+        backgroundColor: '#e0e0e0',
+        borderRadius: 6,
+    },
 });
 
 export default FriendsScreen;
