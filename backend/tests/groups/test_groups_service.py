@@ -599,3 +599,144 @@ class TestGroupService:
         assert result["name"] == "Partial Group"
         assert result["currency"] == "USD"  # default fallback
         assert result["members"] == []  # default fallback
+
+    # --- New tests for unsettled balance checks & exception handling (coverage additions) ---
+    @pytest.mark.asyncio
+    async def test_leave_group_pending_settlement_blocks(self):
+        """Member can't leave when a pending settlement exists (covers pending branch)."""
+        mock_db = AsyncMock()
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
+
+        group = {
+            "_id": ObjectId("642f1e4a9b3c2d1f6a1b2c3d"),
+            "name": "Test Group",
+            "members": [
+                {
+                    "userId": "admin1",
+                    "role": "admin",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                },
+                {
+                    "userId": "member1",
+                    "role": "member",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                },
+            ],
+        }
+        groups.find_one.return_value = group
+        settlements.find_one.return_value = {"_id": ObjectId()}
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            with pytest.raises(HTTPException) as exc:
+                await self.service.leave_group(str(group["_id"]), "member1")
+
+        assert exc.value.status_code == 400
+        assert "Cannot leave group with unsettled balances" in exc.value.detail
+
+    @pytest.mark.asyncio
+    async def test_leave_group_settlement_lookup_failure(self):
+        """Service returns 503 when settlement lookup errors (covers except block)."""
+        mock_db = AsyncMock()
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
+
+        group = {
+            "_id": ObjectId("642f1e4a9b3c2d1f6a1b2c3d"),
+            "name": "Test Group",
+            "members": [
+                {
+                    "userId": "admin1",
+                    "role": "admin",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                },
+                {
+                    "userId": "member1",
+                    "role": "member",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                },
+            ],
+        }
+        groups.find_one.return_value = group
+        settlements.find_one.side_effect = Exception("db down")
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            with pytest.raises(HTTPException) as exc:
+                await self.service.leave_group(str(group["_id"]), "member1")
+
+        assert exc.value.status_code == 503
+        assert "Unable to verify unsettled balances" in exc.value.detail
+
+    @pytest.mark.asyncio
+    async def test_remove_member_pending_settlement_blocks(self):
+        """Admin can't remove member with pending settlement (covers pending branch)."""
+        mock_db = AsyncMock()
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
+
+        group = {
+            "_id": ObjectId("642f1e4a9b3c2d1f6a1b2c3d"),
+            "name": "Test Group",
+            "members": [
+                {
+                    "userId": "admin1",
+                    "role": "admin",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                },
+                {
+                    "userId": "member1",
+                    "role": "member",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                },
+            ],
+        }
+        groups.find_one.return_value = group  # Admin check passes
+        settlements.find_one.return_value = {"_id": ObjectId()}
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            with pytest.raises(HTTPException) as exc:
+                await self.service.remove_member(str(group["_id"]), "member1", "admin1")
+
+        assert exc.value.status_code == 400
+        assert "Cannot remove member with unsettled balances" in exc.value.detail
+
+    @pytest.mark.asyncio
+    async def test_remove_member_settlement_lookup_failure(self):
+        """Service returns 503 when settlement lookup fails during removal (covers except block)."""
+        mock_db = AsyncMock()
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
+
+        group = {
+            "_id": ObjectId("642f1e4a9b3c2d1f6a1b2c3d"),
+            "name": "Test Group",
+            "members": [
+                {
+                    "userId": "admin1",
+                    "role": "admin",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                },
+                {
+                    "userId": "member1",
+                    "role": "member",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                },
+            ],
+        }
+        groups.find_one.return_value = group  # Admin check passes
+        settlements.find_one.side_effect = Exception("db error")
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            with pytest.raises(HTTPException) as exc:
+                await self.service.remove_member(str(group["_id"]), "member1", "admin1")
+
+        assert exc.value.status_code == 503
+        assert "Unable to verify unsettled balances" in exc.value.detail
