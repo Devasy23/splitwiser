@@ -10,11 +10,19 @@ from app.user.routes import router as user_router
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from utils.limiter import Limiter, get_remote_address, limiter
+
+limiter = Limiter(key_func=get_remote_address)
+# limiter = Limiter(key_func=get_remote_address)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    app.state.limiter = limiter
     logger.info("Lifespan: Connecting to MongoDB...")
     await connect_to_mongo()
     logger.info("Lifespan: MongoDB connected.")
@@ -75,6 +83,9 @@ app.add_middleware(
     expose_headers=["*"],
     max_age=3600,  # Cache preflight responses for 1 hour
 )
+
+
+app.add_middleware(SlowAPIMiddleware)
 
 
 # Add a catch-all OPTIONS handler that should work for any path
