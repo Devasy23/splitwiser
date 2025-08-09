@@ -1,14 +1,15 @@
 import * as ImagePicker from "expo-image-picker";
 import { useContext, useState } from "react";
-import { Alert, StyleSheet, View } from "react-native";
-import { Appbar, Avatar, Button, TextInput, Title } from "react-native-paper";
+import { Alert, StyleSheet, View, Text } from "react-native";
+import { Appbar, Avatar, Button, TextInput } from "react-native-paper";
 import { updateUser } from "../api/auth";
 import { AuthContext } from "../context/AuthContext";
+import { colors, spacing, typography } from "../styles/theme";
 
 const EditProfileScreen = ({ navigation }) => {
-  const { user, token, updateUserInContext } = useContext(AuthContext);
+  const { user, updateUserInContext } = useContext(AuthContext);
   const [name, setName] = useState(user?.name || "");
-  const [pickedImage, setPickedImage] = useState(null); // { uri, base64 }
+  const [pickedImage, setPickedImage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleUpdateProfile = async () => {
@@ -19,17 +20,10 @@ const EditProfileScreen = ({ navigation }) => {
     setIsSubmitting(true);
     try {
       const updates = { name };
-
-      // Add image if picked
       if (pickedImage?.base64) {
-        // Dynamically determine MIME type from picker metadata
-        const mime =
-          pickedImage.mimeType && /image\//.test(pickedImage.mimeType)
-            ? pickedImage.mimeType
-            : "image/jpeg"; // fallback
+        const mime = pickedImage.mimeType || "image/jpeg";
         updates.imageUrl = `data:${mime};base64,${pickedImage.base64}`;
       }
-
       const response = await updateUser(updates);
       updateUserInContext(response.data);
       Alert.alert("Success", "Profile updated successfully.");
@@ -43,7 +37,6 @@ const EditProfileScreen = ({ navigation }) => {
   };
 
   const pickImage = async () => {
-    // Ask permissions
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
@@ -61,48 +54,47 @@ const EditProfileScreen = ({ navigation }) => {
     });
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const asset = result.assets[0];
-      // Capture mimeType (expo-image-picker provides mimeType on iOS/Android SDK 49+)
-      let mimeType = asset.mimeType || asset.type; // expo sometimes supplies type like 'image'
-      if (mimeType && !/image\//.test(mimeType)) {
-        // if it's just 'image', normalize
-        if (mimeType === 'image') mimeType = 'image/jpeg';
-      }
-      if (!mimeType || !/image\//.test(mimeType)) {
-        // Attempt to infer from file extension as a lightweight fallback
-        const ext = (asset.uri || "").split(".").pop()?.toLowerCase();
-        if (ext === "png") mimeType = "image/png";
-        else if (ext === "webp") mimeType = "image/webp";
-        else if (ext === "gif") mimeType = "image/gif";
-        else if (ext === "jpg" || ext === "jpeg") mimeType = "image/jpeg";
-        else mimeType = "image/jpeg"; // safe default
-      }
+      let mimeType = asset.mimeType || "image/jpeg";
       setPickedImage({ uri: asset.uri, base64: asset.base64, mimeType });
     }
   };
 
   return (
     <View style={styles.container}>
-      <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="Edit Profile" />
+      <Appbar.Header style={{ backgroundColor: colors.primary }}>
+        <Appbar.BackAction
+          onPress={() => navigation.goBack()}
+          color={colors.white}
+        />
+        <Appbar.Content
+          title="Edit Profile"
+          color={colors.white}
+          titleStyle={{ ...typography.h2 }}
+        />
       </Appbar.Header>
       <View style={styles.content}>
-        <Title>Edit Your Details</Title>
+        <Text style={styles.title}>Edit Your Details</Text>
 
-        {/* Profile Picture Section */}
         <View style={styles.profilePictureSection}>
-          {pickedImage?.uri ? (
-            <Avatar.Image size={100} source={{ uri: pickedImage.uri }} />
-          ) : user?.imageUrl && /^(https?:|data:image)/.test(user.imageUrl) ? (
-            <Avatar.Image size={100} source={{ uri: user.imageUrl }} />
-          ) : (
-            <Avatar.Text size={100} label={(user?.name || "?").charAt(0)} />
-          )}
+          <Avatar.Image
+            size={120}
+            source={{
+              uri:
+                pickedImage?.uri ||
+                (user?.imageUrl && /^(https?:|data:image)/.test(user.imageUrl)
+                  ? user.imageUrl
+                  : `https://avatar.iran.liara.run/username?username=${
+                      user?.name || "A"
+                    }`),
+            }}
+            style={styles.avatar}
+          />
           <Button
-            mode="outlined"
+            mode="text"
             onPress={pickImage}
             icon="camera"
             style={styles.imageButton}
+            labelStyle={styles.imageButtonLabel}
           >
             {pickedImage ? "Change Photo" : "Add Photo"}
           </Button>
@@ -113,6 +105,7 @@ const EditProfileScreen = ({ navigation }) => {
           value={name}
           onChangeText={setName}
           style={styles.input}
+          theme={{ colors: { primary: colors.accent } }}
         />
         <Button
           mode="contained"
@@ -120,6 +113,7 @@ const EditProfileScreen = ({ navigation }) => {
           loading={isSubmitting}
           disabled={isSubmitting}
           style={styles.button}
+          labelStyle={styles.buttonLabel}
         >
           Save Changes
         </Button>
@@ -131,22 +125,43 @@ const EditProfileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.secondary,
   },
   content: {
-    padding: 16,
+    padding: spacing.lg,
+  },
+  title: {
+    ...typography.h2,
+    color: colors.text,
+    marginBottom: spacing.lg,
+    textAlign: "center",
   },
   profilePictureSection: {
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: spacing.xl,
+  },
+  avatar: {
+    backgroundColor: colors.primary,
   },
   imageButton: {
-    marginTop: 12,
+    marginTop: spacing.md,
+  },
+  imageButtonLabel: {
+    color: colors.primary,
   },
   input: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.white,
   },
   button: {
-    marginTop: 8,
+    marginTop: spacing.md,
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.sm,
+  },
+  buttonLabel: {
+    ...typography.body,
+    color: colors.white,
+    fontWeight: "bold",
   },
 });
 
