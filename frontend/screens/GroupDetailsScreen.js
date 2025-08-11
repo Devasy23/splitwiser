@@ -183,6 +183,18 @@ const GroupDetailsScreen = ({ route, navigation }) => {
                 </Text>
               </View>
             ))}
+            <TouchableOpacity
+              style={styles.settleUpButton}
+              onPress={() =>
+                navigation.navigate("SettleUp", {
+                  groupId,
+                  settlement: settlements[0],
+                  members,
+                })
+              }
+            >
+              <Text style={styles.settleUpButtonText}>Settle Up</Text>
+            </TouchableOpacity>
           </View>
         )}
       </TouchableOpacity>
@@ -354,6 +366,18 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: "center",
     marginTop: spacing.lg,
+  },
+  settleUpButton: {
+    backgroundColor: colors.primary,
+    padding: spacing.sm,
+    borderRadius: spacing.sm,
+    alignItems: "center",
+    marginTop: spacing.md,
+  },
+  settleUpButtonText: {
+    ...typography.body,
+    color: colors.white,
+    fontWeight: "bold",
   },
 });
 

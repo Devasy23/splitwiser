@@ -45,3 +45,6 @@ export const updateMemberRole = (groupId, memberId, role) =>
 
 export const removeMember = (groupId, memberId) =>
   apiClient.delete(`/groups/${groupId}/members/${memberId}`);
+
+export const recordSettlement = (groupId, settlementData) =>
+  apiClient.post(`/groups/${groupId}/settlements`, settlementData);
