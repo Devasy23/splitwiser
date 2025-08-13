@@ -312,9 +312,29 @@ class GroupService:
                     detail="Cannot leave group when you are the only admin. Delete the group or promote another member to admin first.",
                 )
 
-        # TODO: Check for outstanding balances with expense service
-        # For now, we'll allow leaving without balance check
-        # This should be implemented when expense service is ready
+        # Block leaving when there are unsettled balances involving this user
+        try:
+            pending = await db.settlements.find_one(
+                {
+                    "groupId": group_id,  # settlements store string groupId
+                    "status": "pending",
+                    "$or": [{"payerId": user_id}, {"payeeId": user_id}],
+                },
+                {"_id": 1},
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to verify unsettled balances for group {group_id}: {e}"
+            )
+            raise HTTPException(
+                status_code=503,
+                detail="Unable to verify unsettled balances right now. Please try again later.",
+            )
+        if pending:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot leave group with unsettled balances. Please settle up first.",
+            )
 
         result = await db.groups.update_one(
             {"_id": obj_id}, {"$pull": {"members": {"userId": user_id}}}
@@ -424,8 +444,29 @@ class GroupService:
                 detail="Cannot remove yourself. Use leave group instead",
             )
 
-        # TODO: Check for outstanding balances with expense service
-        # For now, we'll allow removal without balance check
+        # Block removal when there are unsettled balances involving the target member
+        try:
+            pending = await db.settlements.find_one(
+                {
+                    "groupId": group_id,  # settlements store string groupId
+                    "status": "pending",
+                    "$or": [{"payerId": member_id}, {"payeeId": member_id}],
+                },
+                {"_id": 1},
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to verify unsettled balances on removal for group {group_id}: {e}"
+            )
+            raise HTTPException(
+                status_code=503,
+                detail="Unable to verify unsettled balances right now. Please try again later.",
+            )
+        if pending:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot remove member with unsettled balances. Please settle up first.",
+            )
 
         result = await db.groups.update_one(
             {"_id": obj_id}, {"$pull": {"members": {"userId": member_id}}}

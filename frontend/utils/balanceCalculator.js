@@ -1,6 +1,9 @@
 /**
  * Utility functions for calculating friend balances across groups
  * Includes comprehensive null safety checks to prevent runtime errors
+ * 
+ * Note: Uses 'paidBy' field to determine who actually paid for an expense,
+ * with fallback to 'createdBy' for backward compatibility.
  */
 
 /**
@@ -79,7 +82,7 @@ const getMemberName = (members, userId) => {
 const processExpense = (expense, balances, members, group, currentUserId) => {
   if (!expense || typeof expense !== 'object' || !currentUserId) return;
   
-  const payerId = safeGet(expense, 'createdBy');
+  const payerId = safeGet(expense, 'paidBy') || safeGet(expense, 'createdBy');
   const splits = safeGet(expense, 'splits');
   
   if (!payerId || !Array.isArray(splits)) return;
