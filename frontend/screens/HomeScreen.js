@@ -1,19 +1,24 @@
 import { useContext, useEffect, useState } from "react";
-import { Alert, FlatList, StyleSheet, View } from "react-native";
+import { Alert, Dimensions, FlatList, StyleSheet, View } from "react-native";
 import {
   ActivityIndicator,
   Appbar,
   Avatar,
   Button,
-  Card,
+  FAB,
   Modal,
   Portal,
   Text,
-  TextInput,
+  TextInput
 } from "react-native-paper";
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
+import { AnimatedCard, FadeInView, ScaleInView, SlideInView } from "../utils/animations";
 import { formatCurrency, getCurrencySymbol } from "../utils/currency";
+import { StatusGradient } from "../utils/gradients";
+import { borderRadius, colors, shadows, spacing, typography } from "../utils/theme";
+
+const { width } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
   const { token, logout, user } = useContext(AuthContext);
@@ -122,7 +127,7 @@ const HomeScreen = ({ navigation }) => {
 
   const currencySymbol = getCurrencySymbol();
 
-  const renderGroup = ({ item }) => {
+  const renderGroup = ({ item, index }) => {
     const settlementStatus = groupSettlements[item._id];
 
     // Generate settlement status text
@@ -132,65 +137,79 @@ const HomeScreen = ({ navigation }) => {
       }
 
       if (settlementStatus.isSettled) {
-        return "✓ You are settled up.";
+        return "✨ All settled up!";
       }
 
       if (settlementStatus.netBalance > 0) {
-        return `You are owed ${formatCurrency(settlementStatus.netBalance)}.`;
+        return `💰 You're owed ${formatCurrency(settlementStatus.netBalance)}`;
       } else if (settlementStatus.netBalance < 0) {
-        return `You owe ${formatCurrency(
-          Math.abs(settlementStatus.netBalance)
-        )}.`;
+        return `💳 You owe ${formatCurrency(Math.abs(settlementStatus.netBalance))}`;
       }
 
-      return "You are settled up.";
+      return "✨ All settled up!";
     };
 
-    // Get text color based on settlement status
-    const getStatusColor = () => {
+    // Get status for gradient
+    const getStatusType = () => {
       if (!settlementStatus || settlementStatus.isSettled) {
-        return "#4CAF50"; // Green for settled
+        return 'settled';
       }
-
       if (settlementStatus.netBalance > 0) {
-        return "#4CAF50"; // Green for being owed money
+        return 'success';
       } else if (settlementStatus.netBalance < 0) {
-        return "#F44336"; // Red for owing money
+        return 'warning';
       }
-
-      return "#4CAF50"; // Default green
+      return 'settled';
     };
 
-    const isImage =
-      item.imageUrl && /^(https?:|data:image)/.test(item.imageUrl);
+    const isImage = item.imageUrl && /^(https?:|data:image)/.test(item.imageUrl);
     const groupIcon = item.imageUrl || item.name?.charAt(0) || "?";
+    
     return (
-      <Card
-        style={styles.card}
-        onPress={() =>
-          navigation.navigate("GroupDetails", {
-            groupId: item._id,
-            groupName: item.name,
-            groupIcon,
-          })
-        }
-      >
-        <Card.Title
-          title={item.name}
-          left={(props) =>
-            isImage ? (
-              <Avatar.Image {...props} source={{ uri: item.imageUrl }} />
-            ) : (
-              <Avatar.Text {...props} label={groupIcon} />
-            )
+      <SlideInView delay={index * 100} style={styles.cardWrapper}>
+        <AnimatedCard
+          onPress={() =>
+            navigation.navigate("GroupDetails", {
+              groupId: item._id,
+              groupName: item.name,
+              groupIcon,
+            })
           }
-        />
-        <Card.Content>
-          <Text style={[styles.settlementStatus, { color: getStatusColor() }]}>
-            {getSettlementStatusText()}
-          </Text>
-        </Card.Content>
-      </Card>
+          style={styles.modernCard}
+        >
+          <View style={styles.cardHeader}>
+            {isImage ? (
+              <Avatar.Image 
+                size={56} 
+                source={{ uri: item.imageUrl }} 
+                style={styles.avatar}
+              />
+            ) : (
+              <Avatar.Text 
+                size={56} 
+                label={groupIcon} 
+                style={[styles.avatar, { backgroundColor: colors.primary }]}
+                labelStyle={{ color: 'white', fontWeight: '700' }}
+              />
+            )}
+            <View style={styles.groupInfo}>
+              <Text style={styles.groupName}>{item.name}</Text>
+              <Text style={styles.memberCount}>
+                {item.members?.length || 0} members
+              </Text>
+            </View>
+          </View>
+          
+          <StatusGradient 
+            status={getStatusType()} 
+            style={styles.statusContainer}
+          >
+            <Text style={styles.statusText}>
+              {getSettlementStatusText()}
+            </Text>
+          </StatusGradient>
+        </AnimatedCard>
+      </SlideInView>
     );
   };
 
@@ -202,54 +221,101 @@ const HomeScreen = ({ navigation }) => {
           onDismiss={hideModal}
           contentContainerStyle={styles.modalContainer}
         >
-          <Text style={styles.modalTitle}>Create a New Group</Text>
-          <TextInput
-            label="Group Name"
-            value={newGroupName}
-            onChangeText={setNewGroupName}
-            style={styles.input}
-          />
-          <Button
-            mode="contained"
-            onPress={handleCreateGroup}
-            loading={isCreatingGroup}
-            disabled={isCreatingGroup}
-          >
-            Create
-          </Button>
+          <FadeInView>
+            <Text style={styles.modalTitle}>Create New Group</Text>
+            <Text style={styles.modalSubtitle}>
+              Start splitting expenses with friends! 🎉
+            </Text>
+            <TextInput
+              label="Group Name"
+              value={newGroupName}
+              onChangeText={setNewGroupName}
+              style={styles.input}
+              mode="outlined"
+              placeholder="e.g., Weekend Trip, Roommates..."
+            />
+            <View style={styles.modalButtons}>
+              <Button
+                mode="outlined"
+                onPress={hideModal}
+                style={styles.cancelButton}
+              >
+                Cancel
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleCreateGroup}
+                loading={isCreatingGroup}
+                disabled={isCreatingGroup}
+                style={styles.createButton}
+              >
+                Create
+              </Button>
+            </View>
+          </FadeInView>
         </Modal>
       </Portal>
 
-      <Appbar.Header>
-        <Appbar.Content title="Your Groups" />
-        <Appbar.Action icon="plus" onPress={showModal} />
+      <Appbar.Header style={styles.header}>
+        <Appbar.Content 
+          title="Your Groups" 
+          titleStyle={styles.headerTitle}
+        />
+        <Appbar.Action 
+          icon="plus" 
+          onPress={showModal}
+          iconColor={colors.primary}
+        />
         <Appbar.Action
           icon="account-plus"
           onPress={() =>
             navigation.navigate("JoinGroup", { onGroupJoined: fetchGroups })
           }
+          iconColor={colors.primary}
         />
       </Appbar.Header>
 
       {isLoading ? (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" />
-        </View>
+        <FadeInView style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading your groups...</Text>
+        </FadeInView>
       ) : (
         <FlatList
           data={groups}
           renderItem={renderGroup}
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>
-              No groups found. Create or join one!
-            </Text>
+            <FadeInView style={styles.emptyContainer}>
+              <Text style={styles.emptyTitle}>No groups yet! 🎯</Text>
+              <Text style={styles.emptyText}>
+                Create your first group to start splitting expenses with friends
+              </Text>
+              <Button
+                mode="contained"
+                onPress={showModal}
+                style={styles.createFirstGroupButton}
+                icon="plus"
+              >
+                Create Group
+              </Button>
+            </FadeInView>
           }
           onRefresh={fetchGroups}
           refreshing={isLoading}
         />
       )}
+
+      <ScaleInView delay={500}>
+        <FAB
+          icon="plus"
+          style={styles.fab}
+          onPress={showModal}
+          color="white"
+        />
+      </ScaleInView>
     </View>
   );
 };
@@ -257,39 +323,145 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
+  },
+  header: {
+    backgroundColor: colors.surface,
+    elevation: 0,
+    shadowOpacity: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.outlineVariant,
+  },
+  headerTitle: {
+    ...typography.h3,
+    color: colors.onSurface,
   },
   loaderContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    paddingBottom: 50,
+  },
+  loadingText: {
+    ...typography.body2,
+    color: colors.onSurfaceVariant,
+    marginTop: spacing.md,
   },
   list: {
-    padding: 16,
+    padding: spacing.md,
+    paddingBottom: 100, // Space for FAB
   },
-  card: {
-    marginBottom: 16,
+  cardWrapper: {
+    marginBottom: spacing.md,
+  },
+  modernCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    ...shadows.medium,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  avatar: {
+    marginRight: spacing.md,
+  },
+  groupInfo: {
+    flex: 1,
+  },
+  groupName: {
+    ...typography.h4,
+    color: colors.onSurface,
+    marginBottom: 2,
+  },
+  memberCount: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
+  },
+  statusContainer: {
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  statusText: {
+    ...typography.label,
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: '600',
   },
   settlementStatus: {
     fontWeight: "500",
     marginTop: 4,
   },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingTop: spacing.xxl * 2,
+    paddingHorizontal: spacing.lg,
+  },
+  emptyTitle: {
+    ...typography.h2,
+    color: colors.onSurface,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
   emptyText: {
-    textAlign: "center",
-    marginTop: 20,
+    ...typography.body1,
+    color: colors.onSurfaceVariant,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    lineHeight: 24,
+  },
+  createFirstGroupButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
   },
   modalContainer: {
-    backgroundColor: "white",
-    padding: 20,
-    margin: 20,
-    borderRadius: 8,
+    backgroundColor: colors.surface,
+    margin: spacing.lg,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    ...shadows.large,
   },
   modalTitle: {
-    fontSize: 20,
-    marginBottom: 20,
-    textAlign: "center",
+    ...typography.h2,
+    color: colors.onSurface,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  modalSubtitle: {
+    ...typography.body1,
+    color: colors.onSurfaceVariant,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
   },
   input: {
-    marginBottom: 20,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.surface,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  cancelButton: {
+    flex: 1,
+    borderColor: colors.outline,
+  },
+  createButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: spacing.lg,
+    right: spacing.lg,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.round,
+    ...shadows.large,
   },
 });
 

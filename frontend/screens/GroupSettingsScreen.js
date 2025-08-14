@@ -12,17 +12,18 @@ import {
   ScrollView,
   Share,
   StyleSheet,
+  TouchableOpacity,
   View,
 } from "react-native";
 import {
   ActivityIndicator,
   Avatar,
   Button,
-  Card,
+  Chip,
+  Divider,
   IconButton,
-  List,
   Text,
-  TextInput,
+  TextInput
 } from "react-native-paper";
 import {
   deleteGroup as apiDeleteGroup,
@@ -34,6 +35,9 @@ import {
   getOptimizedSettlements,
 } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
+import { AnimatedCard, FadeInView, SlideInView } from "../utils/animations";
+import { GradientCard, StatusGradient } from "../utils/gradients";
+import { borderRadius, colors, shadows, spacing, typography } from "../utils/theme";
 
 const ICON_CHOICES = ["👥", "🏠", "🎉", "🧳", "🍽️", "🚗", "🏖️", "🎮", "💼"];
 
@@ -259,168 +263,529 @@ const GroupSettingsScreen = ({ route, navigation }) => {
     );
   };
 
-  const renderMemberItem = (m) => {
+  const renderMemberItem = (m, index) => {
     const isSelf = m.userId === user?._id;
     const displayName = m.user?.name || "Unknown";
     const imageUrl = m.user?.imageUrl;
+    
     return (
-      <List.Item
-        key={m.userId}
-        title={displayName}
-        description={m.role === "admin" ? "Admin" : undefined}
-        left={() =>
-          imageUrl ? (
-            <Avatar.Image size={40} source={{ uri: imageUrl }} />
-          ) : (
-            <Avatar.Text size={40} label={(displayName || "?").charAt(0)} />
-          )
-        }
-        right={() =>
-          isAdmin && !isSelf ? (
+      <SlideInView key={m.userId} delay={index * 100}>
+        <View style={styles.memberItem}>
+          <View style={styles.memberInfo}>
+            {imageUrl ? (
+              <Avatar.Image size={48} source={{ uri: imageUrl }} style={styles.memberAvatar} />
+            ) : (
+              <Avatar.Text 
+                size={48} 
+                label={(displayName || "?").charAt(0)} 
+                style={[styles.memberAvatar, { backgroundColor: colors.primary }]}
+                labelStyle={{ color: 'white', fontWeight: '700' }}
+              />
+            )}
+            <View style={styles.memberDetails}>
+              <Text style={styles.memberName}>{displayName}</Text>
+              {m.role === "admin" && (
+                <Chip 
+                  mode="outlined" 
+                  style={styles.adminChip}
+                  textStyle={styles.adminChipText}
+                  icon="crown"
+                >
+                  Admin
+                </Chip>
+              )}
+              {isSelf && (
+                <Text style={styles.youLabel}>You</Text>
+              )}
+            </View>
+          </View>
+          {isAdmin && !isSelf && (
             <IconButton
               icon="account-remove"
+              iconColor={colors.error}
               onPress={() => onKick(m.userId, displayName)}
+              style={styles.removeButton}
             />
-          ) : null
-        }
-      />
+          )}
+        </View>
+        {index < members.length - 1 && <Divider style={styles.memberDivider} />}
+      </SlideInView>
     );
   };
 
   if (loading) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator />
+      <View style={styles.container}>
+        <FadeInView style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading group settings...</Text>
+        </FadeInView>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Card style={styles.card}>
-          <Card.Title title="Group Info" />
-          <Card.Content>
-            <TextInput
-              label="Group Name"
-              value={name}
-              onChangeText={setName}
-              editable={!!isAdmin}
-              style={{ marginBottom: 12 }}
-            />
-            <Text style={{ marginBottom: 8 }}>Icon</Text>
-            <View style={styles.iconRow}>
-              {ICON_CHOICES.map((i) => (
-                <Button
-                  key={i}
-                  mode={icon === i ? "contained" : "outlined"}
-                  style={styles.iconBtn}
-                  onPress={() => setIcon(i)}
-                  disabled={!isAdmin}
-                >
-                  {i}
-                </Button>
-              ))}
-            </View>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Button
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Group Info Section */}
+        <FadeInView delay={100}>
+          <GradientCard 
+            colors={colors.gradientPrimary} 
+            style={styles.headerCard}
+          >
+            <Text style={styles.headerTitle}>Group Settings</Text>
+            <Text style={styles.headerSubtitle}>
+              Manage your group preferences and members
+            </Text>
+          </GradientCard>
+        </FadeInView>
+
+        {/* Basic Info Card */}
+        <SlideInView delay={200}>
+          <AnimatedCard style={styles.modernCard}>
+            <Text style={styles.sectionTitle}>📝 Basic Information</Text>
+            
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Group Name</Text>
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                editable={!!isAdmin}
+                style={styles.modernInput}
                 mode="outlined"
-                onPress={pickImage}
-                disabled={!isAdmin}
-                icon="image"
-                style={{ marginRight: 12 }}
-              >
-                {pickedImage ? "Change Image" : "Upload Image"}
-              </Button>
-              {pickedImage?.uri ? (
-                <Image
-                  source={{ uri: pickedImage.uri }}
-                  style={{ width: 48, height: 48, borderRadius: 24 }}
-                />
-              ) : group?.imageUrl &&
-                /^(https?:|data:image)/.test(group.imageUrl) ? (
-                <Image
-                  source={{ uri: group.imageUrl }}
-                  style={{ width: 48, height: 48, borderRadius: 24 }}
-                />
-              ) : group?.imageUrl ? (
-                <Text style={{ fontSize: 32 }}>{group.imageUrl}</Text>
-              ) : null}
+                theme={{
+                  colors: {
+                    primary: colors.primary,
+                    outline: colors.outline,
+                  }
+                }}
+              />
             </View>
+
+            <View style={styles.iconSection}>
+              <Text style={styles.inputLabel}>Choose an Icon</Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                style={styles.iconScrollView}
+              >
+                <View style={styles.iconRow}>
+                  {ICON_CHOICES.map((i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={[
+                        styles.iconButton,
+                        icon === i && styles.iconButtonSelected
+                      ]}
+                      onPress={() => setIcon(i)}
+                      disabled={!isAdmin}
+                    >
+                      <Text style={styles.iconText}>{i}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+
+            <View style={styles.imageSection}>
+              <Text style={styles.inputLabel}>Or Upload Custom Image</Text>
+              <View style={styles.imageUploadContainer}>
+                <Button
+                  mode="outlined"
+                  onPress={pickImage}
+                  disabled={!isAdmin}
+                  icon="image"
+                  style={styles.uploadButton}
+                  contentStyle={styles.uploadButtonContent}
+                >
+                  {pickedImage ? "Change Image" : "Upload Image"}
+                </Button>
+                {(pickedImage?.uri || (group?.imageUrl && /^(https?:|data:image)/.test(group.imageUrl))) && (
+                  <View style={styles.currentImageContainer}>
+                    <Image
+                      source={{ 
+                        uri: pickedImage?.uri || group?.imageUrl 
+                      }}
+                      style={styles.currentImage}
+                    />
+                    <Text style={styles.currentImageLabel}>Current</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
             {isAdmin && (
               <Button
                 mode="contained"
-                style={{ marginTop: 12 }}
+                style={styles.saveButton}
                 loading={saving}
                 disabled={saving}
                 onPress={onSave}
+                contentStyle={styles.saveButtonContent}
               >
                 Save Changes
               </Button>
             )}
-          </Card.Content>
-        </Card>
+          </AnimatedCard>
+        </SlideInView>
 
-        <Card style={styles.card}>
-          <Card.Title title="Members" />
-          <Card.Content>{members.map(renderMemberItem)}</Card.Content>
-        </Card>
+        {/* Members Section */}
+        <SlideInView delay={300}>
+          <AnimatedCard style={styles.modernCard}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>👥 Members</Text>
+              <Chip 
+                mode="outlined" 
+                style={styles.memberCountChip}
+                textStyle={styles.memberCountText}
+              >
+                {members.length} member{members.length !== 1 ? 's' : ''}
+              </Chip>
+            </View>
+            
+            <View style={styles.membersContainer}>
+              {members.map((m, index) => renderMemberItem(m, index))}
+            </View>
+          </AnimatedCard>
+        </SlideInView>
 
-        <Card style={styles.card}>
-          <Card.Title title="Invite" />
-          <Card.Content>
-            <Text style={{ marginBottom: 8 }}>
-              Join Code: {group?.joinCode}
+        {/* Invite Section */}
+        <SlideInView delay={400}>
+          <StatusGradient status="info" style={styles.inviteCard}>
+            <Text style={styles.inviteTitle}>🎉 Invite Friends</Text>
+            <Text style={styles.inviteSubtitle}>
+              Share this code with friends to join your group
             </Text>
+            
+            <View style={styles.joinCodeContainer}>
+              <Text style={styles.joinCodeLabel}>Join Code</Text>
+              <View style={styles.joinCodeBox}>
+                <Text style={styles.joinCode}>{group?.joinCode}</Text>
+              </View>
+            </View>
+            
             <Button
-              mode="outlined"
+              mode="contained"
               onPress={onShareInvite}
               icon="share-variant"
+              style={styles.shareButton}
+              contentStyle={styles.shareButtonContent}
+              buttonColor="rgba(255, 255, 255, 0.2)"
+              textColor="white"
             >
-              Share invite
+              Share Invite
             </Button>
-          </Card.Content>
-        </Card>
+          </StatusGradient>
+        </SlideInView>
 
-        <Card style={styles.card}>
-          <Card.Title title="Danger Zone" />
-          <Card.Content>
-            <View>
+        {/* Danger Zone */}
+        <SlideInView delay={500}>
+          <AnimatedCard style={[styles.modernCard, styles.dangerCard]}>
+            <Text style={styles.dangerTitle}>⚠️ Danger Zone</Text>
+            <Text style={styles.dangerSubtitle}>
+              These actions cannot be undone
+            </Text>
+            
+            <View style={styles.dangerActions}>
               <Button
                 mode="outlined"
-                buttonColor="#fff"
-                textColor="#d32f2f"
                 onPress={onLeave}
                 icon="logout-variant"
+                style={styles.leaveButton}
+                textColor={colors.warning}
+                theme={{
+                  colors: {
+                    outline: colors.warning,
+                  }
+                }}
               >
                 Leave Group
               </Button>
+              
               {isAdmin && (
                 <Button
                   mode="contained"
-                  buttonColor="#d32f2f"
+                  buttonColor={colors.error}
                   onPress={onDeleteGroup}
                   icon="delete"
-                  style={{ marginTop: 8 }}
+                  style={styles.deleteButton}
+                  contentStyle={styles.deleteButtonContent}
                 >
                   Delete Group
                 </Button>
               )}
             </View>
-          </Card.Content>
-        </Card>
+          </AnimatedCard>
+        </SlideInView>
       </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { padding: 16 },
-  loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  card: { marginBottom: 16 },
-  iconRow: { flexDirection: "row", flexWrap: "wrap", marginBottom: 8 },
-  iconBtn: { marginRight: 8, marginBottom: 8 },
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.background 
+  },
+  scrollContent: { 
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  loaderContainer: { 
+    flex: 1, 
+    justifyContent: "center", 
+    alignItems: "center" 
+  },
+  loadingText: {
+    ...typography.body1,
+    color: colors.onSurfaceVariant,
+    marginTop: spacing.md,
+  },
+  headerCard: {
+    marginBottom: spacing.lg,
+    padding: spacing.xl,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    ...typography.h2,
+    color: 'white',
+    fontWeight: '700',
+    marginBottom: spacing.xs,
+  },
+  headerSubtitle: {
+    ...typography.body1,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+  },
+  modernCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    ...shadows.medium,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+  },
+  sectionTitle: {
+    ...typography.h3,
+    color: colors.onSurface,
+    marginBottom: spacing.lg,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  inputContainer: {
+    marginBottom: spacing.lg,
+  },
+  inputLabel: {
+    ...typography.label,
+    color: colors.onSurface,
+    marginBottom: spacing.sm,
+    fontWeight: '600',
+  },
+  modernInput: {
+    backgroundColor: colors.surface,
+  },
+  iconSection: {
+    marginBottom: spacing.lg,
+  },
+  iconScrollView: {
+    marginBottom: spacing.sm,
+  },
+  iconRow: { 
+    flexDirection: "row", 
+    gap: spacing.sm,
+    paddingRight: spacing.lg,
+  },
+  iconButton: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surfaceVariant,
+    borderWidth: 2,
+    borderColor: colors.outline,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconButtonSelected: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary,
+  },
+  iconText: {
+    fontSize: 24,
+  },
+  imageSection: {
+    marginBottom: spacing.lg,
+  },
+  imageUploadContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  uploadButton: {
+    borderColor: colors.outline,
+  },
+  uploadButtonContent: {
+    paddingVertical: spacing.xs,
+  },
+  currentImageContainer: {
+    alignItems: 'center',
+  },
+  currentImage: {
+    width: 64,
+    height: 64,
+    borderRadius: borderRadius.lg,
+    borderWidth: 2,
+    borderColor: colors.outline,
+  },
+  currentImageLabel: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
+    marginTop: spacing.xs,
+  },
+  saveButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    ...shadows.small,
+  },
+  saveButtonContent: {
+    paddingVertical: spacing.sm,
+  },
+  memberCountChip: {
+    backgroundColor: colors.surfaceVariant,
+  },
+  memberCountText: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
+  },
+  membersContainer: {
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surfaceVariant,
+    padding: spacing.md,
+  },
+  memberItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+  },
+  memberInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  memberAvatar: {
+    marginRight: spacing.md,
+  },
+  memberDetails: {
+    flex: 1,
+  },
+  memberName: {
+    ...typography.h4,
+    color: colors.onSurface,
+    marginBottom: spacing.xs,
+  },
+  adminChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary,
+  },
+  adminChipText: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  youLabel: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
+    fontStyle: 'italic',
+  },
+  removeButton: {
+    backgroundColor: colors.errorLight,
+  },
+  memberDivider: {
+    backgroundColor: colors.outline,
+    marginVertical: spacing.xs,
+  },
+  inviteCard: {
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
+    alignItems: 'center',
+  },
+  inviteTitle: {
+    ...typography.h3,
+    color: 'white',
+    fontWeight: '700',
+    marginBottom: spacing.xs,
+  },
+  inviteSubtitle: {
+    ...typography.body1,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  joinCodeContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  joinCodeLabel: {
+    ...typography.label,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: spacing.sm,
+  },
+  joinCodeBox: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  joinCode: {
+    ...typography.h3,
+    color: 'white',
+    fontWeight: '700',
+    letterSpacing: 2,
+  },
+  shareButton: {
+    borderRadius: borderRadius.md,
+  },
+  shareButtonContent: {
+    paddingVertical: spacing.sm,
+  },
+  dangerCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: colors.error,
+  },
+  dangerTitle: {
+    ...typography.h3,
+    color: colors.error,
+    marginBottom: spacing.xs,
+  },
+  dangerSubtitle: {
+    ...typography.body2,
+    color: colors.onSurfaceVariant,
+    marginBottom: spacing.lg,
+  },
+  dangerActions: {
+    gap: spacing.md,
+  },
+  leaveButton: {
+    borderColor: colors.warning,
+  },
+  deleteButton: {
+    backgroundColor: colors.error,
+    borderRadius: borderRadius.md,
+  },
+  deleteButtonContent: {
+    paddingVertical: spacing.sm,
+  },
 });
 
 export default GroupSettingsScreen;
