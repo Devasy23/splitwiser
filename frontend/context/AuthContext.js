@@ -1,12 +1,21 @@
+// AuthContext.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useEffect, useState } from "react";
+import { Platform } from 'react-native';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import {
+  GoogleAuthProvider,
+  signInWithCredential,
+  signInWithPopup,
+  User,
+} from 'firebase/auth';
+import { auth } from '../firebase/firebaseConfig.web';
 import * as authApi from "../api/auth";
 import {
   clearAuthTokens,
   setAuthTokens,
   setTokenUpdateListener,
 } from "../api/client";
-
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -14,18 +23,38 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [refresh, setRefresh] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [firebaseUser, setFirebaseUser] = useState(null);
+  const [idToken, setIdToken] = useState(null);
+
+  // Configure Google Sign-In on component mount
+  useEffect(() => {
+      GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        offlineAccess: true,
+      });
+  }, []);
+
 
   // Load token and user data from AsyncStorage on app start
   useEffect(() => {
     const loadStoredAuth = async () => {
       try {
-        const storedToken = await AsyncStorage.getItem("auth_token");
+        const storedToken = await AsyncStorage.getItem('auth_token');
+        const storedUser = await AsyncStorage.getItem('user_data');
         const storedRefresh = await AsyncStorage.getItem("refresh_token");
-  const storedUser = await AsyncStorage.getItem("user_data");
+        const storedIdToken = await AsyncStorage.getItem('firebase_id_token');
+        const storedFirebaseUser = await AsyncStorage.getItem('firebase_user');
 
         if (storedToken && storedUser) {
+          if (storedFirebaseUser) {
+            try {
+              setFirebaseUser(JSON.parse(storedFirebaseUser));
+            } catch {
+              // ignore parse error; storage may contain older format
+            }
+          }
           setToken(storedToken);
-          setRefresh(storedRefresh);
+          setUser(JSON.parse(storedUser));
           await setAuthTokens({
             newAccessToken: storedToken,
             newRefreshToken: storedRefresh,
@@ -106,8 +135,33 @@ export const AuthProvider = ({ children }) => {
     saveUser();
   }, [user]);
 
+  // Save Firebase data to AsyncStorage
+  useEffect(() => {
+    const saveFirebaseData = async () => {
+      try {
+        if (idToken) {
+          await AsyncStorage.setItem('firebase_id_token', idToken);
+        } else {
+          await AsyncStorage.removeItem('firebase_id_token');
+        }
+
+        if (firebaseUser) {
+          await AsyncStorage.setItem('firebase_user', JSON.stringify(firebaseUser));
+        } else {
+          await AsyncStorage.removeItem('firebase_user');
+        }
+      } catch (error) {
+        console.error('Failed to save Firebase data to storage:', error);
+      }
+    };
+
+    saveFirebaseData();
+  }, [idToken, firebaseUser]);
+
+  // Regular email/password login
   const login = async (email, password) => {
     try {
+
       const response = await authApi.login(email, password);
       const { access_token, refresh_token, user: userData } = response.data;
       setToken(access_token);
@@ -133,6 +187,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Regular email/password signup
   const signup = async (name, email, password) => {
     try {
       await authApi.signup(name, email, password);
@@ -146,20 +201,91 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
-    try {
-      // Clear stored authentication data
-      await AsyncStorage.removeItem("auth_token");
-      await AsyncStorage.removeItem("refresh_token");
-      await AsyncStorage.removeItem("user_data");
+  // Google Sign-In
+const signInWithGoogle = async () => {
+  try {
+    if (Platform.OS === 'web') {
+      // ---- WEB FLOW ----
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+
+      const firebaseIdToken = await result.user.getIdToken(true);
+      setFirebaseUser(result.user);
+      setIdToken(firebaseIdToken);
+
+      // Exchange with backend for app tokens
+      const backendResponse = await authApi.signInWithGoogle(firebaseIdToken);
+      const { access_token, refresh_token, user: userData } = backendResponse.data;
+      setToken(access_token);
+      if (refresh_token) setRefresh(refresh_token);
+      await setAuthTokens({
+        newAccessToken: access_token,
+        newRefreshToken: refresh_token,
+      });
+      setUser(userData);
+
+      return { idToken: firebaseIdToken, firebaseUser: result.user };
+    } else {
+      // ---- NATIVE FLOW ----
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+      const { idToken: googleIdToken } = await GoogleSignin.signIn();
+      if (!googleIdToken) throw new Error('No Google ID token returned');
+
+      const credential = GoogleAuthProvider.credential(googleIdToken);
+      const userCredential = await signInWithCredential(auth, credential);
+
+      const firebaseIdToken = await userCredential.user.getIdToken(true);
+      setFirebaseUser(userCredential.user);
+      setIdToken(firebaseIdToken);
+
+      const backendResponse = await authApi.signInWithGoogle(firebaseIdToken);
+      const { access_token, refresh_token, user: userData } = backendResponse.data;
+      setToken(access_token);
+      if (refresh_token) setRefresh(refresh_token);
+      await setAuthTokens({
+        newAccessToken: access_token,
+        newRefreshToken: refresh_token,
+      });
+      setUser(userData);
+
+      return { idToken: firebaseIdToken, firebaseUser: userCredential.user };
+    }
+  } catch (error) {
+    console.error('Google Sign-In error:', error?.message || error);
+    throw error;
+  }
+};
+
+// Unified logout function
+const logout = async () => {
+  try {
+    // Clear stored authentication data
+     await AsyncStorage.removeItem('auth_token');
+      await AsyncStorage.removeItem('user_data');
+      await AsyncStorage.removeItem('firebase_id_token');
+      await AsyncStorage.removeItem('firebase_user');
+
+      // Sign out from Google/Firebase if applicable
+      if (firebaseUser) {
+        if (Platform.OS === 'web') {
+          await auth.signOut();
+        } else {
+          await GoogleSignin.signOut();
+          await auth.signOut();
+        }
+      }
     } catch (error) {
       console.error("Failed to clear stored authentication:", error);
     }
 
+    // Clear all state
     setToken(null);
     setRefresh(null);
     setUser(null);
     await clearAuthTokens();
+    setFirebaseUser(null);
+    setIdToken(null);
   };
 
   const updateUserInContext = (updatedUser) => {
@@ -172,17 +298,50 @@ export const AuthProvider = ({ children }) => {
     setUser(normalizedUser);
   };
 
+  // Helper function to check if user is authenticated (either way)
+  const isAuthenticated = () => {
+    return !!(token || idToken);
+  };
+
+  // Helper function to get current auth method
+  const getAuthMethod = () => {
+    if (idToken && firebaseUser) return 'google';
+    if (token && user) return 'email';
+    return null;
+  };
+
   return (
     <AuthContext.Provider
+     
       value={{
+       
+        // Original auth state
         user,
+       
         token,
+       
         isLoading,
+       
+        
+        // Google auth state
+        firebaseUser,
+        idToken,
+        
+        // Auth methods
         login,
+       
         signup,
+        signInWithGoogle,
+       
         logout,
+       
         updateUserInContext,
+        
+        // Helper methods
+        isAuthenticated,
+        getAuthMethod,
       }}
+    
     >
       {children}
     </AuthContext.Provider>

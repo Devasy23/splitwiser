@@ -1,14 +1,15 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "SplitWiser",
+    "scheme": "splitwiser",
+    "slug": "splitwiser",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -23,12 +24,17 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
+      "package": "com.splitwiser.app",
+      "googleServicesFile": "./google-services.json",
       "permissions": ["READ_MEDIA_IMAGES"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      "expo-secure-store",
+      "expo-web-browser"
+    ],
     "extra": {
       "eas": {
         "projectId": "afe97159-52c4-425a-9ce3-c56d4f2cb568"

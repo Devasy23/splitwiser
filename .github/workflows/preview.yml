@@ -9,7 +9,9 @@ permissions:
 
 jobs:
   preview:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -28,6 +30,14 @@ jobs:
       - name: Install dependencies
         run: npm install
         working-directory: ./frontend
+
+      - name: Create .env file
+        working-directory: ./frontend
+        run: |
+          echo "EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID=${{ secrets.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID }}" >> .env
+          echo "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=${{ secrets.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID }}" >> .env
+          echo "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=${{ secrets.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID }}" >> .env
+          echo "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=${{ secrets.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}" >> .env
 
       - name: Create preview
         uses: expo/expo-github-action/preview@v8
