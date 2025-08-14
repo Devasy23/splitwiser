@@ -1,11 +1,14 @@
-import { useContext, useEffect, useState } from "react";
-import { Alert, FlatList, StyleSheet, View } from "react-native";
+import { useTheme } from "@react-navigation/native";
+import { useContext, useEffect, useRef, useState } from "react";
+import { Alert, Animated, FlatList, Pressable, StyleSheet, View } from "react-native";
+import Swipeable from "react-native-gesture-handler/Swipeable";
 import {
   ActivityIndicator,
   Appbar,
   Avatar,
   Button,
   Card,
+  Chip,
   Modal,
   Portal,
   Text,
@@ -14,9 +17,11 @@ import {
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 import { formatCurrency, getCurrencySymbol } from "../utils/currency";
+import { tokens } from "../utils/theme";
 
 const HomeScreen = ({ navigation }) => {
   const { token, logout, user } = useContext(AuthContext);
+  const { colors } = useTheme();
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [groupSettlements, setGroupSettlements] = useState({}); // Track settlement status for each group
@@ -122,7 +127,17 @@ const HomeScreen = ({ navigation }) => {
 
   const currencySymbol = getCurrencySymbol();
 
-  const renderGroup = ({ item }) => {
+  // Simple mount animation for list items
+  const itemAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(itemAnim, {
+      toValue: 1,
+      duration: 350,
+      useNativeDriver: true,
+    }).start();
+  }, [groups]);
+
+  const renderGroup = ({ item, index }) => {
     const settlementStatus = groupSettlements[item._id];
 
     // Generate settlement status text
@@ -149,48 +164,118 @@ const HomeScreen = ({ navigation }) => {
     // Get text color based on settlement status
     const getStatusColor = () => {
       if (!settlementStatus || settlementStatus.isSettled) {
-        return "#4CAF50"; // Green for settled
+        return tokens.success; // Green for settled
       }
 
       if (settlementStatus.netBalance > 0) {
-        return "#4CAF50"; // Green for being owed money
+        return tokens.success; // Green for being owed money
       } else if (settlementStatus.netBalance < 0) {
-        return "#F44336"; // Red for owing money
+        return tokens.danger; // Red for owing money
       }
 
-      return "#4CAF50"; // Default green
+      return tokens.success; // Default green
     };
 
     const isImage =
       item.imageUrl && /^(https?:|data:image)/.test(item.imageUrl);
     const groupIcon = item.imageUrl || item.name?.charAt(0) || "?";
+    // Press animation
+    const scale = useRef(new Animated.Value(1)).current;
+    const onPressIn = () => {
+      Animated.spring(scale, {
+        toValue: 0.98,
+        useNativeDriver: true,
+        speed: 40,
+        bounciness: 4,
+      }).start();
+    };
+    const onPressOut = () => {
+      Animated.spring(scale, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 20,
+        bounciness: 6,
+      }).start();
+    };
+
+    const openDetails = () =>
+      navigation.navigate("GroupDetails", {
+        groupId: item._id,
+        groupName: item.name,
+        groupIcon,
+      });
+
+    const renderRightActions = () => (
+      <View style={styles.swipeActions}>
+        <Pressable
+          style={[styles.actionBtn, { backgroundColor: tokens.tertiary }]}
+          onPress={() => navigation.navigate("AddExpense", { groupId: item._id })}
+        >
+          <Text style={styles.actionText}>Add</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.actionBtn, { backgroundColor: colors.primary }]}
+          onPress={() => navigation.navigate("GroupSettings", { groupId: item._id })}
+        >
+          <Text style={styles.actionText}>Settings</Text>
+        </Pressable>
+      </View>
+    );
+
+    const renderLeftActions = () => (
+      <View style={[styles.swipeActions, { justifyContent: "flex-start" }]}>
+        <Pressable
+          style={[styles.actionBtn, { backgroundColor: tokens.info }]}
+          onPress={openDetails}
+        >
+          <Text style={styles.actionText}>Open</Text>
+        </Pressable>
+      </View>
+    );
+
     return (
-      <Card
-        style={styles.card}
-        onPress={() =>
-          navigation.navigate("GroupDetails", {
-            groupId: item._id,
-            groupName: item.name,
-            groupIcon,
-          })
-        }
+      <Animated.View
+        style={{
+          transform: [
+            { scale },
+            {
+              translateY: itemAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [12, 0],
+              }),
+            },
+          ],
+          opacity: itemAnim,
+        }}
       >
-        <Card.Title
-          title={item.name}
-          left={(props) =>
-            isImage ? (
-              <Avatar.Image {...props} source={{ uri: item.imageUrl }} />
-            ) : (
-              <Avatar.Text {...props} label={groupIcon} />
-            )
-          }
-        />
-        <Card.Content>
-          <Text style={[styles.settlementStatus, { color: getStatusColor() }]}>
-            {getSettlementStatusText()}
-          </Text>
-        </Card.Content>
-      </Card>
+        <Swipeable renderRightActions={renderRightActions} renderLeftActions={renderLeftActions}>
+          <Pressable onPress={openDetails} onPressIn={onPressIn} onPressOut={onPressOut}>
+            <Card style={[styles.card, { backgroundColor: colors.card }]}> 
+              <Card.Title
+                title={item.name}
+                titleStyle={styles.cardTitle}
+                left={(props) =>
+                  isImage ? (
+                    <Avatar.Image {...props} source={{ uri: item.imageUrl }} />
+                  ) : (
+                    <Avatar.Text {...props} label={groupIcon} />
+                  )
+                }
+              />
+              <Card.Content>
+                <View style={styles.rowBetween}>
+                  <Text style={[styles.settlementStatus, { color: getStatusColor() }]}>
+                    {getSettlementStatusText()}
+                  </Text>
+                  <Chip compact selectedColor={colors.onSurface}>
+                    {item.members?.length || item.memberCount || 0} members
+                  </Chip>
+                </View>
+              </Card.Content>
+            </Card>
+          </Pressable>
+        </Swipeable>
+      </Animated.View>
     );
   };
 
@@ -236,7 +321,7 @@ const HomeScreen = ({ navigation }) => {
           <ActivityIndicator size="large" />
         </View>
       ) : (
-        <FlatList
+  <FlatList
           data={groups}
           renderItem={renderGroup}
           keyExtractor={(item) => item._id}
@@ -268,10 +353,25 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 16,
+    borderRadius: 16,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "700",
   },
   settlementStatus: {
-    fontWeight: "500",
+    fontWeight: "600",
     marginTop: 4,
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   emptyText: {
     textAlign: "center",
@@ -290,6 +390,23 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 20,
+  },
+  swipeActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 8,
+    paddingHorizontal: 12,
+  },
+  actionBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginHorizontal: 4,
+  },
+  actionText: {
+    color: '#fff',
+    fontWeight: '700',
   },
 });
 

@@ -1,3 +1,4 @@
+import { useTheme } from "@react-navigation/native";
 import { useContext, useEffect, useState } from "react";
 import { Alert, FlatList, StyleSheet, Text, View } from "react-native";
 import {
@@ -50,6 +51,8 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     }
   };
 
+  const { colors } = useTheme();
+
   useEffect(() => {
     navigation.setOptions({
       title: groupName,
@@ -76,23 +79,23 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     const paidByMe = (item.paidBy || item.createdBy) === user._id;
     const net = paidByMe ? item.amount - userShare : -userShare;
 
-    let balanceText;
-    let balanceColor = "black";
+  let balanceText;
+  let balanceColor = colors.text;
 
     if (net > 0) {
       balanceText = `You are owed ${formatCurrency(net)}`;
-      balanceColor = "green";
+  balanceColor = "#16A34A";
     } else if (net < 0) {
       balanceText = `You borrowed ${formatCurrency(Math.abs(net))}`;
-      balanceColor = "red";
+  balanceColor = "#DC2626";
     } else {
       balanceText = "You are settled for this expense.";
     }
 
     return (
-      <Card style={styles.card}>
+    <Card style={styles.card}>
         <Card.Content>
-          <Title>{item.description}</Title>
+      <Title>{item.description}</Title>
           <Paragraph>Amount: {formatCurrency(item.amount)}</Paragraph>
           <Paragraph>
             Paid by: {getMemberName(item.paidBy || item.createdBy)}
@@ -227,7 +230,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   card: {
-    marginBottom: 16,
+  marginBottom: 16,
+  borderRadius: 16,
   },
   expensesTitle: {
     marginTop: 16,

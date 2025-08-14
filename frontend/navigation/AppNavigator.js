@@ -1,7 +1,8 @@
-import React, { useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { useContext } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
+import { navTheme } from '../utils/theme';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
 
@@ -17,7 +18,7 @@ const AppNavigator = () => {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navTheme}>
       {token ? <MainNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
