@@ -10,11 +10,17 @@ import {
   View,
 } from "react-native";
 import { ActivityIndicator, FAB } from "react-native-paper";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import {
   getGroupExpenses,
   getGroupMembers,
   getOptimizedSettlements,
 } from "../api/groups";
+import SkeletonLoader from "../components/SkeletonLoader";
 import { AuthContext } from "../context/AuthContext";
 import { colors, spacing, typography } from "../styles/theme";
 
@@ -26,6 +32,13 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   const [settlements, setSettlements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [settlementExpanded, setSettlementExpanded] = useState(false);
+  const opacity = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+    };
+  });
 
   const currency = "₹";
   const formatCurrency = (amount) => `${currency}${amount.toFixed(2)}`;
@@ -47,6 +60,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
       Alert.alert("Error", "Failed to fetch group details.");
     } finally {
       setIsLoading(false);
+      opacity.value = withTiming(1, { duration: 500 });
     }
   };
 
@@ -191,8 +205,11 @@ const GroupDetailsScreen = ({ route, navigation }) => {
 
   if (isLoading) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={styles.container}>
+        <SettlementSummarySkeleton />
+        <ExpenseCardSkeleton />
+        <ExpenseCardSkeleton />
+        <ExpenseCardSkeleton />
       </View>
     );
   }
@@ -205,7 +222,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   );
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, animatedStyle]}>
       <FlatList
         data={expenses}
         renderItem={renderExpense}
@@ -222,9 +239,36 @@ const GroupDetailsScreen = ({ route, navigation }) => {
         color={colors.white}
         onPress={() => navigation.navigate("AddExpense", { groupId })}
       />
-    </View>
+    </Animated.View>
   );
 };
+
+const SettlementSummarySkeleton = () => (
+  <View style={styles.summaryCard}>
+    <View style={styles.summaryTotals}>
+      <View style={styles.summaryTotal}>
+        <SkeletonLoader style={{ width: 60, height: 16, marginBottom: spacing.xs }} />
+        <SkeletonLoader style={{ width: 80, height: 24 }} />
+      </View>
+      <View style={styles.summaryTotal}>
+        <SkeletonLoader style={{ width: 80, height: 16, marginBottom: spacing.xs }} />
+        <SkeletonLoader style={{ width: 100, height: 24 }} />
+      </View>
+    </View>
+  </View>
+);
+
+const ExpenseCardSkeleton = () => (
+  <View style={styles.expenseCard}>
+    <SkeletonLoader style={{ width: 24, height: 24, marginRight: spacing.md }} />
+    <View style={styles.expenseDetails}>
+      <SkeletonLoader style={{ width: '80%', height: 20, marginBottom: spacing.xs }} />
+      <SkeletonLoader style={{ width: '50%', height: 16 }} />
+    </View>
+    <SkeletonLoader style={{ width: 60, height: 24 }} />
+  </View>
+);
+
 
 const styles = StyleSheet.create({
   container: {

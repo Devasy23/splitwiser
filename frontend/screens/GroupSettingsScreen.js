@@ -28,8 +28,14 @@ import {
   removeMember as apiRemoveMember,
   updateGroup as apiUpdateGroup,
 } from "../api/groups";
+import SkeletonLoader from "../components/SkeletonLoader";
 import { AuthContext } from "../context/AuthContext";
 import { colors, spacing, typography } from "../styles/theme";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 const ICON_CHOICES = ["👥", "🏠", "🎉", "🧳", "🍽️", "🚗", "🏖️", "🎮", "💼"];
 
@@ -43,6 +49,13 @@ const GroupSettingsScreen = ({ route, navigation }) => {
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
   const [pickedImage, setPickedImage] = useState(null);
+  const opacity = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+    };
+  });
 
   const isAdmin = useMemo(
     () => members.find((m) => m.userId === user?._id)?.role === "admin",
@@ -64,6 +77,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
       Alert.alert("Error", "Failed to load group settings.");
     } finally {
       setLoading(false);
+      opacity.value = withTiming(1, { duration: 500 });
     }
   };
 
@@ -219,14 +233,18 @@ const GroupSettingsScreen = ({ route, navigation }) => {
 
   if (loading) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator color={colors.primary} />
+      <View style={styles.container}>
+        <Appbar.Header style={{ backgroundColor: colors.primary }}>
+          <Appbar.BackAction onPress={() => navigation.goBack()} color={colors.white} />
+          <Appbar.Content title="Group Settings" color={colors.white} titleStyle={{ ...typography.h2 }} />
+        </Appbar.Header>
+        <GroupSettingsSkeleton />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, animatedStyle]}>
       <Appbar.Header style={{ backgroundColor: colors.primary }}>
         <Appbar.BackAction
           onPress={() => navigation.goBack()}
@@ -334,9 +352,31 @@ const GroupSettingsScreen = ({ route, navigation }) => {
           )}
         </View>
       </ScrollView>
-    </View>
+    </Animated.View>
   );
 };
+
+const GroupSettingsSkeleton = () => (
+  <ScrollView contentContainerStyle={styles.scrollContent}>
+    <View style={styles.card}>
+      <SkeletonLoader style={{ width: 120, height: 24, marginBottom: spacing.md }} />
+      <SkeletonLoader style={{ height: 56, marginBottom: spacing.md }} />
+      <SkeletonLoader style={{ width: 60, height: 16, marginBottom: spacing.sm }} />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.md }}>
+        {Array.from({ length: 9 }).map((_, i) => (
+          <SkeletonLoader key={i} style={{ width: 48, height: 48, borderRadius: 24, marginRight: spacing.sm, marginBottom: spacing.sm }} />
+        ))}
+      </View>
+      <SkeletonLoader style={{ height: 40, marginBottom: spacing.md }} />
+      <SkeletonLoader style={{ height: 40 }} />
+    </View>
+    <View style={styles.card}>
+      <SkeletonLoader style={{ width: 120, height: 24, marginBottom: spacing.md }} />
+      <SkeletonLoader style={{ height: 40, marginBottom: spacing.sm }} />
+      <SkeletonLoader style={{ height: 40, marginBottom: spacing.sm }} />
+    </View>
+  </ScrollView>
+);
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.secondary },

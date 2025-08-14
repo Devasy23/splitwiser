@@ -18,7 +18,13 @@ import {
   SegmentedButtons,
   TextInput,
 } from "react-native-paper";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { createExpense, getGroupMembers } from "../api/groups";
+import SkeletonLoader from "../components/SkeletonLoader";
 import { AuthContext } from "../context/AuthContext";
 import { colors, spacing, typography } from "../styles/theme";
 
@@ -73,6 +79,13 @@ const AddExpenseScreen = ({ route, navigation }) => {
   const [shares, setShares] = useState({});
   const [exactAmounts, setExactAmounts] = useState({});
   const [selectedMembers, setSelectedMembers] = useState({});
+  const opacity = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+    };
+  });
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -115,6 +128,7 @@ const AddExpenseScreen = ({ route, navigation }) => {
         Alert.alert("Error", "Failed to fetch group members.");
       } finally {
         setIsLoading(false);
+        opacity.value = withTiming(1, { duration: 500 });
       }
     };
     if (groupId) {
@@ -271,8 +285,12 @@ const AddExpenseScreen = ({ route, navigation }) => {
 
   if (isLoading) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={styles.container}>
+        <Appbar.Header style={{ backgroundColor: colors.primary }}>
+          <Appbar.BackAction onPress={() => navigation.goBack()} color={colors.white} />
+          <Appbar.Content title="Add Expense" color={colors.white} titleStyle={{ ...typography.h2 }} />
+        </Appbar.Header>
+        <AddExpenseSkeleton />
       </View>
     );
   }
@@ -281,100 +299,116 @@ const AddExpenseScreen = ({ route, navigation }) => {
     members.find((m) => m.userId === payerId)?.user.name || "Select Payer";
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-    >
-      <Appbar.Header style={{ backgroundColor: colors.primary }}>
-        <Appbar.BackAction
-          onPress={() => navigation.goBack()}
-          color={colors.white}
-        />
-        <Appbar.Content
-          title="Add Expense"
-          color={colors.white}
-          titleStyle={{ ...typography.h2 }}
-        />
-      </Appbar.Header>
-      <ScrollView contentContainerStyle={styles.content}>
-        <TextInput
-          label="Description"
-          value={description}
-          onChangeText={setDescription}
-          style={styles.input}
-          theme={{ colors: { primary: colors.accent } }}
-        />
-        <TextInput
-          label="Amount"
-          value={amount}
-          onChangeText={setAmount}
-          style={styles.input}
-          keyboardType="numeric"
-          theme={{ colors: { primary: colors.accent } }}
-        />
+    <Animated.View style={[styles.container, animatedStyle]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <Appbar.Header style={{ backgroundColor: colors.primary }}>
+          <Appbar.BackAction
+            onPress={() => navigation.goBack()}
+            color={colors.white}
+          />
+          <Appbar.Content
+            title="Add Expense"
+            color={colors.white}
+            titleStyle={{ ...typography.h2 }}
+          />
+        </Appbar.Header>
+        <ScrollView contentContainerStyle={styles.content}>
+          <TextInput
+            label="Description"
+            value={description}
+            onChangeText={setDescription}
+            style={styles.input}
+            theme={{ colors: { primary: colors.accent } }}
+          />
+          <TextInput
+            label="Amount"
+            value={amount}
+            onChangeText={setAmount}
+            style={styles.input}
+            keyboardType="numeric"
+            theme={{ colors: { primary: colors.accent } }}
+          />
 
-        <View>
-          <Text style={styles.label}>Paid by</Text>
-          <Menu
-            visible={menuVisible}
-            onDismiss={() => setMenuVisible(false)}
-            anchor={
-              <TouchableOpacity
-                style={styles.menuAnchor}
-                onPress={() => setMenuVisible(true)}
-              >
-                <Text style={styles.menuAnchorText}>{selectedPayerName}</Text>
-                <Ionicons
-                  name="chevron-down-outline"
-                  size={24}
-                  color={colors.textSecondary}
+          <View>
+            <Text style={styles.label}>Paid by</Text>
+            <Menu
+              visible={menuVisible}
+              onDismiss={() => setMenuVisible(false)}
+              anchor={
+                <TouchableOpacity
+                  style={styles.menuAnchor}
+                  onPress={() => setMenuVisible(true)}
+                >
+                  <Text style={styles.menuAnchorText}>{selectedPayerName}</Text>
+                  <Ionicons
+                    name="chevron-down-outline"
+                    size={24}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              }
+            >
+              {members.map((member) => (
+                <Menu.Item
+                  key={member.userId}
+                  onPress={() => {
+                    setPayerId(member.userId);
+                    setMenuVisible(false);
+                  }}
+                  title={member.user.name}
                 />
-              </TouchableOpacity>
-            }
+              ))}
+            </Menu>
+          </View>
+
+          <Text style={styles.splitTitle}>Split Method</Text>
+          <SegmentedButtons
+            value={splitMethod}
+            onValueChange={setSplitMethod}
+            buttons={[
+              { value: "equal", label: "Equally", icon: "division" },
+              { value: "exact", label: "Exact", icon: "currency-usd" },
+              { value: "percentage", label: "%", icon: "percent-outline" },
+              { value: "shares", label: "Shares", icon: "chart-pie" },
+            ]}
+            style={styles.input}
+            theme={{ colors: { primary: colors.primary } }}
+          />
+
+          <View style={styles.splitInputsContainer}>{renderSplitInputs()}</View>
+
+          <Button
+            mode="contained"
+            onPress={handleAddExpense}
+            style={styles.button}
+            labelStyle={styles.buttonLabel}
+            loading={isSubmitting}
+            disabled={isSubmitting}
           >
-          {members.map((member) => (
-            <Menu.Item
-              key={member.userId}
-              onPress={() => {
-                setPayerId(member.userId);
-                setMenuVisible(false);
-              }}
-              title={member.user.name}
-            />
-          ))}
-        </Menu>
-        </View>
-
-        <Text style={styles.splitTitle}>Split Method</Text>
-        <SegmentedButtons
-          value={splitMethod}
-          onValueChange={setSplitMethod}
-          buttons={[
-            { value: "equal", label: "Equally", icon: "division" },
-            { value: "exact", label: "Exact", icon: "currency-usd" },
-            { value: "percentage", label: "%", icon: "percent-outline" },
-            { value: "shares", label: "Shares", icon: "chart-pie" },
-          ]}
-          style={styles.input}
-          theme={{ colors: { primary: colors.primary } }}
-        />
-
-        <View style={styles.splitInputsContainer}>{renderSplitInputs()}</View>
-
-        <Button
-          mode="contained"
-          onPress={handleAddExpense}
-          style={styles.button}
-          labelStyle={styles.buttonLabel}
-          loading={isSubmitting}
-          disabled={isSubmitting}
-        >
-          Add Expense
-        </Button>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            Add Expense
+          </Button>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Animated.View>
   );
 };
+
+const AddExpenseSkeleton = () => (
+  <ScrollView contentContainerStyle={styles.content}>
+    <SkeletonLoader style={[styles.input, { height: 56 }]} />
+    <SkeletonLoader style={[styles.input, { height: 56 }]} />
+    <View>
+      <SkeletonLoader style={{ width: 60, height: 16, marginBottom: spacing.sm }} />
+      <SkeletonLoader style={[styles.menuAnchor, { height: 56 }]} />
+    </View>
+    <SkeletonLoader style={{ width: 120, height: 24, marginTop: spacing.lg, marginBottom: spacing.md }} />
+    <SkeletonLoader style={[styles.input, { height: 40 }]} />
+    <SkeletonLoader style={[styles.button, { height: 48 }]} />
+  </ScrollView>
+);
 
 const styles = StyleSheet.create({
   container: {
