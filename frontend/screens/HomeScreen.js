@@ -1,5 +1,5 @@
 import { useTheme } from "@react-navigation/native";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { Alert, Animated, FlatList, Pressable, StyleSheet, View } from "react-native";
 import Swipeable from "react-native-gesture-handler/Swipeable";
 import {
@@ -16,11 +16,11 @@ import {
 } from "react-native-paper";
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
-import { formatCurrency, getCurrencySymbol } from "../utils/currency";
+import { formatCurrency } from "../utils/currency";
 import { tokens } from "../utils/theme";
 
 const HomeScreen = ({ navigation }) => {
-  const { token, logout, user } = useContext(AuthContext);
+  const { token, user } = useContext(AuthContext);
   const { colors } = useTheme();
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -80,17 +80,23 @@ const HomeScreen = ({ navigation }) => {
 
       // Fetch settlement status for each group
       if (user?._id) {
-        const settlementPromises = groupsList.map(async (group) => {
-          const status = await calculateSettlementStatus(group._id, user._id);
-          return { groupId: group._id, status };
-        });
-
-        const settlementResults = await Promise.all(settlementPromises);
-        const settlementMap = {};
-        settlementResults.forEach(({ groupId, status }) => {
-          settlementMap[groupId] = status;
-        });
-        setGroupSettlements(settlementMap);
+        const chunkSize = 5;
+        // clear previous while loading fresh data
+        setGroupSettlements({});
+        for (let i = 0; i < groupsList.length; i += chunkSize) {
+          const slice = groupsList.slice(i, i + chunkSize);
+          const results = await Promise.all(
+            slice.map(async (group) => ({
+              groupId: group._id,
+              status: await calculateSettlementStatus(group._id, user._id),
+            }))
+          );
+          const partial = results.reduce((acc, { groupId, status }) => {
+            acc[groupId] = status;
+            return acc;
+          }, {});
+          setGroupSettlements((prev) => ({ ...prev, ...partial }));
+        }
       }
     } catch (error) {
       console.error("Failed to fetch groups:", error);
@@ -125,7 +131,7 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const currencySymbol = getCurrencySymbol();
+  // const currencySymbol = getCurrencySymbol(); // not used on this screen currently
 
   // Simple mount animation for list items
   const itemAnim = useRef(new Animated.Value(0)).current;
@@ -137,7 +143,7 @@ const HomeScreen = ({ navigation }) => {
     }).start();
   }, [groups]);
 
-  const renderGroup = ({ item, index }) => {
+  const renderGroup = useCallback(({ item, index }) => {
     const settlementStatus = groupSettlements[item._id];
 
     // Generate settlement status text
@@ -248,7 +254,12 @@ const HomeScreen = ({ navigation }) => {
           opacity: itemAnim,
         }}
       >
-        <Swipeable renderRightActions={renderRightActions} renderLeftActions={renderLeftActions}>
+        <Swipeable
+          renderRightActions={renderRightActions}
+          renderLeftActions={renderLeftActions}
+          friction={2}
+          overshootFriction={8}
+        >
           <Pressable onPress={openDetails} onPressIn={onPressIn} onPressOut={onPressOut}>
             <Card style={[styles.card, { backgroundColor: colors.card }]}> 
               <Card.Title
@@ -277,7 +288,7 @@ const HomeScreen = ({ navigation }) => {
         </Swipeable>
       </Animated.View>
     );
-  };
+  }, [groupSettlements, colors, itemAnim, navigation]);
 
   return (
     <View style={styles.container}>
@@ -326,6 +337,9 @@ const HomeScreen = ({ navigation }) => {
           renderItem={renderGroup}
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.list}
+          initialNumToRender={8}
+          windowSize={10}
+          removeClippedSubviews
           ListEmptyComponent={
             <Text style={styles.emptyText}>
               No groups found. Create or join one!

@@ -1,8 +1,8 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { useContext } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, useColorScheme, View } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-import { navTheme } from '../utils/theme';
+import { navTheme, navThemeDark } from '../utils/theme';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
 
@@ -17,8 +17,10 @@ const AppNavigator = () => {
     );
   }
 
+  const scheme = useColorScheme();
+  const theme = scheme === 'dark' ? navThemeDark : navTheme;
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={theme}>
       {token ? <MainNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );

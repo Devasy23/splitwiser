@@ -1,8 +1,8 @@
 // Centralized theme for react-native-paper (MD3) and React Navigation
 // Formal, modern palette suitable for finance/expense tracking, with bold accents
 
-import { DefaultTheme as DefaultNavTheme } from '@react-navigation/native';
-import { MD3LightTheme as DefaultPaperTheme } from 'react-native-paper';
+import { DarkTheme as DefaultNavDark, DefaultTheme as DefaultNavTheme } from '@react-navigation/native';
+import { MD3DarkTheme as DefaultPaperDark, MD3LightTheme as DefaultPaperTheme } from 'react-native-paper';
 
 const palette = {
   // Neutrals
@@ -58,3 +58,47 @@ export const navTheme = {
 };
 
 export const tokens = palette;
+
+// Dark theme variant
+const darkPalette = {
+  ...palette,
+  background: '#0B1220',
+  surface: '#0F172A',
+  surfaceVariant: '#111827',
+  outline: '#1F2937',
+  primary: '#3B82F6',
+  text: '#E5E7EB',
+  textMuted: '#9CA3AF',
+};
+
+export const paperThemeDark = {
+  ...DefaultPaperDark,
+  colors: {
+    ...DefaultPaperDark.colors,
+    primary: darkPalette.primary,
+    onPrimary: darkPalette.onPrimary,
+    secondary: darkPalette.secondary,
+    tertiary: darkPalette.tertiary,
+    background: darkPalette.background,
+    surface: darkPalette.surface,
+    surfaceVariant: darkPalette.surfaceVariant,
+    outline: darkPalette.outline,
+    error: darkPalette.danger,
+    onSurface: darkPalette.text,
+    onSurfaceVariant: darkPalette.textMuted,
+  },
+  roundness: 12,
+};
+
+export const navThemeDark = {
+  ...DefaultNavDark,
+  colors: {
+    ...DefaultNavDark.colors,
+    primary: darkPalette.primary,
+    background: darkPalette.background,
+    card: darkPalette.surface,
+    text: darkPalette.text,
+    border: darkPalette.outline,
+    notification: darkPalette.secondary,
+  },
+};

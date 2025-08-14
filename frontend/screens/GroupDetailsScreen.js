@@ -1,5 +1,5 @@
 import { useTheme } from "@react-navigation/native";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, StyleSheet, Text, View } from "react-native";
 import {
   ActivityIndicator,
@@ -68,10 +68,13 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     }
   }, [token, groupId]);
 
-  const getMemberName = (userId) => {
-    const member = members.find((m) => m.userId === userId);
-    return member ? member.user.name : "Unknown";
-  };
+  const membersMap = useMemo(() => {
+    const map = new Map();
+    members.forEach((m) => map.set(m.userId, m.user?.name || 'Unknown'));
+    return map;
+  }, [members]);
+
+  const getMemberName = (userId) => membersMap.get(userId) || 'Unknown';
 
   const renderExpense = ({ item }) => {
     const userSplit = item.splits.find((s) => s.userId === user._id);
@@ -230,8 +233,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   card: {
-  marginBottom: 16,
-  borderRadius: 16,
+    marginBottom: 16,
+    borderRadius: 16,
   },
   expensesTitle: {
     marginTop: 16,
