@@ -1,8 +1,9 @@
 import { useContext, useState } from "react";
-import { Alert, StyleSheet, View } from "react-native";
-import { Appbar, Button, TextInput, Title } from "react-native-paper";
+import { Alert, StyleSheet, View, Text } from "react-native";
+import { Appbar, Button, TextInput } from "react-native-paper";
 import { joinGroup } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
+import { colors, spacing, typography } from "../styles/theme";
 
 const JoinGroupScreen = ({ navigation, route }) => {
   const { token } = useContext(AuthContext);
@@ -19,7 +20,7 @@ const JoinGroupScreen = ({ navigation, route }) => {
     try {
       await joinGroup(joinCode);
       Alert.alert("Success", "Successfully joined the group.");
-      onGroupJoined(); // Call the callback to refresh the groups list
+      onGroupJoined();
       navigation.goBack();
     } catch (error) {
       console.error("Failed to join group:", error);
@@ -34,18 +35,26 @@ const JoinGroupScreen = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="Join a Group" />
+      <Appbar.Header style={{ backgroundColor: colors.primary }}>
+        <Appbar.BackAction
+          onPress={() => navigation.goBack()}
+          color={colors.white}
+        />
+        <Appbar.Content
+          title="Join a Group"
+          color={colors.white}
+          titleStyle={{ ...typography.h2 }}
+        />
       </Appbar.Header>
       <View style={styles.content}>
-        <Title>Enter Group Code</Title>
+        <Text style={styles.title}>Enter Group Code</Text>
         <TextInput
           label="Join Code"
           value={joinCode}
           onChangeText={setJoinCode}
           style={styles.input}
           autoCapitalize="characters"
+          theme={{ colors: { primary: colors.accent } }}
         />
         <Button
           mode="contained"
@@ -53,6 +62,7 @@ const JoinGroupScreen = ({ navigation, route }) => {
           loading={isJoining}
           disabled={isJoining}
           style={styles.button}
+          labelStyle={styles.buttonLabel}
         >
           Join Group
         </Button>
@@ -64,15 +74,30 @@ const JoinGroupScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.secondary,
   },
   content: {
-    padding: 16,
+    padding: spacing.lg,
+  },
+  title: {
+    ...typography.h2,
+    color: colors.text,
+    marginBottom: spacing.lg,
+    textAlign: "center",
   },
   input: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.white,
   },
   button: {
-    marginTop: 8,
+    marginTop: spacing.md,
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.sm,
+  },
+  buttonLabel: {
+    ...typography.body,
+    color: colors.white,
+    fontWeight: "bold",
   },
 });
 
