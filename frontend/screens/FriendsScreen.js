@@ -17,6 +17,7 @@ import {
   Text,
 } from "react-native-paper";
 import { getFriendsBalance, getGroups } from "../api/groups";
+import SkeletonLoader from "../components/SkeletonLoader";
 import { AuthContext } from "../context/AuthContext";
 import { colors, spacing, typography } from "../styles/theme";
 import { formatCurrency } from "../utils/currency";
@@ -81,6 +82,18 @@ const FriendItem = ({ item, onToggle, isExpanded }) => {
   );
 };
 
+const FriendItemSkeleton = () => (
+  <View style={styles.friendCard}>
+    <View style={styles.friendHeader}>
+      <SkeletonLoader style={{ width: 48, height: 48, borderRadius: 24 }} />
+      <View style={styles.friendInfo}>
+        <SkeletonLoader style={{ width: '70%', height: 20, marginBottom: spacing.xs }} />
+        <SkeletonLoader style={{ width: '50%', height: 16 }} />
+      </View>
+    </View>
+  </View>
+);
+
 const FriendsScreen = () => {
   const { token } = useContext(AuthContext);
   const [friends, setFriends] = useState([]);
@@ -140,11 +153,12 @@ const FriendsScreen = () => {
             titleStyle={{ ...typography.h2 }}
           />
         </Appbar.Header>
-        <ActivityIndicator
-          animating={true}
-          color={colors.primary}
-          style={{ marginTop: spacing.xl }}
-        />
+        <View style={styles.listContent}>
+          <FriendItemSkeleton />
+          <FriendItemSkeleton />
+          <FriendItemSkeleton />
+          <FriendItemSkeleton />
+        </View>
       </View>
     );
   }

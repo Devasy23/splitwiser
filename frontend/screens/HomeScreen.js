@@ -21,6 +21,7 @@ import {
   TextInput,
 } from "react-native-paper";
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
+import SkeletonLoader from "../components/SkeletonLoader";
 import { AuthContext } from "../context/AuthContext";
 import { colors, spacing, typography } from "../styles/theme";
 import { formatCurrency } from "../utils/currency";
@@ -274,7 +275,18 @@ const HomeScreen = ({ navigation }) => {
 
       {isLoading ? (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <View style={styles.row}>
+            <GroupCardSkeleton />
+            <GroupCardSkeleton />
+          </View>
+          <View style={styles.row}>
+            <GroupCardSkeleton />
+            <GroupCardSkeleton />
+          </View>
+          <View style={styles.row}>
+            <GroupCardSkeleton />
+            <GroupCardSkeleton />
+          </View>
         </View>
       ) : (
         <FlatList
@@ -300,6 +312,14 @@ const HomeScreen = ({ navigation }) => {
   );
 };
 
+const GroupCardSkeleton = () => (
+  <View style={styles.card}>
+    <SkeletonLoader style={{ width: 60, height: 60, borderRadius: 30, marginBottom: spacing.md }} />
+    <SkeletonLoader style={{ width: '80%', height: 20, marginBottom: spacing.xs }} />
+    <SkeletonLoader style={{ width: '60%', height: 20 }} />
+  </View>
+);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -311,9 +331,7 @@ const styles = StyleSheet.create({
   },
   loaderContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: colors.secondary,
+    padding: spacing.md,
   },
   list: {
     padding: spacing.md,
