@@ -2,6 +2,7 @@ name: Create EAS Preview
 
 on:
   pull_request_target:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -9,13 +10,13 @@ permissions:
 
 jobs:
   preview:
-    if: contains(github.event.pull_request.labels.*.name, 'run-preview')
+    if: contains(github.event.pull_request.labels.*.name, 'run-preview') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -35,5 +36,5 @@ jobs:
       - name: Create preview
         uses: expo/expo-github-action/preview@v8
         with:
-          command: eas update --auto --branch ${{ github.event.pull_request.head.ref }}
+          command: eas update --auto --branch ${{ github.event.pull_request.head.ref || github.ref_name }}
           working-directory: ./frontend
