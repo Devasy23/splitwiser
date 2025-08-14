@@ -1,19 +1,22 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useContext, useEffect, useState } from "react";
-import { Alert, FlatList, StyleSheet, Text, View } from "react-native";
 import {
-  ActivityIndicator,
-  Card,
-  FAB,
-  IconButton,
-  Paragraph,
-  Title,
-} from "react-native-paper";
+  Alert,
+  FlatList,
+  LayoutAnimation,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { ActivityIndicator, FAB } from "react-native-paper";
 import {
   getGroupExpenses,
   getGroupMembers,
   getOptimizedSettlements,
 } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
+import { colors, spacing, typography } from "../styles/theme";
 
 const GroupDetailsScreen = ({ route, navigation }) => {
   const { groupId, groupName } = route.params;
@@ -22,17 +25,14 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   const [expenses, setExpenses] = useState([]);
   const [settlements, setSettlements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [settlementExpanded, setSettlementExpanded] = useState(false);
 
-  // Currency configuration - can be made configurable later
-  const currency = "₹"; // Default to INR, can be changed to '$' for USD
-
-  // Helper function to format currency amounts
+  const currency = "₹";
   const formatCurrency = (amount) => `${currency}${amount.toFixed(2)}`;
 
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      // Fetch members, expenses, and settlements in parallel
       const [membersResponse, expensesResponse, settlementsResponse] =
         await Promise.all([
           getGroupMembers(groupId),
@@ -54,16 +54,25 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     navigation.setOptions({
       title: groupName,
       headerRight: () => (
-        <IconButton
-          icon="cog"
+        <TouchableOpacity
           onPress={() => navigation.navigate("GroupSettings", { groupId })}
-        />
+          style={{ marginRight: spacing.md }}
+        >
+          <Ionicons name="settings-outline" size={24} color={colors.white} />
+        </TouchableOpacity>
       ),
+      headerStyle: {
+        backgroundColor: colors.primary,
+      },
+      headerTintColor: colors.white,
+      headerTitleStyle: {
+        ...typography.h3,
+      },
     });
     if (token && groupId) {
       fetchData();
     }
-  }, [token, groupId]);
+  }, [token, groupId, navigation]);
 
   const getMemberName = (userId) => {
     const member = members.find((m) => m.userId === userId);
@@ -76,30 +85,36 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     const paidByMe = (item.paidBy || item.createdBy) === user._id;
     const net = paidByMe ? item.amount - userShare : -userShare;
 
-    let balanceText;
-    let balanceColor = "black";
-
+    let balanceText, balanceColor;
     if (net > 0) {
-      balanceText = `You are owed ${formatCurrency(net)}`;
-      balanceColor = "green";
+      balanceText = `You get back ${formatCurrency(net)}`;
+      balanceColor = colors.success;
     } else if (net < 0) {
-      balanceText = `You borrowed ${formatCurrency(Math.abs(net))}`;
-      balanceColor = "red";
+      balanceText = `You owe ${formatCurrency(Math.abs(net))}`;
+      balanceColor = colors.error;
     } else {
-      balanceText = "You are settled for this expense.";
+      balanceText = "You are settled for this expense";
+      balanceColor = colors.textSecondary;
     }
 
     return (
-      <Card style={styles.card}>
-        <Card.Content>
-          <Title>{item.description}</Title>
-          <Paragraph>Amount: {formatCurrency(item.amount)}</Paragraph>
-          <Paragraph>
-            Paid by: {getMemberName(item.paidBy || item.createdBy)}
-          </Paragraph>
-          <Paragraph style={{ color: balanceColor }}>{balanceText}</Paragraph>
-        </Card.Content>
-      </Card>
+      <View style={styles.expenseCard}>
+        <View style={styles.expenseIcon}>
+          <Ionicons name="receipt-outline" size={24} color={colors.primary} />
+        </View>
+        <View style={styles.expenseDetails}>
+          <Text style={styles.expenseDescription}>{item.description}</Text>
+          <Text style={styles.expensePaidBy}>
+            Paid by {getMemberName(item.paidBy || item.createdBy)}
+          </Text>
+          <Text style={[styles.expenseBalance, { color: balanceColor }]}>
+            {balanceText}
+          </Text>
+        </View>
+        <Text style={styles.expenseAmount}>
+          {formatCurrency(item.amount)}
+        </Text>
+      </View>
     );
   };
 
@@ -109,91 +124,101 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     const totalOwed = userOwes.reduce((sum, s) => sum + s.amount, 0);
     const totalToReceive = userIsOwed.reduce((sum, s) => sum + s.amount, 0);
 
-    // If user is all settled up
+    const toggleExpansion = () => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setSettlementExpanded(!settlementExpanded);
+    };
+
     if (userOwes.length === 0 && userIsOwed.length === 0) {
       return (
         <View style={styles.settledContainer}>
-          <Text style={styles.settledText}>✓ You are all settled up!</Text>
+          <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+          <Text style={styles.settledText}>You are all settled up!</Text>
         </View>
       );
     }
 
     return (
-      <View style={styles.settlementContainer}>
-        {/* You owe section - only show if totalOwed > 0 */}
-        {totalOwed > 0 && (
-          <View style={styles.owedSection}>
-            <Text style={styles.sectionTitle}>
-              You need to pay:{" "}
-              <Text style={styles.amountOwed}>{formatCurrency(totalOwed)}</Text>
+      <TouchableOpacity onPress={toggleExpansion} style={styles.summaryCard}>
+        <View style={styles.summaryTotals}>
+          <View style={styles.summaryTotal}>
+            <Text style={styles.summaryLabel}>You Owe</Text>
+            <Text style={[styles.summaryAmount, { color: colors.error }]}>
+              {formatCurrency(totalOwed)}
             </Text>
+          </View>
+          <View style={styles.summaryTotal}>
+            <Text style={styles.summaryLabel}>You Are Owed</Text>
+            <Text style={[styles.summaryAmount, { color: colors.success }]}>
+              {formatCurrency(totalToReceive)}
+            </Text>
+          </View>
+          <Ionicons
+            name={
+              settlementExpanded ? "chevron-up-outline" : "chevron-down-outline"
+            }
+            size={24}
+            color={colors.textSecondary}
+          />
+        </View>
+        {settlementExpanded && (
+          <View style={styles.settlementDetails}>
             {userOwes.map((s, index) => (
               <View key={`owes-${index}`} style={styles.settlementItem}>
-                <View style={styles.personInfo}>
-                  <Text style={styles.personName}>
-                    {getMemberName(s.toUserId)}
-                  </Text>
-                  <Text style={styles.settlementAmount}>
-                    {formatCurrency(s.amount)}
-                  </Text>
-                </View>
+                <Text style={styles.settlementText}>
+                  Pay {getMemberName(s.toUserId)}
+                </Text>
+                <Text style={styles.settlementAmount}>
+                  {formatCurrency(s.amount)}
+                </Text>
               </View>
             ))}
-          </View>
-        )}
-
-        {/* You receive section - only show if totalToReceive > 0 */}
-        {totalToReceive > 0 && (
-          <View style={styles.receiveSection}>
-            <Text style={styles.sectionTitle}>
-              You will receive:{" "}
-              <Text style={styles.amountReceive}>
-                {formatCurrency(totalToReceive)}
-              </Text>
-            </Text>
             {userIsOwed.map((s, index) => (
               <View key={`is-owed-${index}`} style={styles.settlementItem}>
-                <View style={styles.personInfo}>
-                  <Text style={styles.personName}>
-                    {getMemberName(s.fromUserId)}
-                  </Text>
-                  <Text style={styles.settlementAmount}>
-                    {formatCurrency(s.amount)}
-                  </Text>
-                </View>
+                <Text style={styles.settlementText}>
+                  Receive from {getMemberName(s.fromUserId)}
+                </Text>
+                <Text style={styles.settlementAmount}>
+                  {formatCurrency(s.amount)}
+                </Text>
               </View>
             ))}
+            <TouchableOpacity
+              style={styles.settleUpButton}
+              onPress={() =>
+                navigation.navigate("SettleUp", {
+                  groupId,
+                  settlement: settlements[0],
+                  members,
+                })
+              }
+            >
+              <Text style={styles.settleUpButtonText}>Settle Up</Text>
+            </TouchableOpacity>
           </View>
         )}
-      </View>
+      </TouchableOpacity>
     );
   };
 
   if (isLoading) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   const renderHeader = () => (
     <>
-      <Card style={styles.card}>
-        <Card.Content>
-          <Title>Settlement Summary</Title>
-          {renderSettlementSummary()}
-        </Card.Content>
-      </Card>
-
-      <Title style={styles.expensesTitle}>Expenses</Title>
+      {renderSettlementSummary()}
+      <Text style={styles.expensesTitle}>Expenses</Text>
     </>
   );
 
   return (
     <View style={styles.container}>
       <FlatList
-        style={styles.contentContainer}
         data={expenses}
         renderItem={renderExpense}
         keyExtractor={(item) => item._id}
@@ -201,13 +226,13 @@ const GroupDetailsScreen = ({ route, navigation }) => {
         ListEmptyComponent={
           <Text style={styles.emptyText}>No expenses recorded yet.</Text>
         }
-        contentContainerStyle={{ paddingBottom: 80 }} // To avoid FAB overlap
+        contentContainerStyle={styles.contentContainer}
       />
-
       <FAB
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: colors.accent }]}
         icon="plus"
-        onPress={() => navigation.navigate("AddExpense", { groupId: groupId })}
+        color={colors.white}
+        onPress={() => navigation.navigate("AddExpense", { groupId })}
       />
     </View>
   );
@@ -216,99 +241,143 @@ const GroupDetailsScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.secondary,
   },
   contentContainer: {
-    flex: 1,
-    padding: 16,
+    padding: spacing.md,
+    paddingBottom: 80,
   },
   loaderContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: colors.secondary,
   },
-  card: {
-    marginBottom: 16,
+  summaryCard: {
+    backgroundColor: colors.white,
+    borderRadius: spacing.sm,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.black,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
-  expensesTitle: {
-    marginTop: 16,
-    marginBottom: 8,
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  memberText: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  fab: {
-    position: "absolute",
-    margin: 16,
-    right: 0,
-    bottom: 0,
-  },
-  // Settlement Summary Styles
-  settlementContainer: {
-    marginBottom: 16,
-  },
-  settledContainer: {
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  settledText: {
-    fontSize: 16,
-    color: "#2e7d32",
-    fontWeight: "500",
-  },
-  owedSection: {
-    backgroundColor: "#ffebee",
-    borderRadius: 8,
-    padding: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: "#d32f2f",
-  },
-  receiveSection: {
-    backgroundColor: "#e8f5e8",
-    borderRadius: 8,
-    padding: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: "#2e7d32",
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
-    color: "#333",
-  },
-  amountOwed: {
-    color: "#d32f2f",
-    fontWeight: "bold",
-  },
-  amountReceive: {
-    color: "#2e7d32",
-    fontWeight: "bold",
-  },
-  settlementItem: {
-    marginVertical: 4,
-  },
-  personInfo: {
+  summaryTotals: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 4,
   },
-  personName: {
-    fontSize: 14,
-    color: "#555",
-    flex: 1,
+  summaryTotal: {
+    alignItems: "center",
+  },
+  summaryLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  summaryAmount: {
+    ...typography.h2,
+  },
+  settlementDetails: {
+    marginTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.secondary,
+    paddingTop: spacing.md,
+  },
+  settlementItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: spacing.sm,
+  },
+  settlementText: {
+    ...typography.body,
+    color: colors.text,
   },
   settlementAmount: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
+    ...typography.body,
+    fontWeight: "bold",
+    color: colors.text,
+  },
+  settledContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  settledText: {
+    ...typography.body,
+    color: colors.success,
+    marginLeft: spacing.sm,
+  },
+  expensesTitle: {
+    ...typography.h3,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  expenseCard: {
+    backgroundColor: colors.white,
+    borderRadius: spacing.sm,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  expenseIcon: {
+    marginRight: spacing.md,
+  },
+  expenseDetails: {
+    flex: 1,
+  },
+  expenseDescription: {
+    ...typography.body,
+    fontWeight: "bold",
+    color: colors.text,
+  },
+  expensePaidBy: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  expenseBalance: {
+    ...typography.body,
+    marginTop: spacing.xs,
+  },
+  expenseAmount: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  fab: {
+    position: "absolute",
+    margin: spacing.md,
+    right: 0,
+    bottom: 0,
   },
   emptyText: {
-    fontSize: 14,
-    color: "#666",
-    paddingVertical: 8,
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: "center",
+    marginTop: spacing.lg,
+  },
+  settleUpButton: {
+    backgroundColor: colors.primary,
+    padding: spacing.sm,
+    borderRadius: spacing.sm,
+    alignItems: "center",
+    marginTop: spacing.md,
+  },
+  settleUpButtonText: {
+    ...typography.body,
+    color: colors.white,
+    fontWeight: "bold",
   },
 });
 
