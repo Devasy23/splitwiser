@@ -16,7 +16,6 @@ venv/
 # Firebase
 firebase-service-account.json
 google-services.json
-
 # dependencies
 node_modules/
 

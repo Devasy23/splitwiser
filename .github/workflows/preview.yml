@@ -37,3 +37,5 @@ jobs:
         with:
           command: eas update --auto --branch ${{ github.event.pull_request.head.ref }}
           working-directory: ./frontend
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
