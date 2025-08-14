@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+  "scheme": "splitwiser",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -14,11 +15,13 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.devasy23.splitwiser",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Allow Splitwiser to select a group icon from your photo library."
       }
     },
     "android": {
+      "package": "com.devasy23.splitwiser",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"

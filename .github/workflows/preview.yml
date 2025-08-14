@@ -32,6 +32,14 @@ jobs:
         run: npm install
         working-directory: ./frontend
 
+      - name: Create .env file
+        working-directory: ./frontend
+        run: |
+          echo "EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID=${{ secrets.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID }}" >> .env
+          echo "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=${{ secrets.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID }}" >> .env
+          echo "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=${{ secrets.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID }}" >> .env
+          echo "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=${{ secrets.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}" >> .env
+
       - name: Create preview
         uses: expo/expo-github-action/preview@v8
         with:

@@ -1,4 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuthRequest } from "expo-auth-session/providers/google";
+import * as WebBrowser from "expo-web-browser";
 import { createContext, useEffect, useState } from "react";
 import * as authApi from "../api/auth";
 import {
@@ -6,6 +8,8 @@ import {
   setAuthTokens,
   setTokenUpdateListener,
 } from "../api/client";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export const AuthContext = createContext();
 
@@ -15,13 +19,64 @@ export const AuthProvider = ({ children }) => {
   const [refresh, setRefresh] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // For Expo Go, we need to use the web-based auth flow
+  // Force all platforms to use web client ID in Expo Go
+  const [request, response, promptAsync] = useAuthRequest({
+    expoClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID, // Force web client for iOS in Expo Go
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID, // Force web client for Android in Expo Go
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    redirectUri: 'https://auth.expo.io/@devasy23/frontend',
+  });
+
+  // Debug logging
+  useEffect(() => {
+    if (request) {
+      console.log("Auth request details:", {
+        url: request.url,
+        params: request.params
+      });
+    }
+  }, [request]);
+
+  useEffect(() => {
+    const handleGoogleSignIn = async () => {
+      if (response?.type === "success") {
+        const { id_token } = response.params;
+        try {
+          const res = await authApi.loginWithGoogle(id_token);
+          const { access_token, refresh_token, user: userData } = res.data;
+          setToken(access_token);
+          setRefresh(refresh_token);
+          await setAuthTokens({
+            newAccessToken: access_token,
+            newRefreshToken: refresh_token,
+          });
+          const normalizedUser = userData?._id
+            ? userData
+            : userData?.id
+            ? { ...userData, _id: userData.id }
+            : userData;
+          setUser(normalizedUser);
+        } catch (error) {
+          console.error(
+            "Google login failed:",
+            error.response?.data?.detail || error.message
+          );
+        }
+      }
+    };
+
+    handleGoogleSignIn();
+  }, [response]);
+
   // Load token and user data from AsyncStorage on app start
   useEffect(() => {
     const loadStoredAuth = async () => {
       try {
         const storedToken = await AsyncStorage.getItem("auth_token");
         const storedRefresh = await AsyncStorage.getItem("refresh_token");
-  const storedUser = await AsyncStorage.getItem("user_data");
+        const storedUser = await AsyncStorage.getItem("user_data");
 
         if (storedToken && storedUser) {
           setToken(storedToken);
@@ -146,6 +201,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithGoogle = async () => {
+    await promptAsync();
+  };
+
   const logout = async () => {
     try {
       // Clear stored authentication data
@@ -182,6 +241,7 @@ export const AuthProvider = ({ children }) => {
         signup,
         logout,
         updateUserInContext,
+        loginWithGoogle,
       }}
     >
       {children}

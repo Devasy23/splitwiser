@@ -1,237 +1,174 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
-import { useContext, useEffect, useRef, useState } from "react";
-import { Alert, Animated, FlatList, StyleSheet, View } from "react-native";
+import { useContext, useEffect, useState } from "react";
 import {
+  Alert,
+  FlatList,
+  LayoutAnimation,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import {
+  ActivityIndicator,
   Appbar,
   Avatar,
   Divider,
-  IconButton,
-  List,
   Text,
 } from "react-native-paper";
 import { getFriendsBalance, getGroups } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
+import { colors, spacing, typography } from "../styles/theme";
 import { formatCurrency } from "../utils/currency";
 
+const FriendItem = ({ item, onToggle, isExpanded }) => {
+  const balanceColor =
+    item.netBalance < 0 ? colors.error : colors.success;
+  const balanceText =
+    item.netBalance < 0
+      ? `You owe ${formatCurrency(Math.abs(item.netBalance))}`
+      : `Owes you ${formatCurrency(item.netBalance)}`;
+
+  return (
+    <View style={styles.friendCard}>
+      <TouchableOpacity style={styles.friendHeader} onPress={onToggle}>
+        <Avatar.Image
+          size={48}
+          source={{
+            uri:
+              item.imageUrl ||
+              `https://avatar.iran.liara.run/username?username=${item.name}`,
+          }}
+        />
+        <View style={styles.friendInfo}>
+          <Text style={styles.friendName}>{item.name}</Text>
+          <Text style={[styles.friendBalance, { color: balanceColor }]}>
+            {item.netBalance !== 0 ? balanceText : "Settled up"}
+          </Text>
+        </View>
+        <Ionicons
+          name={isExpanded ? "chevron-up-outline" : "chevron-down-outline"}
+          size={24}
+          color={colors.textSecondary}
+        />
+      </TouchableOpacity>
+      {isExpanded && (
+        <View style={styles.groupBreakdown}>
+          <Divider />
+          {item.groups.map((group) => (
+            <View key={group.id} style={styles.groupItem}>
+              <Avatar.Image
+                size={32}
+                source={{
+                  uri:
+                    group.imageUrl ||
+                    `https://avatar.iran.liara.run/username?username=${group.name}`,
+                }}
+              />
+              <Text style={styles.groupName}>{group.name}</Text>
+              <Text
+                style={{
+                  color: group.balance < 0 ? colors.error : colors.success,
+                }}
+              >
+                {formatCurrency(group.balance)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
+
 const FriendsScreen = () => {
-  const { token, user } = useContext(AuthContext);
+  const { token } = useContext(AuthContext);
   const [friends, setFriends] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showTooltip, setShowTooltip] = useState(true);
+  const [expandedFriend, setExpandedFriend] = useState(null);
   const isFocused = useIsFocused();
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch friends balance + groups concurrently for group icons
-        const friendsResponse = await getFriendsBalance();
+        const [friendsResponse, groupsResponse] = await Promise.all([
+          getFriendsBalance(),
+          getGroups(),
+        ]);
         const friendsData = friendsResponse.data.friendsBalance || [];
-        const groupsResponse = await getGroups();
-        const groups = groupsResponse?.data?.groups || [];
         const groupMeta = new Map(
-          groups.map((g) => [g._id, { name: g.name, imageUrl: g.imageUrl }])
+          (groupsResponse.data.groups || []).map((g) => [
+            g._id,
+            { name: g.name, imageUrl: g.imageUrl },
+          ])
         );
-
         const transformedFriends = friendsData.map((friend) => ({
           id: friend.userId,
           name: friend.userName,
-          imageUrl: friend.userImageUrl || null,
+          imageUrl: friend.userImageUrl,
           netBalance: friend.netBalance,
           groups: (friend.breakdown || []).map((group) => ({
             id: group.groupId,
-            name: group.groupName,
+            name: groupMeta.get(group.groupId)?.name || "Unknown Group",
             balance: group.balance,
-            imageUrl: groupMeta.get(group.groupId)?.imageUrl || null,
+            imageUrl: groupMeta.get(group.groupId)?.imageUrl,
           })),
         }));
-
         setFriends(transformedFriends);
       } catch (error) {
-        console.error("Failed to fetch friends balance data:", error);
         Alert.alert("Error", "Failed to load friends balance data.");
       } finally {
         setIsLoading(false);
       }
     };
-
-    if (token && isFocused) {
-      fetchData();
-    }
+    if (token && isFocused) fetchData();
   }, [token, isFocused]);
 
-  const renderFriend = ({ item }) => {
-    const balanceColor = item.netBalance < 0 ? "red" : "green";
-    const balanceText =
-      item.netBalance < 0
-        ? `You owe ${formatCurrency(Math.abs(item.netBalance))}`
-        : `Owes you ${formatCurrency(item.netBalance)}`;
-
-    // Determine if we have an image URL or a base64 payload
-    const hasImage = !!item.imageUrl;
-    let imageUri = null;
-    if (hasImage) {
-      // If it's a raw base64 string without prefix, add a default MIME prefix
-      if (
-        /^data:image/.test(item.imageUrl) ||
-        /^https?:\/\//.test(item.imageUrl)
-      ) {
-        imageUri = item.imageUrl;
-      } else if (/^[A-Za-z0-9+/=]+$/.test(item.imageUrl.substring(0, 50))) {
-        imageUri = `data:image/jpeg;base64,${item.imageUrl}`;
-      }
-    }
-
-    return (
-      <List.Accordion
-        title={item.name}
-        description={item.netBalance !== 0 ? balanceText : "Settled up"}
-        descriptionStyle={{
-          color: item.netBalance !== 0 ? balanceColor : "gray",
-        }}
-        left={(props) =>
-          imageUri ? (
-            <Avatar.Image {...props} size={40} source={{ uri: imageUri }} />
-          ) : (
-            <Avatar.Text
-              {...props}
-              size={40}
-              label={(item.name || "?").charAt(0)}
-            />
-          )
-        }
-      >
-        {item.groups.map((group) => {
-          const groupBalanceColor = group.balance < 0 ? "red" : "green";
-          const groupBalanceText =
-            group.balance < 0
-              ? `You owe ${formatCurrency(Math.abs(group.balance))}`
-              : `Owes you ${formatCurrency(group.balance)}`;
-          // Prepare group icon (imageUrl may be base64 or URL)
-          let groupImageUri = null;
-          if (group.imageUrl) {
-            if (
-              /^data:image/.test(group.imageUrl) ||
-              /^https?:\/\//.test(group.imageUrl)
-            ) {
-              groupImageUri = group.imageUrl;
-            } else if (
-              /^[A-Za-z0-9+/=]+$/.test(group.imageUrl.substring(0, 50))
-            ) {
-              groupImageUri = `data:image/jpeg;base64,${group.imageUrl}`;
-            }
-          }
-
-          return (
-            <List.Item
-              key={group.id}
-              title={group.name}
-              description={groupBalanceText}
-              descriptionStyle={{ color: groupBalanceColor }}
-              left={(props) =>
-                groupImageUri ? (
-                  <Avatar.Image
-                    {...props}
-                    size={36}
-                    source={{ uri: groupImageUri }}
-                  />
-                ) : (
-                  <Avatar.Text
-                    {...props}
-                    size={36}
-                    label={(group.name || "?").charAt(0)}
-                  />
-                )
-              }
-            />
-          );
-        })}
-      </List.Accordion>
-    );
+  const handleToggleFriend = (friendId) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedFriend(expandedFriend === friendId ? null : friendId);
   };
-
-  // Shimmer skeleton components
-  const opacityAnim = useRef(new Animated.Value(0.3)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0.3,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [opacityAnim]);
-
-  const SkeletonRow = () => (
-    <View style={styles.skeletonRow}>
-      <Animated.View
-        style={[styles.skeletonAvatar, { opacity: opacityAnim }]}
-      />
-      <View style={{ flex: 1, marginLeft: 12 }}>
-        <Animated.View
-          style={[styles.skeletonLine, { width: "60%", opacity: opacityAnim }]}
-        />
-        <Animated.View
-          style={[
-            styles.skeletonLineSmall,
-            { width: "40%", opacity: opacityAnim },
-          ]}
-        />
-      </View>
-    </View>
-  );
 
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Appbar.Header>
-          <Appbar.Content title="Friends" />
+        <Appbar.Header style={{ backgroundColor: colors.primary }}>
+          <Appbar.Content
+            title="Friends"
+            color={colors.white}
+            titleStyle={{ ...typography.h2 }}
+          />
         </Appbar.Header>
-        <View style={styles.skeletonContainer}>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <SkeletonRow key={i} />
-          ))}
-        </View>
+        <ActivityIndicator
+          animating={true}
+          color={colors.primary}
+          style={{ marginTop: spacing.xl }}
+        />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Appbar.Header>
-        <Appbar.Content title="Friends" />
+      <Appbar.Header style={{ backgroundColor: colors.primary }}>
+        <Appbar.Content
+          title="Friends"
+          color={colors.white}
+          titleStyle={{ ...typography.h2 }}
+        />
       </Appbar.Header>
-      {showTooltip && (
-        <View style={styles.explanationContainer}>
-          <View style={styles.explanationContent}>
-            <Text style={styles.explanationText}>
-              💡 These amounts show your direct balance with each friend across
-              all shared groups. Check individual group details for optimized
-              settlement suggestions.
-            </Text>
-            <IconButton
-              icon="close"
-              size={16}
-              onPress={() => setShowTooltip(false)}
-              style={styles.closeButton}
-            />
-          </View>
-        </View>
-      )}
       <FlatList
         data={friends}
-        renderItem={renderFriend}
+        renderItem={({ item }) => (
+          <FriendItem
+            item={item}
+            isExpanded={expandedFriend === item.id}
+            onToggle={() => handleToggleFriend(item.id)}
+          />
+        )}
         keyExtractor={(item) => item.id}
-        ItemSeparatorComponent={Divider}
+        contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No balances with friends yet.</Text>
         }
@@ -243,63 +180,51 @@ const FriendsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.secondary,
   },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
+  listContent: {
+    padding: spacing.md,
+  },
+  friendCard: {
+    backgroundColor: colors.white,
+    borderRadius: spacing.sm,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+  },
+  friendHeader: {
+    flexDirection: "row",
     alignItems: "center",
   },
-  explanationContainer: {
-    backgroundColor: "#f0f8ff",
-    margin: 8,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: "#2196f3",
-  },
-  explanationContent: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    padding: 12,
-  },
-  explanationText: {
-    fontSize: 12,
-    color: "#555",
-    lineHeight: 16,
+  friendInfo: {
     flex: 1,
-    paddingRight: 8,
+    marginLeft: spacing.md,
   },
-  closeButton: {
-    margin: 0,
-    marginTop: -4,
+  friendName: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  friendBalance: {
+    ...typography.body,
+  },
+  groupBreakdown: {
+    marginTop: spacing.md,
+  },
+  groupItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: spacing.sm,
+  },
+  groupName: {
+    flex: 1,
+    marginLeft: spacing.md,
+    ...typography.body,
+    color: colors.text,
   },
   emptyText: {
     textAlign: "center",
-    marginTop: 20,
-  },
-  skeletonContainer: {
-    padding: 16,
-  },
-  skeletonRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  skeletonAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#e0e0e0",
-  },
-  skeletonLine: {
-    height: 14,
-    backgroundColor: "#e0e0e0",
-    borderRadius: 6,
-    marginBottom: 6,
-  },
-  skeletonLineSmall: {
-    height: 12,
-    backgroundColor: "#e0e0e0",
-    borderRadius: 6,
+    marginTop: spacing.xl,
+    ...typography.body,
+    color: colors.textSecondary,
   },
 });
 

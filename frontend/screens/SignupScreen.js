@@ -1,7 +1,8 @@
 import React, { useState, useContext } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
-import { Button, Text, TextInput } from 'react-native-paper';
+import { View, StyleSheet, Alert, Text } from 'react-native';
+import { Button, TextInput } from 'react-native-paper';
 import { AuthContext } from '../context/AuthContext';
+import { colors, spacing, typography } from '../styles/theme';
 
 const SignupScreen = ({ navigation }) => {
   const [name, setName] = useState('');
@@ -9,7 +10,7 @@ const SignupScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signup } = useContext(AuthContext);
+  const { signup, loginWithGoogle } = useContext(AuthContext);
 
   const handleSignup = async () => {
     if (!name || !email || !password || !confirmPassword) {
@@ -34,15 +35,28 @@ const SignupScreen = ({ navigation }) => {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      await loginWithGoogle();
+    } catch (error) {
+      console.error('Google Sign-In error:', error);
+      Alert.alert('Google Sign-In Failed', 'An error occurred during Google Sign-In. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Text variant="headlineMedium" style={styles.title}>Create Account</Text>
+      <Text style={styles.title}>Create Account</Text>
       <TextInput
         label="Name"
         value={name}
         onChangeText={setName}
         style={styles.input}
         autoCapitalize="words"
+        theme={{ colors: { primary: colors.accent } }}
       />
       <TextInput
         label="Email"
@@ -51,6 +65,7 @@ const SignupScreen = ({ navigation }) => {
         style={styles.input}
         keyboardType="email-address"
         autoCapitalize="none"
+        theme={{ colors: { primary: colors.accent } }}
       />
       <TextInput
         label="Password"
@@ -58,6 +73,7 @@ const SignupScreen = ({ navigation }) => {
         onChangeText={setPassword}
         style={styles.input}
         secureTextEntry
+        theme={{ colors: { primary: colors.accent } }}
       />
       <TextInput
         label="Confirm Password"
@@ -65,17 +81,34 @@ const SignupScreen = ({ navigation }) => {
         onChangeText={setConfirmPassword}
         style={styles.input}
         secureTextEntry
+        theme={{ colors: { primary: colors.accent } }}
       />
       <Button
         mode="contained"
         onPress={handleSignup}
         style={styles.button}
+        labelStyle={styles.buttonLabel}
         loading={isLoading}
         disabled={isLoading}
       >
         Sign Up
       </Button>
-      <Button onPress={() => navigation.navigate('Login')} style={styles.button} disabled={isLoading}>
+      <Button
+        mode="contained"
+        onPress={handleGoogleSignIn}
+        style={[styles.button, styles.googleButton]}
+        labelStyle={styles.buttonLabel}
+        icon="google"
+        disabled={isLoading}
+      >
+        Sign up with Google
+      </Button>
+      <Button
+        onPress={() => navigation.navigate('Login')}
+        style={styles.loginButton}
+        labelStyle={styles.loginButtonLabel}
+        disabled={isLoading}
+      >
         Already have an account? Log In
       </Button>
     </View>
@@ -86,17 +119,37 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 16,
+    padding: spacing.lg,
+    backgroundColor: colors.secondary,
   },
   title: {
+    ...typography.h1,
+    color: colors.primary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   input: {
-    marginBottom: 16,
+    marginBottom: spacing.md,
+    backgroundColor: colors.white,
   },
   button: {
-    marginTop: 8,
+    marginTop: spacing.md,
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.sm,
+  },
+  googleButton: {
+    backgroundColor: '#4285F4', // Google's brand color
+  },
+  buttonLabel: {
+    ...typography.body,
+    color: colors.white,
+    fontWeight: 'bold',
+  },
+  loginButton: {
+    marginTop: spacing.md,
+  },
+  loginButtonLabel: {
+    color: colors.primary,
   },
 });
 
