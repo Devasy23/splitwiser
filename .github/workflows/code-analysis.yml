@@ -1,0 +1,141 @@
+name: Code Analysis
+
+on:
+  pull_request_target:
+    paths:
+      - 'frontend/**'
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  web-bundle-analysis:
+    if: contains(github.event.pull_request.labels.*.name, 'run-analysis') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.ref }}
+        fetch-depth: 0
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install Dependencies
+      run: npm install
+      working-directory: ./frontend
+
+    - name: Setup EAS
+      uses: expo/expo-github-action@v8
+      with:
+        eas-version: latest
+        token: ${{ secrets.EXPO_TOKEN }}
+
+    - name: Build for Bundle Analysis (Web)
+      run: |
+        if npx expo export --platform web --output-dir web-build 2>/dev/null; then
+          echo "✅ Expo web export successful"
+        else
+          echo "⚠️ Web export failed, using alternative bundle analysis approach"
+          npx metro build --entry-file index.js --platform web --bundle-output web-build/bundle.js --assets-dest web-build/static || true
+        fi
+      working-directory: ./frontend
+
+    - name: Analyze Web Bundle Size
+      working-directory: ./frontend
+      run: |
+        if [ ! -d "web-build" ]; then
+          echo "❌ No web-build directory found. Skipping analysis."
+          exit 0
+        fi
+
+        TOTAL_SIZE=0
+        if [ -d "web-build/static/js" ]; then
+          TOTAL_SIZE=$(find web-build/static/js -name "*.js" -type f -exec stat -c%s {} \; | awk '{sum+=$1} END {print sum}')
+        elif [ -f "web-build/bundle.js" ]; then
+          TOTAL_SIZE=$(stat -c%s web-build/bundle.js)
+        fi
+
+        if [ "$TOTAL_SIZE" -gt 0 ]; then
+          TOTAL_SIZE_MB=$(awk "BEGIN {printf \"%.2f\", $TOTAL_SIZE / 1024 / 1024}")
+          echo "📊 Total Web JavaScript bundle size: ${TOTAL_SIZE_MB} MB"
+
+          echo "# Web Bundle Analysis Report" > bundle-analysis-web.md
+          echo "## Bundle Size Summary" >> bundle-analysis-web.md
+          echo "- Total JavaScript bundle size: **${TOTAL_SIZE_MB} MB**" >> bundle-analysis-web.md
+        else
+          echo "❌ No JavaScript bundles found in expected locations."
+        fi
+
+    - name: Upload Web Bundle Analysis Report
+      if: always() && hashFiles('frontend/bundle-analysis-web.md') != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: web-bundle-analysis-report
+        path: frontend/bundle-analysis-web.md
+
+  rn-bundle-analysis:
+    if: contains(github.event.pull_request.labels.*.name, 'run-analysis') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.ref }}
+        fetch-depth: 0
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install Dependencies
+      run: npm install
+      working-directory: ./frontend
+
+    - name: Setup EAS
+      uses: expo/expo-github-action@v8
+      with:
+        eas-version: latest
+        token: ${{ secrets.EXPO_TOKEN }}
+
+    - name: Build for Bundle Analysis (RN)
+      run: |
+        if npx expo export --platform android --output-dir android-build --max-workers 1; then
+          echo "✅ Android export successful"
+        else
+          echo "⚠️ Android export failed. Skipping analysis."
+        fi
+      working-directory: ./frontend
+
+    - name: Analyze RN Bundle Size
+      working-directory: ./frontend
+      run: |
+        if [ ! -d "android-build" ]; then
+          echo "❌ No android-build directory found. Skipping analysis."
+          exit 0
+        fi
+
+        BUNDLE_FILE=$(find android-build/bundles -name "android-*.js" | head -1)
+        if [ -f "$BUNDLE_FILE" ]; then
+          BUNDLE_SIZE=$(stat -c%s "$BUNDLE_FILE")
+          BUNDLE_SIZE_MB=$(awk "BEGIN {printf \"%.2f\", $BUNDLE_SIZE / 1024 / 1024}")
+
+          echo "# React Native Bundle Analysis Report" > bundle-analysis-rn.md
+          echo "## Bundle Size Summary" >> bundle-analysis-rn.md
+          echo "- Platform: Android" >> bundle-analysis-rn.md
+          echo "- Bundle size: **${BUNDLE_SIZE_MB} MB**" >> bundle-analysis-rn.md
+        else
+          echo "❌ No Android bundle found."
+        fi
+
+    - name: Upload RN Bundle Analysis Report
+      if: always() && hashFiles('frontend/bundle-analysis-rn.md') != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: rn-bundle-analysis-report
+        path: frontend/bundle-analysis-rn.md

@@ -27,7 +27,9 @@
     "react-native-web": "^0.20.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.20.0",
+    "metro-visualizer": "^0.7.0",
+    "@expo/metro-config": "^0.7.1"
   },
   "private": true
 }

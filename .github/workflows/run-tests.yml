@@ -1,24 +1,27 @@
 name: Run Backend Tests & Analytics
 
 on:
-  pull_request:
+  pull_request_target:
     branches: [ main, master, feature/*]
-  push:
-    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   test-backend:
+    if: contains(github.event.pull_request.labels.*.name, 'run-tests') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     
     steps:
     - uses: actions/checkout@v5
       with:
+        ref: ${{ github.event.pull_request.head.sha || github.ref }}
         fetch-depth: 0  # Full history for better diff analysis
     
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.12'
+        cache: 'pip'
+        cache-dependency-path: backend/requirements.txt
         
     - name: Install dependencies
       run: |
@@ -66,8 +69,8 @@ jobs:
         fail_ci_if_error: false
         verbose: true
         working-directory: ./
-        override_branch: ${{ github.head_ref }}
-        override_commit: ${{ github.event.pull_request.head.sha }}
+        override_branch: ${{ github.head_ref || github.ref_name }}
+        override_commit: ${{ github.event.pull_request.head.sha || github.sha }}
         
     - name: Codecov upload skipped for Dependabot
       if: github.actor == 'dependabot[bot]'
