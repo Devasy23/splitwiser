@@ -1,9 +1,7 @@
 import asyncio
 import random
 import string
-
 from playwright.async_api import async_playwright, expect
-
 
 async def main():
     async with async_playwright() as p:
@@ -12,9 +10,7 @@ async def main():
         page = await context.new_page()
 
         # Generate random user credentials
-        random_suffix = "".join(
-            random.choices(string.ascii_lowercase + string.digits, k=8)
-        )
+        random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
         email = f"testuser_{random_suffix}@example.com"
         password = "securepassword123"
         name = "Test User"
@@ -42,7 +38,6 @@ async def main():
         await page.screenshot(path="jules-scratch/verification/home_screen.png")
 
         await browser.close()
-
 
 if __name__ == "__main__":
     asyncio.run(main())

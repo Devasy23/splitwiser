@@ -51,7 +51,7 @@ const MainNavigator = () => {
             <View style={[styles.tabItem, focused && styles.tabItemFocused]}>
               <Ionicons name={focused ? "person-circle" : "person-circle-outline"} color={focused ? colors.brandAccent : colors.textSecondary} size={24} />
               <Text style={[styles.tabLabel, focused && styles.tabLabelFocused]}>Account</Text>
-            </V>
+            </View>
           ),
         }}
       />
