@@ -4,7 +4,7 @@
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
-import { borderRadius, colors, shadows, spacing } from '../../utils/theme';
+import theme, { borderRadius, colors, shadows, spacing } from '../../utils/theme';
 
 const Button = ({
   title,
@@ -179,3 +179,4 @@ const Button = ({
 };
 
 export default Button;
+export { Button as ModernButton };

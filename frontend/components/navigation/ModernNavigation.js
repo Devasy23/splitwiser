@@ -9,7 +9,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import {
+import theme, {
     colors,
     shadows,
     spacing,

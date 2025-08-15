@@ -10,7 +10,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { animations, borderRadius, colors, spacing, typography } from '../../utils/theme';
+import theme, { animations, borderRadius, colors, spacing, typography } from '../../utils/theme';
 
 const EnhancedTextInput = ({
   label,

@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import {
+import theme, {
   borderRadius,
   colors,
   shadows,

@@ -269,3 +269,18 @@ export const paperTheme = {
   },
   roundness: borderRadius.md,
 };
+
+// Default export for convenient theme access
+export const theme = {
+  colors,
+  spacing,
+  borderRadius,
+  typography,
+  shadows,
+  animations,
+  glassmorphism,
+  paperTheme,
+  tokens,
+};
+
+export default theme;

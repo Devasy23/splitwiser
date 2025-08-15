@@ -29,7 +29,7 @@ import Button from '../components/core/Button';
 import { EnhancedTextInput } from '../components/core/Input';
 import { FloatingActionButton, ModernHeader } from '../components/navigation/ModernNavigation';
 import { GlassCard, GroupSummaryCard, QuickActionCard } from '../utils/cards';
-import { borderRadius, colors, spacing, typography } from '../utils/theme';
+import theme, { borderRadius, colors, spacing, typography } from '../utils/theme';
 
 const { width, height } = Dimensions.get('window');
 
