@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Blueprint: Splitwiser Redesign</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Vibrant Trust -->
+    <!-- Application Structure Plan: The SPA is structured as a single-page interactive exploration of the design blueprint. It uses a fixed top navigation for smooth scrolling between thematic sections (Vision, Principles, Design System, etc.). This structure was chosen to mirror the logical flow of the report while transforming it from a static document into an engaging, hands-on experience. Key interactions include live demonstrations of the design system (colors, typography, glassmorphism), an interactive component library showcasing button/form states, and animated mockups of the final app screens. This allows the user to not just read about the design principles, but to see and interact with them directly, leading to a deeper understanding. -->
+    <!-- Visualization & Content Choices: The report's content is qualitative, describing a design system. Therefore, traditional data charts are not applicable. Instead, information is presented using interactive HTML/CSS/JS components. Report Info: Color Palette -> Goal: Inform/Interact -> Presentation: Interactive color swatches -> Interaction: Hover/click to see details -> Justification: Allows users to experience the palette directly. | Report Info: Components (Buttons) -> Goal: Demonstrate -> Presentation: Live HTML buttons -> Interaction: Click to see different states (pressed, disabled) -> Justification: Provides a tangible feel for the component's behavior. | Report Info: Screen Mockups -> Goal: Visualize -> Presentation: Styled HTML/CSS layouts -> Interaction: Hover for annotations -> Justification: Connects the abstract design system to its concrete application in the final product. All visuals are created using HTML/CSS/Tailwind, confirming no SVG/Mermaid JS is used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        :root {
+            --color-background-primary: #FFFFFF;
+            --color-background-secondary: #F3F4F6;
+            --color-text-primary: #111827;
+            --color-text-secondary: #6B7280;
+            --color-brand-accent: #8B5CF6;
+            --color-brand-accent-darker: #7C3AED;
+            --color-semantic-success: #10B981;
+            --color-semantic-error: #EF4444;
+            --color-border-subtle: #E5E7EB;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-background-primary);
+            color: var(--color-text-primary);
+        }
+        .glassmorphic {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .nav-link {
+            transition: color 0.2s ease-in-out;
+        }
+        .nav-link:hover {
+            color: var(--color-brand-accent);
+        }
+        .section-title {
+            font-size: 2.25rem;
+            font-weight: 700;
+            line-height: 2.5rem;
+        }
+        .section-subtitle {
+            font-size: 1.125rem;
+            color: var(--color-text-secondary);
+            max-width: 48rem;
+            margin: 1rem auto 0;
+        }
+        .principle-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .principle-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+        .component-showcase button, .component-showcase input {
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-primary {
+            background-color: var(--color-brand-accent);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: var(--color-brand-accent-darker);
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        .btn-primary:disabled {
+            background-color: #9CA3AF;
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid var(--color-brand-accent);
+            color: var(--color-brand-accent);
+        }
+        .btn-secondary:hover {
+            background-color: rgba(139, 92, 246, 0.1);
+        }
+        .btn-secondary:active {
+            transform: scale(0.98);
+        }
+        .btn-tertiary {
+            color: var(--color-brand-accent);
+        }
+        .btn-tertiary:hover {
+            text-decoration: underline;
+        }
+        .input-field {
+            background-color: var(--color-background-secondary);
+            border: 1px solid var(--color-border-subtle);
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--color-brand-accent);
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+        }
+        .input-field.error {
+            border-color: var(--color-semantic-error);
+        }
+        .mobile-mockup {
+            width: 300px;
+            height: 600px;
+            border: 10px solid #1f2937;
+            border-radius: 40px;
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+        }
+        .animated-element {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header id="header" class="bg-white/80 backdrop-blur-sm fixed top-0 left-0 right-0 z-50 border-b border-gray-200">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800">Splitwiser Blueprint</h1>
+            <nav class="hidden md:flex space-x-8">
+                <a href="#vision" class="nav-link text-gray-600 font-medium">Vision</a>
+                <a href="#principles" class="nav-link text-gray-600 font-medium">Principles</a>
+                <a href="#system" class="nav-link text-gray-600 font-medium">Design System</a>
+                <a href="#components" class="nav-link text-gray-600 font-medium">Components</a>
+                <a href="#screens" class="nav-link text-gray-600 font-medium">Screens</a>
+                <a href="#motion" class="nav-link text-gray-600 font-medium">Motion</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="pt-20">
+
+        <section id="vision" class="py-20 text-center">
+            <div class="container mx-auto px-6">
+                <h2 class="text-4xl md:text-6xl font-extrabold tracking-tight" style="color: var(--color-text-primary);">A New Vision for Expense Splitting</h2>
+                <p class="mt-4 text-lg md:text-xl max-w-3xl mx-auto" style="color: var(--color-text-secondary);">Moving from a '90s feel to a modern, Gen Z-centric experience through the philosophy of <span class="font-bold" style="color: var(--color-brand-accent);">Expressive Minimalism</span>.</p>
+            </div>
+        </section>
+
+        <section id="principles" class="py-20 bg-gray-50">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="section-title">Core Principles for Gen Z</h2>
+                <p class="section-subtitle">These four pillars translate Gen Z's digital behaviors into an actionable design framework, ensuring the app is not just used, but loved.</p>
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
+                    <div class="principle-card bg-white p-8 rounded-2xl shadow-sm text-left">
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                            <span class="text-2xl">⚡️</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Immediacy</h3>
+                        <p style="color: var(--color-text-secondary);">Designing for an 8-second attention span. Performance is a feature, minimalism is a functional requirement, and every action gets instant feedback.</p>
+                    </div>
+                    <div class="principle-card bg-white p-8 rounded-2xl shadow-sm text-left">
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                            <span class="text-2xl">🤝</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Authenticity</h3>
+                        <p style="color: var(--color-text-secondary);">Building trust through transparency. No fake fronts, just clear financial data, upfront policies, and honest communication.</p>
+                    </div>
+                    <div class="principle-card bg-white p-8 rounded-2xl shadow-sm text-left">
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                            <span class="text-2xl">🎨</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Personalization</h3>
+                        <p style="color: var(--color-text-secondary);">The interface as an extension of identity. Offering meaningful customization like dark mode and accent colors to make the app feel personal.</p>
+                    </div>
+                    <div class="principle-card bg-white p-8 rounded-2xl shadow-sm text-left">
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                            <span class="text-2xl">🌍</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Values-Driven</h3>
+                        <p style="color: var(--color-text-secondary);">Embedding ethics into the design. Prioritizing accessibility, inclusive representation, and gender-neutral language as a baseline requirement.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="system" class="py-20">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="section-title">The Design System</h2>
+                <p class="section-subtitle">The single source of truth that codifies "Expressive Minimalism" into a set of reusable components and clear standards for a consistent, high-quality experience.</p>
+                
+                <div class="mt-16 text-left space-y-16">
+                    <div>
+                        <h3 class="text-2xl font-bold mb-4 text-center">Aesthetic: Strategic Glassmorphism</h3>
+                        <div class="relative h-80 rounded-2xl overflow-hidden p-8 flex items-center justify-center bg-gradient-to-br from-purple-500 to-indigo-600">
+                             <div class="absolute -top-20 -left-20 w-64 h-64 bg-white/20 rounded-full filter blur-xl"></div>
+                             <div class="absolute -bottom-20 -right-10 w-80 h-80 bg-white/20 rounded-full filter blur-2xl"></div>
+                            <div class="glassmorphic w-full max-w-md p-8 rounded-2xl text-center">
+                                <h4 class="text-xl font-bold text-white">Floating Content</h4>
+                                <p class="text-white/80 mt-2">This effect is used for background surfaces like cards to create depth and a modern feel, while critical text remains on opaque surfaces for accessibility.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-2xl font-bold mb-6 text-center">Color Palette</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                            <div>
+                                <h4 class="font-semibold mb-3">Primary (Fintech Trust)</h4>
+                                <div class="flex space-x-2">
+                                    <div class="w-full h-16 rounded-lg flex items-center justify-center text-white" style="background-color: #111827;">Deep Blue</div>
+                                    <div class="w-full h-16 rounded-lg flex items-center justify-center text-white" style="background-color: #047857;">Dark Green</div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold mb-3">Accent (Gen Z Expression)</h4>
+                                <div class="flex space-x-2">
+                                    <div class="w-full h-16 rounded-lg" style="background-color: #8B5CF6;"></div>
+                                    <div class="w-full h-16 rounded-lg" style="background-color: #22D3EE;"></div>
+                                    <div class="w-full h-16 rounded-lg" style="background-color: #E52A6F;"></div>
+                                </div>
+                            </div>
+                             <div>
+                                <h4 class="font-semibold mb-3">Neutral (Foundation)</h4>
+                                <div class="flex space-x-2">
+                                    <div class="w-full h-16 rounded-lg" style="background-color: #F9FAFB; border: 1px solid #E5E7EB;"></div>
+                                    <div class="w-full h-16 rounded-lg" style="background-color: #E5E7EB;"></div>
+                                    <div class="w-full h-16 rounded-lg" style="background-color: #6B7280;"></div>
+                                    <div class="w-full h-16 rounded-lg" style="background-color: #1F2937;"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold mb-3">Semantic (Status)</h4>
+                                <div class="flex space-x-2">
+                                    <div class="w-full h-16 rounded-lg" style="background-color: var(--color-semantic-success);"></div>
+                                    <div class="w-full h-16 rounded-lg" style="background-color: #F59E0B;"></div>
+                                    <div class="w-full h-16 rounded-lg" style="background-color: var(--color-semantic-error);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-2xl font-bold mb-6 text-center">Typography: Inter</h3>
+                        <div class="bg-gray-50 p-8 rounded-2xl">
+                            <p class="text-4xl font-bold" id="type-demo">Display Text</p>
+                            <h1 class="text-3xl font-semibold mt-2">Screen Title (H1)</h1>
+                            <h2 class="text-2xl font-semibold mt-2">Section Heading (H2)</h2>
+                            <p class="text-base mt-4">This is body text. Inter was designed for high legibility on screens, making it perfect for both expressive headlines and dense financial data.</p>
+                            <p class="text-sm text-gray-500 mt-2">This is caption text for metadata.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="components" class="py-20 bg-gray-50">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="section-title">Core Components</h2>
+                <p class="section-subtitle">The reusable building blocks of the interface. Standardized for consistency, accessibility, and development efficiency.</p>
+                <div class="component-showcase mt-16 grid grid-cols-1 lg:grid-cols-2 gap-12 text-left">
+                    <div class="space-y-8">
+                        <h3 class="text-xl font-bold">Buttons & CTAs</h3>
+                        <div class="flex items-center space-x-4">
+                            <button class="btn-primary px-6 py-3 rounded-lg font-semibold">Primary Action</button>
+                            <button class="btn-secondary px-6 py-3 rounded-lg font-semibold">Secondary</button>
+                            <button class="btn-tertiary font-semibold">Tertiary</button>
+                        </div>
+                        <div>
+                            <p class="font-medium mb-2">States:</p>
+                             <div class="flex items-center space-x-4">
+                                <button class="btn-primary px-6 py-3 rounded-lg font-semibold" disabled>Disabled</button>
+                                <button id="loading-btn" class="btn-primary px-6 py-3 rounded-lg font-semibold w-36 flex items-center justify-center">
+                                    <span class="btn-text">Click for loading</span>
+                                    <span class="btn-loader hidden">
+                                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-8">
+                         <h3 class="text-xl font-bold">Input Fields & Forms</h3>
+                         <div class="space-y-4">
+                            <div>
+                                <label for="default" class="block text-sm font-medium text-gray-700 mb-1">Default State</label>
+                                <input type="text" id="default" class="input-field w-full p-3 rounded-lg" placeholder="Enter details...">
+                            </div>
+                            <div>
+                                <label for="focused" class="block text-sm font-medium mb-1" style="color: var(--color-brand-accent);">Focused State</label>
+                                <input type="text" id="focused" class="input-field w-full p-3 rounded-lg" value="Active input" style="border-color: var(--color-brand-accent); box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);">
+                            </div>
+                             <div>
+                                <label for="error" class="block text-sm font-medium mb-1" style="color: var(--color-semantic-error);">Error State</label>
+                                <input type="email" id="error" class="input-field error w-full p-3 rounded-lg" value="invalid-email">
+                                <p class="text-sm mt-1" style="color: var(--color-semantic-error);">Please enter a valid email address.</p>
+                            </div>
+                         </div>
+                    </div>
+                    <div class="space-y-8 lg:col-span-2">
+                        <h3 class="text-xl font-bold text-center">Cards & Navigation</h3>
+                        <div class="flex flex-col md:flex-row items-center justify-center gap-12">
+                            <div class="bg-gradient-to-br from-gray-700 to-gray-900 p-8 rounded-2xl">
+                                <div class="glassmorphic p-6 rounded-xl w-72">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <p class="text-sm text-white/80">Dinner with Friends</p>
+                                            <p class="text-3xl font-bold text-white mt-1">$42.50</p>
+                                        </div>
+                                        <div class="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center text-lg">🍕</div>
+                                    </div>
+                                    <p class="text-xs text-white/60 mt-4">August 15, 2025</p>
+                                </div>
+                            </div>
+                            <div class="w-full max-w-sm">
+                                <div class="bg-white p-2 rounded-full shadow-lg flex justify-around">
+                                    <div class="text-center p-2 rounded-full">
+                                        <span class="text-2xl">📊</span>
+                                        <p class="text-xs font-regular text-gray-500">Dashboard</p>
+                                    </div>
+                                    <div class="text-center p-2 rounded-full" style="background-color: rgba(139, 92, 246, 0.1);">
+                                        <span class="text-2xl">👥</span>
+                                        <p class="text-xs font-semibold" style="color: var(--color-brand-accent);">Groups</p>
+                                    </div>
+                                    <div class="text-center p-2 rounded-full">
+                                        <span class="text-2xl">🔔</span>
+                                        <p class="text-xs font-regular text-gray-500">Activity</p>
+                                    </div>
+                                </div>
+                                <p class="text-center text-sm text-gray-500 mt-4">A bottom tab bar provides global navigation. The active tab is clearly differentiated with a filled icon, background, and bolder text.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="screens" class="py-20">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="section-title">Screen Redesigns</h2>
+                <p class="section-subtitle">Applying the design system to create an intuitive, efficient, and visually cohesive user journey across the app's most critical screens.</p>
+                <div class="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
+                    <div class="flex flex-col items-center">
+                        <h3 class="text-xl font-bold mb-4">Dashboard</h3>
+                        <div class="mobile-mockup bg-gray-50 overflow-hidden flex flex-col p-4">
+                            <h2 class="text-2xl font-bold px-2">Dashboard</h2>
+                            <div class="glassmorphic p-4 rounded-xl mt-4 border-none">
+                                <p class="text-sm font-medium text-gray-700">Net Balance</p>
+                                <p class="text-4xl font-bold text-green-600">$112.50</p>
+                                <div class="flex justify-between text-sm mt-2">
+                                    <p>You are owed: <span class="font-semibold">$150.00</span></p>
+                                    <p>You owe: <span class="font-semibold">$37.50</span></p>
+                                </div>
+                            </div>
+                            <p class="font-semibold text-gray-600 mt-6 px-2">Recent Activity</p>
+                            <div class="space-y-3 mt-3 overflow-y-auto">
+                                <div class="bg-white p-3 rounded-lg shadow-sm flex items-center"><span>☕️</span><span class="ml-3 font-medium">Coffee</span><span class="ml-auto font-bold">$5.00</span></div>
+                                <div class="bg-white p-3 rounded-lg shadow-sm flex items-center"><span> groceries</span><span class="ml-3 font-medium">Groceries</span><span class="ml-auto font-bold">$37.50</span></div>
+                                <div class="bg-white p-3 rounded-lg shadow-sm flex items-center"><span> movie</span><span class="ml-3 font-medium">Movie Tickets</span><span class="ml-auto font-bold">$30.00</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <h3 class="text-xl font-bold mb-4">Add Expense</h3>
+                        <div class="mobile-mockup bg-gray-50 overflow-hidden flex flex-col">
+                            <div class="p-4 flex-grow">
+                                <h2 class="text-2xl font-bold text-center">Add Expense</h2>
+                                <div class="text-center mt-8">
+                                    <span class="text-gray-500">$</span>
+                                    <span class="text-6xl font-bold">75.00</span>
+                                </div>
+                                <div class="space-y-4 mt-8">
+                                    <div class="bg-white p-3 rounded-lg flex items-center"><span class="text-xl">📝</span><span class="ml-3 text-gray-800">Description</span></div>
+                                    <div class="bg-white p-3 rounded-lg flex items-center"><span class="text-xl">👥</span><span class="ml-3 text-gray-800">Split with...</span></div>
+                                    <div class="bg-white p-3 rounded-lg flex items-center"><span class="text-xl">🏷️</span><span class="ml-3 text-gray-800">Category</span></div>
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <button class="btn-primary w-full py-4 rounded-lg font-bold text-lg">Add Expense</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <h3 class="text-xl font-bold mb-4">Settle Up</h3>
+                        <div class="mobile-mockup bg-gray-50 overflow-hidden flex flex-col p-4 items-center">
+                             <h2 class="text-2xl font-bold">Settle Up</h2>
+                             <div class="flex flex-col items-center text-center mt-12">
+                                <div class="w-20 h-20 rounded-full bg-indigo-200 flex items-center justify-center text-4xl">🧑</div>
+                                <p class="mt-4">You pay</p>
+                                <p class="text-2xl font-bold">Jane Doe</p>
+                                <p class="text-5xl font-bold mt-2" style="color: var(--color-brand-accent);">$37.50</p>
+                             </div>
+                             <div class="mt-auto w-full space-y-3">
+                                <button class="btn-primary w-full py-4 rounded-lg font-bold text-lg">Record Cash Payment</button>
+                                <button class="btn-secondary w-full py-4 rounded-lg font-bold text-lg">Pay with 💳</button>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="motion" class="py-20 bg-gray-50">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="section-title">Motion & Microinteractions</h2>
+                <p class="section-subtitle">Subtle, fast, and meaningful animations provide feedback, guide attention, and make the app feel alive and responsive.</p>
+                <div class="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">
+                    <div class="bg-white p-6 rounded-xl">
+                        <h4 class="font-bold mb-3">Feedback</h4>
+                        <p class="text-gray-600 mb-4">Instant confirmation of user actions. Try tapping the button.</p>
+                        <button id="feedback-btn" class="btn-primary px-5 py-2 rounded-lg font-semibold animated-element">Tap Me</button>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl">
+                        <h4 class="font-bold mb-3">Guidance</h4>
+                        <p class="text-gray-600 mb-4">Motion orients users. Click to simulate opening a modal.</p>
+                        <button id="modal-open-btn" class="btn-secondary px-5 py-2 rounded-lg font-semibold">Open Modal</button>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl">
+                        <h4 class="font-bold mb-3">Delight</h4>
+                        <p class="text-gray-600 mb-4">Create positive emotional connections. Click to see a success animation.</p>
+                        <button id="delight-btn" class="px-5 py-2 rounded-lg font-semibold" style="background-color: var(--color-semantic-success); color: white;">Settle Up!</button>
+                    </div>
+                </div>
+                <div id="modal-container" class="fixed inset-0 bg-black/40 z-50 flex items-end justify-center hidden">
+                    <div id="modal-content" class="bg-white w-full max-w-lg h-1/2 rounded-t-2xl p-6 transform translate-y-full animated-element">
+                        <h3 class="text-xl font-bold">Modal Title</h3>
+                        <p class="mt-2 text-gray-600">This slides up to show a temporary context.</p>
+                        <button id="modal-close-btn" class="btn-primary mt-6 px-5 py-2 rounded-lg">Close</button>
+                    </div>
+                </div>
+                 <div id="delight-container" class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"></div>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2025 Splitwiser Redesign Blueprint. An interactive visualization.</p>
+        </div>
+    </footer>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const header = document.getElementById('header');
+        let lastScrollY = window.scrollY;
+
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                header.classList.add('shadow-md');
+            } else {
+                header.classList.remove('shadow-md');
+            }
+        });
+
+        const loadingBtn = document.getElementById('loading-btn');
+        const btnText = loadingBtn.querySelector('.btn-text');
+        const btnLoader = loadingBtn.querySelector('.btn-loader');
+        loadingBtn.addEventListener('click', () => {
+            btnText.classList.add('hidden');
+            btnLoader.classList.remove('hidden');
+            loadingBtn.disabled = true;
+
+            setTimeout(() => {
+                btnText.classList.remove('hidden');
+                btnLoader.classList.add('hidden');
+                loadingBtn.disabled = false;
+            }, 2000);
+        });
+
+        const feedbackBtn = document.getElementById('feedback-btn');
+        feedbackBtn.addEventListener('mousedown', () => {
+            feedbackBtn.style.transform = 'scale(0.95)';
+        });
+        feedbackBtn.addEventListener('mouseup', () => {
+            feedbackBtn.style.transform = 'scale(1)';
+        });
+        feedbackBtn.addEventListener('mouseleave', () => {
+            feedbackBtn.style.transform = 'scale(1)';
+        });
+
+        const modalContainer = document.getElementById('modal-container');
+        const modalContent = document.getElementById('modal-content');
+        const modalOpenBtn = document.getElementById('modal-open-btn');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        modalOpenBtn.addEventListener('click', () => {
+            modalContainer.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.style.transform = 'translateY(0)';
+            }, 10);
+        });
+
+        const closeModal = () => {
+            modalContent.style.transform = 'translateY(100%)';
+            setTimeout(() => {
+                modalContainer.classList.add('hidden');
+            }, 300);
+        };
+        modalCloseBtn.addEventListener('click', closeModal);
+        modalContainer.addEventListener('click', (e) => {
+            if (e.target === modalContainer) {
+                closeModal();
+            }
+        });
+
+        const delightBtn = document.getElementById('delight-btn');
+        const delightContainer = document.getElementById('delight-container');
+        delightBtn.addEventListener('click', () => {
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('absolute');
+                confetti.style.width = `${Math.random() * 10 + 5}px`;
+                confetti.style.height = confetti.style.width;
+                confetti.style.backgroundColor = ['#8B5CF6', '#22D3EE', '#10B981', '#F59E0B'][Math.floor(Math.random() * 4)];
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.top = `${Math.random() * 100}%`;
+                confetti.style.opacity = '0';
+                confetti.style.animation = `confetti-fall ${Math.random() * 2 + 1}s ease-out forwards`;
+                delightContainer.appendChild(confetti);
+            }
+            setTimeout(() => {
+                delightContainer.innerHTML = '';
+            }, 3000);
+        });
+
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes confetti-fall {
+                0% { transform: translateY(-200px) rotate(0deg); opacity: 1; }
+                100% { transform: translateY(200px) rotate(720deg); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        const navLinks = document.querySelectorAll('nav a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    const headerOffset = document.getElementById('header').offsetHeight;
+                    const elementPosition = targetElement.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                    
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+    });
+</script>
+</body>
+</html>

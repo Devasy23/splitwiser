@@ -1,7 +1,7 @@
 name: Create EAS Preview
 
 on:
-  pull_request_target:
+  pull_request:
 
 permissions:
   contents: read
@@ -9,13 +9,10 @@ permissions:
 
 jobs:
   preview:
-    if: contains(github.event.pull_request.labels.*.name, 'run-preview')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
