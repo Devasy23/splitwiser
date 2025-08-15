@@ -14,7 +14,7 @@ import {
     shadows,
     spacing,
     typography
-} from '../utils/theme';
+} from '../../utils/theme';
 
 const { width: screenWidth } = Dimensions.get('window');
 
