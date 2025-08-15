@@ -5,21 +5,21 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useContext, useEffect, useRef, useState } from "react";
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    FlatList,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  Dimensions,
+  FlatList,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import {
-    ActivityIndicator,
-    Modal,
-    Portal,
-    Text,
+  ActivityIndicator,
+  Modal,
+  Portal,
+  Text,
 } from "react-native-paper";
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
@@ -65,8 +65,13 @@ const HomeScreen = ({ navigation }) => {
       }),
     ]).start();
 
-    fetchGroups();
-  }, []);
+    // Only fetch groups if user is authenticated
+    if (user && token) {
+      fetchGroups();
+    } else {
+      setIsLoading(false); // Stop loading if not authenticated
+    }
+  }, [user, token]); // Add dependencies
 
   // Calculate settlement status for a group
   const calculateSettlementStatus = async (groupId, userId) => {
@@ -104,22 +109,38 @@ const HomeScreen = ({ navigation }) => {
 
   const fetchGroups = async () => {
     try {
-      const response = await getGroups(token);
-      const groupsData = response.data;
+      const response = await getGroups(); // Remove token parameter
+      console.log('Groups API Response:', response); // Debug log
+      
+      // Handle different response structures
+      let groupsData = response.data;
+      if (!groupsData) {
+        groupsData = response; // Sometimes the response itself is the data
+      }
+      if (!Array.isArray(groupsData)) {
+        console.warn('Groups data is not an array:', groupsData);
+        groupsData = []; // Fallback to empty array
+      }
+      
       setGroups(groupsData);
 
       // Calculate settlement status for each group
-      const settlementPromises = groupsData.map(async (group) => {
-        const status = await calculateSettlementStatus(group._id, user._id);
-        return { groupId: group._id, status };
-      });
+      if (groupsData.length > 0) {
+        const settlementPromises = groupsData.map(async (group) => {
+          const status = await calculateSettlementStatus(group._id, user._id);
+          return { groupId: group._id, status };
+        });
 
-      const settlementsData = await Promise.all(settlementPromises);
-      const settlementsMap = {};
-      settlementsData.forEach(({ groupId, status }) => {
-        settlementsMap[groupId] = status;
-      });
-      setGroupSettlements(settlementsMap);
+        const settlementsData = await Promise.all(settlementPromises);
+        const settlementsMap = {};
+        settlementsData.forEach(({ groupId, status }) => {
+          settlementsMap[groupId] = status;
+        });
+        setGroupSettlements(settlementsMap);
+      } else {
+        // No groups, clear settlements
+        setGroupSettlements({});
+      }
 
       // Animate balance numbers
       Animated.timing(balanceAnim, {
@@ -161,7 +182,7 @@ const HomeScreen = ({ navigation }) => {
 
     setIsCreatingGroup(true);
     try {
-      await createGroup(newGroupName.trim(), token);
+      await createGroup(newGroupName.trim()); // Remove token parameter
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       hideModal();
       fetchGroups();

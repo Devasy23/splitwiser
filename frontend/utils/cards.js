@@ -5,18 +5,18 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef } from 'react';
 import {
-    Animated,
-    Dimensions,
-    Text,
-    TouchableOpacity,
-    View
+  Animated,
+  Dimensions,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import {
-    borderRadius,
-    colors,
-    shadows,
-    spacing,
-    typography
+  borderRadius,
+  colors,
+  shadows,
+  spacing,
+  typography
 } from './theme';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -125,6 +125,8 @@ const ExpenseCard = ({
   paidBy,
   category,
   participants,
+  userShare,
+  isPaidByUser = false,
   status = 'pending', // pending, settled, owes
   onPress,
   style,
@@ -150,9 +152,30 @@ const ExpenseCard = ({
 
   const currentStatus = statusConfig[status];
 
+  // Calculate user's net position
+  const netAmount = userShare !== undefined 
+    ? (isPaidByUser ? amount - userShare : -userShare)
+    : 0;
+  const isOwed = netAmount > 0;
+  const owesAmount = netAmount < 0;
+
+  const formatCurrency = (amount) => `₹${Math.abs(amount).toFixed(2)}`;
+  const formatDate = (date) => {
+    if (!date) return '';
+    const now = new Date();
+    const expenseDate = new Date(date);
+    const diffTime = Math.abs(now - expenseDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return 'Today';
+    if (diffDays === 2) return 'Yesterday';
+    if (diffDays <= 7) return `${diffDays - 1} days ago`;
+    return expenseDate.toLocaleDateString();
+  };
+
   return (
     <GlassCard onPress={onPress} variant="elevated" style={style}>
-      {/* Header with status */}
+      {/* Header with title and amount */}
       <View style={{
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -168,32 +191,39 @@ const ExpenseCard = ({
           {title}
         </Text>
         
-        <View style={{
-          backgroundColor: currentStatus.backgroundColor,
-          paddingHorizontal: spacing.sm,
-          paddingVertical: spacing.xs,
-          borderRadius: borderRadius.sm,
+        <Text style={{
+          ...typography.display,
+          fontSize: 20,
+          color: colors.brand.accent,
+          fontWeight: '700',
         }}>
-          <Text style={{
-            fontSize: typography.caption.fontSize,
-            fontWeight: '600',
-            color: currentStatus.color,
-            fontFamily: 'Inter',
-          }}>
-            {currentStatus.label}
-          </Text>
-        </View>
+          ₹{amount.toFixed(2)}
+        </Text>
       </View>
 
-      {/* Amount */}
-      <Text style={{
-        ...typography.display,
-        fontSize: 28,
-        color: colors.brand.accent,
-        marginBottom: spacing.sm,
-      }}>
-        ${amount}
-      </Text>
+      {/* User's position */}
+      {netAmount !== 0 && (
+        <View style={{
+          backgroundColor: isOwed 
+            ? `${colors.semantic.success}15` 
+            : `${colors.semantic.warning}15`,
+          padding: spacing.sm,
+          borderRadius: borderRadius.sm,
+          marginBottom: spacing.sm,
+        }}>
+          <Text style={{
+            fontSize: 14,
+            fontWeight: '600',
+            color: isOwed ? colors.semantic.success : colors.semantic.warning,
+            fontFamily: 'Inter',
+          }}>
+            {isOwed 
+              ? `💰 You're owed ${formatCurrency(netAmount)}`
+              : `💳 You owe ${formatCurrency(netAmount)}`
+            }
+          </Text>
+        </View>
+      )}
 
       {/* Details */}
       <View style={{
@@ -207,7 +237,7 @@ const ExpenseCard = ({
             color: colors.text.secondary,
             marginBottom: 2,
           }}>
-            Paid by {paidBy} • {date}
+            Paid by {paidBy} • {formatDate(date)}
           </Text>
           {category && (
             <Text style={{
@@ -239,6 +269,24 @@ const ExpenseCard = ({
             }} />
           </View>
         )}
+        
+        {/* Status badge */}
+        <View style={{
+          backgroundColor: currentStatus.backgroundColor,
+          paddingHorizontal: spacing.sm,
+          paddingVertical: spacing.xs,
+          borderRadius: borderRadius.sm,
+          marginLeft: spacing.sm,
+        }}>
+          <Text style={{
+            fontSize: typography.caption.fontSize,
+            fontWeight: '600',
+            color: currentStatus.color,
+            fontFamily: 'Inter',
+          }}>
+            {currentStatus.label}
+          </Text>
+        </View>
       </View>
     </GlassCard>
   );
@@ -531,8 +579,9 @@ const GroupCard = ({
 };
 
 export {
-    ExpenseCard, GlassCard, GroupCard // For backward compatibility
-    , GroupSummaryCard,
-    QuickActionCard
+  ExpenseCard, GlassCard, GroupCard // For backward compatibility
+  ,
+  GroupSummaryCard,
+  QuickActionCard
 };
 
