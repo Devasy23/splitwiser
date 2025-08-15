@@ -8,6 +8,8 @@ import MainNavigator from './MainNavigator';
 
 const AppNavigator = () => {
   const { token, isLoading } = useContext(AuthContext);
+  const scheme = useColorScheme();
+  const theme = scheme === 'dark' ? navThemeDark : navTheme;
 
   if (isLoading) {
     return (
@@ -17,8 +19,6 @@ const AppNavigator = () => {
     );
   }
 
-  const scheme = useColorScheme();
-  const theme = scheme === 'dark' ? navThemeDark : navTheme;
   return (
     <NavigationContainer theme={theme}>
       {token ? <MainNavigator /> : <AuthNavigator />}
