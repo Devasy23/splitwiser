@@ -8,7 +8,7 @@ This document provides a complete and definitive specification for the API endpo
 
 ### **What is a Settlement?**
 
-A **Settlement** is a record of a specific debt between two users. It represents the fact that one person (the payee) owes another person (the payer) a certain amount of money. Settlements are the fundamental building blocks for tracking who owes whom in the application.
+A Settlement records an obligation between two users. For auto-generated settlements (from an Expense): payerId is the original expense payer (the creditor — the person who paid the expense and is owed money) and payeeId is the member who owes that share (the debtor). For manual settlements (user-recorded repayments): payer_id is the member making the payment now and payee_id is the recipient.
 
 * **Automatic Settlements**: When an expense is created, the system automatically generates a `pending` settlement record for each person who owes a share of the cost.
 * **Manual Settlements**: Users can manually record a `completed` settlement to track a payment made outside the application (e.g., paying someone back in cash).

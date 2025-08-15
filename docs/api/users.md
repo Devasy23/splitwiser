@@ -21,7 +21,7 @@ Retrieves the complete profile information for the currently authenticated user.
       "id": "user_id_string",
       "name": "John Doe",
       "email": "john.doe@example.com",
-      "imageUrl": "[https://example.com/path/to/avatar.png](https://example.com/path/to/avatar.png)",
+      "imageUrl": "https://example.com/path/to/avatar.png",
       "currency": "USD",
       "createdAt": "2025-08-12T10:00:00Z",
       "updatedAt": "2025-08-15T15:00:00Z"
@@ -40,7 +40,7 @@ Updates the profile information for the currently authenticated user.
     ```json
     {
       "name": "Johnathan Doe",
-      "imageUrl": "[https://example.com/path/to/new_avatar.png](https://example.com/path/to/new_avatar.png)"
+      "imageUrl": "https://example.com/path/to/new_avatar.png"
     }
     ```
 * **Response**: A dictionary containing the updated user object.
@@ -50,7 +50,7 @@ Updates the profile information for the currently authenticated user.
             "id": "user_id_string",
             "name": "Johnathan Doe",
             "email": "john.doe@example.com",
-            "imageUrl": "[https://example.com/path/to/new_avatar.png](https://example.com/path/to/new_avatar.png)",
+            "imageUrl": "https://example.com/path/to/new_avatar.png",
             "currency": "USD",
             "createdAt": "2025-08-12T10:00:00Z",
             "updatedAt": "2025-08-15T15:05:00Z"

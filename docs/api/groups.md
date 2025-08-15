@@ -40,7 +40,7 @@ Creates a new group.
     {
       "name": "Trip to the Mountains",
       "currency": "EUR",
-      "imageUrl": "[https://example.com/mountains.png](https://example.com/mountains.png)"
+      "imageUrl": "https://example.com/mountains.png"
     }
     ```
 * **Response** (`GroupResponse`):
@@ -52,7 +52,7 @@ Creates a new group.
       "joinCode": "UNIQUE_JOIN_CODE",
       "createdBy": "user_id_of_creator",
       "createdAt": "2025-08-14T12:00:00Z",
-      "imageUrl": "[https://example.com/mountains.png](https://example.com/mountains.png)",
+      "imageUrl": "https://example.com/mountains.png",
       "members": [ /* ... list of GroupMemberWithDetails ... */ ]
     }
     ```

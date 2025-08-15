@@ -183,8 +183,7 @@ Error :
 - 401 Unauthorized: Invalid or expired refresh token.
 
 ### **`POST /token/verify`**
-**Description**: Verifies an access token and returns the corresponding user's information.Issues a new access token and refresh token if valid, and returns them
-
+**Description**: Verifies an access token and returns the corresponding user's information.
 * **Request Body** (`TokenVerifyRequest`):
     ```json
     {

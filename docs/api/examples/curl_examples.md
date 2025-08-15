@@ -215,8 +215,9 @@ curl -X PATCH "$API_URL/groups/$GROUP_ID/settlements/$SETTLEMENT_ID" \
 }'
 ```
 
+
 ### **Optimize Settlements**
 ```bash
 curl -X POST "$API_URL/groups/$GROUP_ID/settlements/optimize?algorithm=advanced" \
 -H "Authorization: Bearer $ACCESS_TOKEN"
-`
+```
