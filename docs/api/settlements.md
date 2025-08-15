@@ -107,7 +107,7 @@ Updates the status of a settlement, typically to mark it as paid.
 
 Deletes or undoes a recorded settlement.
 
-* **Successful Response**: `{"success": True, "message": "Settlement record deleted successfully."}`
+* **Successful Response**: `{"success": true, "message": "Settlement record deleted successfully."}`
 
 ### **`POST /settlements/optimize`**
 

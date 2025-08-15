@@ -140,7 +140,7 @@ Error :
 
 
 ### **`POST /login/google`**
-**Description**: Handles Google OAuth login. Validates the Google token, creates or logs in the user based on Google ID, and issue OAuth ID token
+**Description**: Handles Google OAuth login. Validates the Google ID token, creates or logs in the user, and returns Splitwiser access and refresh tokens. 
 
 **Parameters**:
 - Request Body (JSON):
@@ -236,7 +236,7 @@ Sets a new password for a user using a valid reset token.
       "message": "Password has been reset successfully"
     }
 
-- 400 Unauthorized: Invalid or expired refresh token.
+- 400 Bad Request: Invalid or expired reset token.
 
 
 ## Authentication Flow
