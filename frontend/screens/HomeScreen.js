@@ -1,38 +1,72 @@
-import { useContext, useEffect, useState } from "react";
-import { Alert, Dimensions, FlatList, StyleSheet, View } from "react-native";
+// Modern Home Screen - Following Blueprint Specifications
+// Implements dashboard with financial overview, glassmorphism, and Gen Z UX
+
+import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useContext, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Appbar,
-  Avatar,
-  Button,
-  FAB,
-  Modal,
-  Portal,
-  Text,
-  TextInput
+    Alert,
+    Animated,
+    Dimensions,
+    FlatList,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import {
+    ActivityIndicator,
+    Modal,
+    Portal,
+    Text,
 } from "react-native-paper";
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
-import { AnimatedCard, FadeInView, ScaleInView, SlideInView } from "../utils/animations";
-import { formatCurrency, getCurrencySymbol } from "../utils/currency";
-import { StatusGradient } from "../utils/gradients";
-import { borderRadius, colors, shadows, spacing, typography } from "../utils/theme";
 
-const { width } = Dimensions.get('window');
+// Import modern components
+import Button from '../components/core/Button';
+import { EnhancedTextInput } from '../components/core/Input';
+import { FloatingActionButton, ModernHeader } from '../components/navigation/ModernNavigation';
+import { GlassCard, GroupSummaryCard, QuickActionCard } from '../utils/cards';
+import { borderRadius, colors, spacing, typography } from '../utils/theme';
+
+const { width, height } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
   const { token, logout, user } = useContext(AuthContext);
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [groupSettlements, setGroupSettlements] = useState({}); // Track settlement status for each group
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [groupSettlements, setGroupSettlements] = useState({});
 
-  // State for the Create Group modal
+  // Create Group modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
-  const showModal = () => setModalVisible(true);
-  const hideModal = () => setModalVisible(false);
+  // Animation refs
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const balanceAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Initial animations
+    Animated.stagger(100, [
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    fetchGroups();
+  }, []);
 
   // Calculate settlement status for a group
   const calculateSettlementStatus = async (groupId, userId) => {
@@ -40,282 +74,375 @@ const HomeScreen = ({ navigation }) => {
       const response = await getOptimizedSettlements(groupId);
       const settlements = response.data.optimizedSettlements || [];
 
-      // Check if user has any pending settlements
       const userOwes = settlements.filter((s) => s.fromUserId === userId);
       const userIsOwed = settlements.filter((s) => s.toUserId === userId);
 
       const totalOwed = userOwes.reduce((sum, s) => sum + (s.amount || 0), 0);
-      const totalToReceive = userIsOwed.reduce(
-        (sum, s) => sum + (s.amount || 0),
-        0
-      );
+      const totalToReceive = userIsOwed.reduce((sum, s) => sum + (s.amount || 0), 0);
+
+      const netBalance = totalToReceive - totalOwed;
+      const isSettled = settlements.length === 0;
 
       return {
-        isSettled: totalOwed === 0 && totalToReceive === 0,
-        owesAmount: totalOwed,
-        owedAmount: totalToReceive,
-        netBalance: totalToReceive - totalOwed,
+        isSettled,
+        netBalance,
+        totalOwed,
+        totalToReceive,
+        settlements,
       };
     } catch (error) {
-      console.error(
-        "Failed to fetch settlement status for group:",
-        groupId,
-        error
-      );
+      console.error("Error calculating settlements:", error);
       return {
-        isSettled: true,
-        owesAmount: 0,
-        owedAmount: 0,
+        isSettled: false,
         netBalance: 0,
+        totalOwed: 0,
+        totalToReceive: 0,
+        settlements: [],
       };
     }
   };
 
   const fetchGroups = async () => {
     try {
-      setIsLoading(true);
-      const response = await getGroups();
-      const groupsList = response.data.groups;
-      setGroups(groupsList);
+      const response = await getGroups(token);
+      const groupsData = response.data;
+      setGroups(groupsData);
 
-      // Fetch settlement status for each group
-      if (user?._id) {
-        const settlementPromises = groupsList.map(async (group) => {
-          const status = await calculateSettlementStatus(group._id, user._id);
-          return { groupId: group._id, status };
-        });
+      // Calculate settlement status for each group
+      const settlementPromises = groupsData.map(async (group) => {
+        const status = await calculateSettlementStatus(group._id, user._id);
+        return { groupId: group._id, status };
+      });
 
-        const settlementResults = await Promise.all(settlementPromises);
-        const settlementMap = {};
-        settlementResults.forEach(({ groupId, status }) => {
-          settlementMap[groupId] = status;
-        });
-        setGroupSettlements(settlementMap);
-      }
+      const settlementsData = await Promise.all(settlementPromises);
+      const settlementsMap = {};
+      settlementsData.forEach(({ groupId, status }) => {
+        settlementsMap[groupId] = status;
+      });
+      setGroupSettlements(settlementsMap);
+
+      // Animate balance numbers
+      Animated.timing(balanceAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: false,
+      }).start();
+
     } catch (error) {
       console.error("Failed to fetch groups:", error);
-      Alert.alert("Error", "Failed to fetch groups.");
+      Alert.alert("Error", "Failed to fetch groups. Please try again.");
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    if (token) {
-      fetchGroups();
-    }
-  }, [token]);
+  const onRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchGroups();
+  };
+
+  const showModal = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setModalVisible(true);
+  };
+
+  const hideModal = () => {
+    setModalVisible(false);
+    setNewGroupName("");
+  };
 
   const handleCreateGroup = async () => {
-    if (!newGroupName) {
+    if (!newGroupName.trim()) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert("Error", "Please enter a group name.");
       return;
     }
+
     setIsCreatingGroup(true);
     try {
-      await createGroup(newGroupName);
+      await createGroup(newGroupName.trim(), token);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       hideModal();
-      setNewGroupName("");
-      await fetchGroups(); // Refresh the groups list
+      fetchGroups();
     } catch (error) {
       console.error("Failed to create group:", error);
-      Alert.alert("Error", "Failed to create group.");
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Error", "Failed to create group. Please try again.");
     } finally {
       setIsCreatingGroup(false);
     }
   };
 
-  const currencySymbol = getCurrencySymbol();
-
-  const renderGroup = ({ item, index }) => {
-    const settlementStatus = groupSettlements[item._id];
-
-    // Generate settlement status text
-    const getSettlementStatusText = () => {
-      if (!settlementStatus) {
-        return "Calculating balances...";
-      }
-
-      if (settlementStatus.isSettled) {
-        return "✨ All settled up!";
-      }
-
-      if (settlementStatus.netBalance > 0) {
-        return `💰 You're owed ${formatCurrency(settlementStatus.netBalance)}`;
-      } else if (settlementStatus.netBalance < 0) {
-        return `💳 You owe ${formatCurrency(Math.abs(settlementStatus.netBalance))}`;
-      }
-
-      return "✨ All settled up!";
-    };
-
-    // Get status for gradient
-    const getStatusType = () => {
-      if (!settlementStatus || settlementStatus.isSettled) {
-        return 'settled';
-      }
-      if (settlementStatus.netBalance > 0) {
-        return 'success';
-      } else if (settlementStatus.netBalance < 0) {
-        return 'warning';
-      }
-      return 'settled';
-    };
-
-    const isImage = item.imageUrl && /^(https?:|data:image)/.test(item.imageUrl);
-    const groupIcon = item.imageUrl || item.name?.charAt(0) || "?";
+  const calculateOverallBalance = () => {
+    let totalOwed = 0;
+    let totalToReceive = 0;
     
+    Object.values(groupSettlements).forEach(settlement => {
+      totalOwed += settlement.totalOwed || 0;
+      totalToReceive += settlement.totalToReceive || 0;
+    });
+
+    return {
+      net: totalToReceive - totalOwed,
+      totalOwed,
+      totalToReceive,
+      totalGroups: groups.length,
+    };
+  };
+
+  const overallBalance = calculateOverallBalance();
+
+  const renderQuickActions = () => (
+    <View style={styles.quickActionsContainer}>
+      <Text style={styles.sectionTitle}>Quick Actions</Text>
+      <View style={styles.quickActionsGrid}>
+        <QuickActionCard
+          title="Create Group"
+          subtitle="Start splitting expenses"
+          icon={<Text style={styles.actionIcon}>👥</Text>}
+          onPress={showModal}
+          variant="accent"
+          style={styles.quickActionCard}
+        />
+        <QuickActionCard
+          title="Join Group"
+          subtitle="Enter group code"
+          icon={<Text style={styles.actionIcon}>🔗</Text>}
+          onPress={() => navigation.navigate('JoinGroup')}
+          variant="success"
+          style={styles.quickActionCard}
+        />
+        <QuickActionCard
+          title="Add Friends"
+          subtitle="Expand your network"
+          icon={<Text style={styles.actionIcon}>👋</Text>}
+          onPress={() => navigation.navigate('Friends')}
+          variant="warning"
+          style={styles.quickActionCard}
+        />
+        <QuickActionCard
+          title="My Profile"
+          subtitle="Account settings"
+          icon={<Text style={styles.actionIcon}>⚙️</Text>}
+          onPress={() => navigation.navigate('Account')}
+          variant="accent"
+          style={styles.quickActionCard}
+        />
+      </View>
+    </View>
+  );
+
+  const renderGroup = ({ item: group, index }) => {
+    const settlement = groupSettlements[group._id];
+    if (!settlement) return null;
+
     return (
-      <SlideInView delay={index * 100} style={styles.cardWrapper}>
-        <AnimatedCard
-          onPress={() =>
-            navigation.navigate("GroupDetails", {
-              groupId: item._id,
-              groupName: item.name,
-              groupIcon,
-            })
-          }
-          style={styles.modernCard}
-        >
-          <View style={styles.cardHeader}>
-            {isImage ? (
-              <Avatar.Image 
-                size={56} 
-                source={{ uri: item.imageUrl }} 
-                style={styles.avatar}
-              />
-            ) : (
-              <Avatar.Text 
-                size={56} 
-                label={groupIcon} 
-                style={[styles.avatar, { backgroundColor: colors.primary }]}
-                labelStyle={{ color: 'white', fontWeight: '700' }}
-              />
-            )}
-            <View style={styles.groupInfo}>
-              <Text style={styles.groupName}>{item.name}</Text>
-              <Text style={styles.memberCount}>
-                {item.members?.length || 0} members
-              </Text>
-            </View>
-          </View>
-          
-          <StatusGradient 
-            status={getStatusType()} 
-            style={styles.statusContainer}
-          >
-            <Text style={styles.statusText}>
-              {getSettlementStatusText()}
-            </Text>
-          </StatusGradient>
-        </AnimatedCard>
-      </SlideInView>
+      <Animated.View
+        style={[
+          styles.groupItemContainer,
+          {
+            opacity: fadeAnim,
+            transform: [
+              {
+                translateY: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, index * 10],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <GroupSummaryCard
+          groupName={group.name}
+          totalExpenses={settlement.totalOwed + settlement.totalToReceive}
+          yourBalance={settlement.netBalance}
+          memberCount={group.memberCount || 2}
+          onPress={() => navigation.navigate('GroupDetails', { 
+            groupId: group._id, 
+            groupName: group.name 
+          })}
+          style={styles.groupCard}
+        />
+      </Animated.View>
     );
   };
 
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <LinearGradient
+          colors={[colors.brand.accent, colors.brand.accentAlt]}
+          style={styles.loadingGradient}
+        >
+          <ActivityIndicator size="large" color="#FFFFFF" />
+          <Text style={styles.loadingText}>Loading your groups...</Text>
+        </LinearGradient>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
+      {/* Modern Header */}
+      <ModernHeader
+        title="Splitwiser"
+        subtitle={`Welcome back, ${user?.name || 'User'}!`}
+        rightAction={
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Account')}
+            style={styles.profileButton}
+          >
+            <View style={styles.profileAvatar}>
+              <Text style={styles.profileInitial}>
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        }
+        variant="gradient"
+      />
+
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            colors={[colors.brand.accent]}
+            tintColor={colors.brand.accent}
+          />
+        }
+      >
+        {/* Balance Overview Card */}
+        <Animated.View style={[
+          styles.balanceContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}>
+          <GlassCard variant="glass" style={styles.balanceCard}>
+            <Text style={styles.balanceTitle}>Your Balance</Text>
+            
+            <Animated.View style={styles.balanceAmountContainer}>
+              <Text style={[
+                styles.balanceAmount,
+                { color: overallBalance.net >= 0 ? colors.semantic.success : colors.semantic.error }
+              ]}>
+                {overallBalance.net >= 0 ? '+' : ''}${Math.abs(overallBalance.net).toFixed(2)}
+              </Text>
+              <Text style={styles.balanceLabel}>
+                {overallBalance.net >= 0 ? 'You are owed' : 'You owe'}
+              </Text>
+            </Animated.View>
+
+            <View style={styles.balanceBreakdown}>
+              <View style={styles.balanceItem}>
+                <Text style={styles.balanceItemAmount}>
+                  +${overallBalance.totalToReceive.toFixed(2)}
+                </Text>
+                <Text style={styles.balanceItemLabel}>To receive</Text>
+              </View>
+              <View style={styles.balanceDivider} />
+              <View style={styles.balanceItem}>
+                <Text style={styles.balanceItemAmount}>
+                  -${overallBalance.totalOwed.toFixed(2)}
+                </Text>
+                <Text style={styles.balanceItemLabel}>To pay</Text>
+              </View>
+            </View>
+          </GlassCard>
+        </Animated.View>
+
+        {/* Quick Actions */}
+        <Animated.View style={[
+          { opacity: fadeAnim },
+        ]}>
+          {renderQuickActions()}
+        </Animated.View>
+
+        {/* Groups Section */}
+        <View style={styles.groupsSection}>
+          <Text style={styles.sectionTitle}>Your Groups ({groups.length})</Text>
+          
+          {groups.length === 0 ? (
+            <GlassCard variant="outlined" style={styles.emptyStateCard}>
+              <Text style={styles.emptyStateIcon}>👥</Text>
+              <Text style={styles.emptyStateTitle}>No Groups Yet</Text>
+              <Text style={styles.emptyStateText}>
+                Create your first group to start splitting expenses with friends!
+              </Text>
+              <Button
+                title="Create Group"
+                onPress={showModal}
+                variant="primary"
+                style={styles.emptyStateButton}
+              />
+            </GlassCard>
+          ) : (
+            <FlatList
+              data={groups}
+              keyExtractor={(item) => item._id}
+              renderItem={renderGroup}
+              scrollEnabled={false}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.groupsList}
+            />
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Floating Action Button */}
+      <FloatingActionButton
+        icon="➕"
+        onPress={showModal}
+        position="bottom-right"
+      />
+
+      {/* Create Group Modal */}
       <Portal>
         <Modal
           visible={modalVisible}
           onDismiss={hideModal}
           contentContainerStyle={styles.modalContainer}
         >
-          <FadeInView>
+          <GlassCard variant="elevated" style={styles.modalCard}>
             <Text style={styles.modalTitle}>Create New Group</Text>
             <Text style={styles.modalSubtitle}>
-              Start splitting expenses with friends! 🎉
+              Start splitting expenses with your friends
             </Text>
-            <TextInput
+
+            <EnhancedTextInput
               label="Group Name"
+              placeholder="Trip to Vegas, Roommates, etc."
               value={newGroupName}
               onChangeText={setNewGroupName}
-              style={styles.input}
-              mode="outlined"
-              placeholder="e.g., Weekend Trip, Roommates..."
+              variant="filled"
+              style={styles.modalInput}
             />
-            <View style={styles.modalButtons}>
+
+            <View style={styles.modalActions}>
               <Button
-                mode="outlined"
+                title="Cancel"
                 onPress={hideModal}
-                style={styles.cancelButton}
-              >
-                Cancel
-              </Button>
+                variant="ghost"
+                style={styles.modalActionButton}
+              />
               <Button
-                mode="contained"
+                title={isCreatingGroup ? "Creating..." : "Create Group"}
                 onPress={handleCreateGroup}
+                variant="primary"
                 loading={isCreatingGroup}
                 disabled={isCreatingGroup}
-                style={styles.createButton}
-              >
-                Create
-              </Button>
+                style={styles.modalActionButton}
+              />
             </View>
-          </FadeInView>
+          </GlassCard>
         </Modal>
       </Portal>
-
-      <Appbar.Header style={styles.header}>
-        <Appbar.Content 
-          title="Your Groups" 
-          titleStyle={styles.headerTitle}
-        />
-        <Appbar.Action 
-          icon="plus" 
-          onPress={showModal}
-          iconColor={colors.primary}
-        />
-        <Appbar.Action
-          icon="account-plus"
-          onPress={() =>
-            navigation.navigate("JoinGroup", { onGroupJoined: fetchGroups })
-          }
-          iconColor={colors.primary}
-        />
-      </Appbar.Header>
-
-      {isLoading ? (
-        <FadeInView style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading your groups...</Text>
-        </FadeInView>
-      ) : (
-        <FlatList
-          data={groups}
-          renderItem={renderGroup}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <FadeInView style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>No groups yet! 🎯</Text>
-              <Text style={styles.emptyText}>
-                Create your first group to start splitting expenses with friends
-              </Text>
-              <Button
-                mode="contained"
-                onPress={showModal}
-                style={styles.createFirstGroupButton}
-                icon="plus"
-              >
-                Create Group
-              </Button>
-            </FadeInView>
-          }
-          onRefresh={fetchGroups}
-          refreshing={isLoading}
-        />
-      )}
-
-      <ScaleInView delay={500}>
-        <FAB
-          icon="plus"
-          style={styles.fab}
-          onPress={showModal}
-          color="white"
-        />
-      </ScaleInView>
     </View>
   );
 };
@@ -323,145 +450,172 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background.primary,
   },
-  header: {
-    backgroundColor: colors.surface,
-    elevation: 0,
-    shadowOpacity: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.outlineVariant,
-  },
-  headerTitle: {
-    ...typography.h3,
-    color: colors.onSurface,
-  },
-  loaderContainer: {
+  loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingBottom: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background.primary,
+  },
+  loadingGradient: {
+    padding: spacing.xl,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
   },
   loadingText: {
-    ...typography.body2,
-    color: colors.onSurfaceVariant,
+    ...typography.body,
+    color: '#FFFFFF',
     marginTop: spacing.md,
   },
-  list: {
-    padding: spacing.md,
-    paddingBottom: 100, // Space for FAB
-  },
-  cardWrapper: {
-    marginBottom: spacing.md,
-  },
-  modernCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    ...shadows.medium,
-    borderWidth: 1,
-    borderColor: colors.outlineVariant,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  avatar: {
-    marginRight: spacing.md,
-  },
-  groupInfo: {
+  content: {
     flex: 1,
   },
-  groupName: {
-    ...typography.h4,
-    color: colors.onSurface,
-    marginBottom: 2,
+  profileButton: {
+    padding: spacing.xs,
   },
-  memberCount: {
-    ...typography.caption,
-    color: colors.onSurfaceVariant,
-  },
-  statusContainer: {
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  statusText: {
-    ...typography.label,
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  settlementStatus: {
-    fontWeight: "500",
-    marginTop: 4,
-  },
-  emptyContainer: {
+  profileAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
-    paddingTop: spacing.xxl * 2,
-    paddingHorizontal: spacing.lg,
+    justifyContent: 'center',
   },
-  emptyTitle: {
-    ...typography.h2,
-    color: colors.onSurface,
+  profileInitial: {
+    ...typography.label,
+    color: '#FFFFFF',
+  },
+  balanceContainer: {
+    margin: spacing.lg,
+  },
+  balanceCard: {
+    padding: spacing.xl,
+    alignItems: 'center',
+  },
+  balanceTitle: {
+    ...typography.label,
+    color: colors.text.secondary,
     marginBottom: spacing.sm,
-    textAlign: 'center',
   },
-  emptyText: {
-    ...typography.body1,
-    color: colors.onSurfaceVariant,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
-    lineHeight: 24,
+  balanceAmountContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
   },
-  createFirstGroupButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
+  balanceAmount: {
+    ...typography.display,
+    fontSize: 36,
+    marginBottom: spacing.xs,
+  },
+  balanceLabel: {
+    ...typography.caption,
+    color: colors.text.secondary,
+  },
+  balanceBreakdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  balanceItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  balanceItemAmount: {
+    ...typography.h4,
+    color: colors.text.primary,
+    marginBottom: 4,
+  },
+  balanceItemLabel: {
+    ...typography.caption,
+    color: colors.text.secondary,
+  },
+  balanceDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: colors.border.subtle,
+    marginHorizontal: spacing.lg,
+  },
+  quickActionsContainer: {
+    padding: spacing.lg,
+  },
+  sectionTitle: {
+    ...typography.h3,
+    color: colors.text.primary,
+    marginBottom: spacing.md,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  quickActionCard: {
+    width: (width - spacing.lg * 3) / 2,
+  },
+  actionIcon: {
+    fontSize: 24,
+  },
+  groupsSection: {
+    padding: spacing.lg,
+  },
+  emptyStateCard: {
+    padding: spacing.xl,
+    alignItems: 'center',
+  },
+  emptyStateIcon: {
+    fontSize: 48,
+    marginBottom: spacing.lg,
+  },
+  emptyStateTitle: {
+    ...typography.h2,
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
+  },
+  emptyStateText: {
+    ...typography.body,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  emptyStateButton: {
+    minWidth: 160,
+  },
+  groupsList: {
+    gap: spacing.md,
+  },
+  groupItemContainer: {
+    marginBottom: spacing.sm,
+  },
+  groupCard: {
+    marginBottom: 0,
   },
   modalContainer: {
-    backgroundColor: colors.surface,
     margin: spacing.lg,
-    borderRadius: borderRadius.xl,
+    justifyContent: 'center',
+  },
+  modalCard: {
     padding: spacing.xl,
-    ...shadows.large,
   },
   modalTitle: {
     ...typography.h2,
-    color: colors.onSurface,
-    textAlign: 'center',
+    color: colors.text.primary,
     marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   modalSubtitle: {
-    ...typography.body1,
-    color: colors.onSurfaceVariant,
+    ...typography.body,
+    color: colors.text.secondary,
     textAlign: 'center',
-    marginBottom: spacing.xl,
-  },
-  input: {
     marginBottom: spacing.lg,
-    backgroundColor: colors.surface,
   },
-  modalButtons: {
+  modalInput: {
+    marginBottom: spacing.lg,
+  },
+  modalActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: spacing.md,
   },
-  cancelButton: {
+  modalActionButton: {
     flex: 1,
-    borderColor: colors.outline,
-  },
-  createButton: {
-    flex: 1,
-    backgroundColor: colors.primary,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: spacing.lg,
-    right: spacing.lg,
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.round,
-    ...shadows.large,
   },
 });
 

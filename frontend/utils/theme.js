@@ -1,127 +1,185 @@
-// Modern theme for Splitwiser - Gen Z friendly design
+// Design System for Splitwiser - Following the Blueprint for Gen Z-Centric Fintech Experience
+// Based on "Expressive Minimalism" philosophy with Strategic Glassmorphism
+
 export const colors = {
-  // Primary brand colors
-  primary: '#6C5CE7',        // Modern purple
-  primaryDark: '#5A4FCF',    // Darker purple for pressed states
-  primaryLight: '#A29BFE',   // Light purple for backgrounds
+  // Primary Palette (Fintech Trust) - Deep, stable colors for security and professionalism
+  background: {
+    primary: '#111827', // Deep blue-gray for dark mode
+    primaryLight: '#FFFFFF', // Pure white for light mode
+    secondary: '#1F2937', // Secondary background for cards, modals (dark)
+    secondaryLight: '#F3F4F6', // Secondary background (light)
+  },
   
-  // Secondary colors
-  secondary: '#00D2FF',      // Electric blue
-  secondaryDark: '#00B8E6',  // Darker blue
-  secondaryLight: '#74E5FF', // Light blue
+  // Text colors with high contrast for accessibility
+  text: {
+    primary: '#F9FAFB', // Primary text for dark mode
+    primaryLight: '#111827', // Primary text for light mode
+    secondary: '#9CA3AF', // Secondary text for dark mode
+    secondaryLight: '#6B7280', // Secondary text for light mode
+  },
   
-  // Success/Positive
-  success: '#00E676',        // Bright green
-  successDark: '#00C853',    // Darker green
-  successLight: '#69F0AE',   // Light green
+  // Accent Palette (Gen Z Expression) - Bold, high-energy colors
+  brand: {
+    accent: '#8B5CF6', // Vibrant purple - primary accent
+    accentAlt: '#06B6D4', // Electric blue/aqua alternative
+    accentMagenta: '#D946EF', // Viva magenta for bold expressions
+  },
   
-  // Warning/Owed money
-  warning: '#FF6B35',        // Modern orange
-  warningDark: '#E55A2B',    // Darker orange
-  warningLight: '#FF8F65',   // Light orange
+  // Semantic Palette - Standardized system status colors
+  semantic: {
+    success: '#10B981', // Clear, accessible green
+    warning: '#F59E0B', // Amber for warnings
+    error: '#EF4444', // Distinct red for errors/destructive actions
+  },
   
-  // Error/Debt
-  error: '#FF3B5C',          // Modern red
-  errorDark: '#E6354E',      // Darker red
-  errorLight: '#FF6B8A',     // Light red
+  // Border and divider colors
+  border: {
+    subtle: '#374151', // Subtle borders for dark mode
+    subtleLight: '#E5E7EB', // Subtle borders for light mode
+  },
   
-  // Neutral colors
-  background: '#FAFBFF',     // Off-white with slight blue tint
-  surface: '#FFFFFF',        // Pure white
-  surfaceVariant: '#F5F7FA', // Light gray
+  // Glassmorphism-specific colors
+  glass: {
+    background: 'rgba(255, 255, 255, 0.1)', // Semi-transparent background
+    backgroundLight: 'rgba(0, 0, 0, 0.05)', // For light mode
+    border: 'rgba(255, 255, 255, 0.2)', // Subtle border for glass effect
+    borderLight: 'rgba(0, 0, 0, 0.1)', // For light mode
+  },
+};
+
+// CSS Custom Properties (Design Tokens) as specified in the blueprint
+export const tokens = {
+  // Color tokens
+  '--color-background-primary': colors.background.primary,
+  '--color-background-secondary': colors.background.secondary,
+  '--color-text-primary': colors.text.primary,
+  '--color-text-secondary': colors.text.secondary,
+  '--color-brand-accent': colors.brand.accent,
+  '--color-semantic-success': colors.semantic.success,
+  '--color-semantic-error': colors.semantic.error,
+  '--color-border-subtle': colors.border.subtle,
   
-  // Text colors
-  onSurface: '#1A1D29',      // Dark blue-gray
-  onSurfaceVariant: '#6B7280', // Medium gray
-  onSurfaceMuted: '#9CA3AF',   // Light gray
+  // Typography tokens
+  '--font-family-primary': "'Inter', sans-serif",
+  '--font-size-display': '48px',
+  '--font-size-h1': '32px',
+  '--font-size-h2': '24px',
+  '--font-size-body': '16px',
+  '--font-size-caption': '12px',
+  '--font-weight-regular': '400',
+  '--font-weight-medium': '500',
+  '--font-weight-semibold': '600',
+  '--font-weight-bold': '700',
   
-  // Borders and dividers
-  outline: '#E5E7EB',        // Light border
-  outlineVariant: '#F3F4F6', // Very light border
+  // Spacing tokens (8px base unit system)
+  '--spacing-xs': '4px',
+  '--spacing-sm': '8px',
+  '--spacing-md': '16px',
+  '--spacing-lg': '24px',
+  '--spacing-xl': '32px',
   
-  // Gradients
-  gradientPrimary: ['#6C5CE7', '#A29BFE'],
-  gradientSecondary: ['#00D2FF', '#74E5FF'],
-  gradientSuccess: ['#00E676', '#69F0AE'],
-  gradientWarning: ['#FF6B35', '#FF8F65'],
-  gradientError: ['#FF3B5C', '#FF6B8A'],
+  // Sizing tokens
+  '--border-radius-sm': '4px',
+  '--border-radius-md': '8px',
+  '--border-radius-lg': '16px',
+  '--touch-target-min': '44px',
 };
 
 export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
+  xs: 4,   // --spacing-xs
+  sm: 8,   // --spacing-sm
+  md: 16,  // --spacing-md
+  lg: 24,  // --spacing-lg
+  xl: 32,  // --spacing-xl
+  xxl: 48, // Extended spacing for larger gaps
 };
 
 export const borderRadius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
-  round: 999,
+  sm: 4,   // --border-radius-sm: For small elements like tags
+  md: 8,   // --border-radius-md: For buttons and input fields
+  lg: 16,  // --border-radius-lg: For cards and modals
+  round: 999, // For circular elements
 };
 
+// Typography system based on Inter font with clear hierarchy
 export const typography = {
+  // Display text for large, impactful numbers (dashboard balance)
+  display: {
+    fontSize: 48,
+    fontWeight: '700',
+    lineHeight: 56,
+    fontFamily: 'Inter',
+  },
+  
   // Headings
   h1: {
-    fontSize: 32,
+    fontSize: 32,  // Screen titles
     fontWeight: '700',
     lineHeight: 40,
+    fontFamily: 'Inter',
   },
   h2: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 24,  // Section headings
+    fontWeight: '600',
     lineHeight: 32,
+    fontFamily: 'Inter',
   },
   h3: {
     fontSize: 20,
     fontWeight: '600',
     lineHeight: 28,
+    fontFamily: 'Inter',
   },
   h4: {
     fontSize: 18,
     fontWeight: '600',
     lineHeight: 24,
+    fontFamily: 'Inter',
   },
   
   // Body text
-  body1: {
-    fontSize: 16,
+  body: {
+    fontSize: 16,  // Main body text, labels
     fontWeight: '400',
     lineHeight: 24,
+    fontFamily: 'Inter',
   },
-  body2: {
-    fontSize: 14,
-    fontWeight: '400',
-    lineHeight: 20,
+  bodyMedium: {
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 24,
+    fontFamily: 'Inter',
   },
   
   // Small text
   caption: {
-    fontSize: 12,
+    fontSize: 12,  // Small helper text, metadata
     fontWeight: '400',
     lineHeight: 16,
+    fontFamily: 'Inter',
   },
   
-  // Labels
+  // Labels and UI text
   label: {
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
-  },
-  
-  // Numbers and amounts
-  amount: {
-    fontSize: 18,
-    fontWeight: '700',
-    lineHeight: 24,
+    fontFamily: 'Inter',
   },
 };
 
+// Shadows for depth and elevation
 export const shadows = {
+  subtle: {
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
   small: {
     shadowColor: '#000',
     shadowOffset: {
@@ -129,7 +187,7 @@ export const shadows = {
       height: 2,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
+    shadowRadius: 4,
     elevation: 2,
   },
   medium: {
@@ -154,41 +212,60 @@ export const shadows = {
   },
 };
 
+// Animation timings and easing for consistent motion
 export const animations = {
-  // Timing configurations
   timing: {
-    short: 200,
-    medium: 300,
-    long: 500,
+    fast: 150,     // Button interactions, quick feedback
+    normal: 250,   // Screen transitions, modal appearances
+    slow: 300,     // Complex transitions
+    loading: 1500, // Success celebrations
   },
   
-  // Easing functions
   easing: {
     easeOut: 'ease-out',
     easeIn: 'ease-in',
     easeInOut: 'ease-in-out',
-    spring: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+    spring: 'cubic-bezier(0.4, 0, 0.2, 1)', // Material Design standard
+    bounce: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
   },
 };
 
-// Paper theme configuration for react-native-paper
+// Glassmorphism effect properties for strategic application
+export const glassmorphism = {
+  // Background blur and transparency settings
+  blur: {
+    light: 10,   // Subtle blur for secondary elements
+    medium: 20,  // Standard blur for cards
+    heavy: 40,   // Strong blur for overlays
+  },
+  
+  // Opacity levels for different contexts
+  opacity: {
+    subtle: 0.1,   // Very light transparency
+    light: 0.2,    // Light transparency for backgrounds
+    medium: 0.3,   // Standard transparency for cards
+    heavy: 0.4,    // Stronger transparency for emphasis
+  },
+};
+
+// Paper theme configuration for react-native-paper with blueprint specifications
 export const paperTheme = {
   colors: {
-    primary: colors.primary,
-    primaryContainer: colors.primaryLight,
-    secondary: colors.secondary,
-    secondaryContainer: colors.secondaryLight,
-    surface: colors.surface,
-    surfaceVariant: colors.surfaceVariant,
-    background: colors.background,
-    error: colors.error,
+    primary: colors.brand.accent,
+    primaryContainer: `${colors.brand.accent}20`, // 20% opacity
+    secondary: colors.brand.accentAlt,
+    secondaryContainer: `${colors.brand.accentAlt}20`,
+    surface: colors.background.secondary,
+    surfaceVariant: colors.background.secondary,
+    background: colors.background.primary,
+    error: colors.semantic.error,
     onPrimary: '#FFFFFF',
     onSecondary: '#FFFFFF',
-    onSurface: colors.onSurface,
-    onSurfaceVariant: colors.onSurfaceVariant,
+    onSurface: colors.text.primary,
+    onSurfaceVariant: colors.text.secondary,
     onError: '#FFFFFF',
-    outline: colors.outline,
-    outlineVariant: colors.outlineVariant,
+    outline: colors.border.subtle,
+    outlineVariant: `${colors.border.subtle}80`, // 50% opacity
   },
   roundness: borderRadius.md,
 };
