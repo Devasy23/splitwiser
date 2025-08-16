@@ -73,9 +73,7 @@ async def mock_db():
 
     # Patch get_database for all services that use it
     patches = [
-        patch("app.auth.service.get_database", return_value=mock_database_instance),
-        patch("app.user.service.get_database", return_value=mock_database_instance),
-        patch("app.groups.service.get_database", return_value=mock_database_instance),
+        patch("app.database.get_database", return_value=mock_database_instance),
     ]
 
     # Start all patches

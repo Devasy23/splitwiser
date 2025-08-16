@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 
 from app.auth.security import get_current_user
+from app.dependencies import get_group_service
 from app.groups.schemas import (
     DeleteGroupResponse,
     GroupCreateRequest,
@@ -14,7 +15,7 @@ from app.groups.schemas import (
     MemberRoleUpdateRequest,
     RemoveMemberResponse,
 )
-from app.groups.service import group_service
+from app.groups.service import GroupService
 from fastapi import APIRouter, Depends, HTTPException, status
 
 router = APIRouter(prefix="/groups", tags=["Groups"])
@@ -24,6 +25,7 @@ router = APIRouter(prefix="/groups", tags=["Groups"])
 async def create_group(
     group_data: GroupCreateRequest,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    group_service: GroupService = Depends(get_group_service),
 ):
     """Create a new group"""
     group = await group_service.create_group(
@@ -35,7 +37,10 @@ async def create_group(
 
 
 @router.get("", response_model=GroupListResponse)
-async def list_user_groups(current_user: Dict[str, Any] = Depends(get_current_user)):
+async def list_user_groups(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    group_service: GroupService = Depends(get_group_service),
+):
     """List all groups the current user belongs to"""
     groups = await group_service.get_user_groups(current_user["_id"])
     return {"groups": groups}
@@ -43,7 +48,9 @@ async def list_user_groups(current_user: Dict[str, Any] = Depends(get_current_us
 
 @router.get("/{group_id}", response_model=GroupResponse)
 async def get_group_details(
-    group_id: str, current_user: Dict[str, Any] = Depends(get_current_user)
+    group_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    group_service: GroupService = Depends(get_group_service),
 ):
     """Get group details including members"""
     group = await group_service.get_group_by_id(group_id, current_user["_id"])
@@ -57,6 +64,7 @@ async def update_group_metadata(
     group_id: str,
     updates: GroupUpdateRequest,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    group_service: GroupService = Depends(get_group_service),
 ):
     """Update group metadata (admin only)"""
     update_data = updates.model_dump(exclude_unset=True)
@@ -73,7 +81,9 @@ async def update_group_metadata(
 
 @router.delete("/{group_id}", response_model=DeleteGroupResponse)
 async def delete_group(
-    group_id: str, current_user: Dict[str, Any] = Depends(get_current_user)
+    group_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    group_service: GroupService = Depends(get_group_service),
 ):
     """Delete a group (admin only)"""
     deleted = await group_service.delete_group(group_id, current_user["_id"])
@@ -86,6 +96,7 @@ async def delete_group(
 async def join_group_by_code(
     join_data: JoinGroupRequest,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    group_service: GroupService = Depends(get_group_service),
 ):
     """Join a group using a join code"""
     group = await group_service.join_group_by_code(
@@ -98,7 +109,9 @@ async def join_group_by_code(
 
 @router.post("/{group_id}/leave", response_model=LeaveGroupResponse)
 async def leave_group(
-    group_id: str, current_user: Dict[str, Any] = Depends(get_current_user)
+    group_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    group_service: GroupService = Depends(get_group_service),
 ):
     """Leave a group (only if no outstanding balances)"""
     left = await group_service.leave_group(group_id, current_user["_id"])
@@ -109,7 +122,9 @@ async def leave_group(
 
 @router.get("/{group_id}/members", response_model=List[GroupMemberWithDetails])
 async def get_group_members(
-    group_id: str, current_user: Dict[str, Any] = Depends(get_current_user)
+    group_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    group_service: GroupService = Depends(get_group_service),
 ):
     """Get list of group members with detailed user information"""
     members = await group_service.get_group_members(group_id, current_user["_id"])
@@ -122,6 +137,7 @@ async def update_member_role(
     member_id: str,
     role_update: MemberRoleUpdateRequest,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    group_service: GroupService = Depends(get_group_service),
 ):
     """Change member role (admin only)"""
     updated = await group_service.update_member_role(
@@ -137,6 +153,7 @@ async def remove_group_member(
     group_id: str,
     member_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    group_service: GroupService = Depends(get_group_service),
 ):
     """Remove a member from the group (admin only)"""
     removed = await group_service.remove_member(
