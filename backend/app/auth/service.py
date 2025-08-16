@@ -318,7 +318,9 @@ class AuthService:
 
         # Get user
         try:
-            user = await self.users_collection.find_one({"_id": token_record["user_id"]})
+            user = await self.users_collection.find_one(
+                {"_id": token_record["user_id"]}
+            )
         except PyMongoError as e:
             logger.error("Error while fetching user: %s", str(e))
             raise HTTPException(
