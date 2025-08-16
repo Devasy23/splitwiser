@@ -55,16 +55,6 @@ if not firebase_admin._apps:
             },
         )
         logger.info("Firebase initialized with credentials from environment variables")
-    # Fall back to service account JSON file if env vars are not available
-    elif os.path.exists(settings.firebase_service_account_path):
-        cred = credentials.Certificate(settings.firebase_service_account_path)
-        firebase_admin.initialize_app(
-            cred,
-            {
-                "projectId": settings.firebase_project_id,
-            },
-        )
-        logger.info("Firebase initialized with service account file")
     else:
         logger.warning("Firebase service account not found. Google auth will not work.")
 
@@ -318,9 +308,7 @@ class AuthService:
 
         # Get user
         try:
-            user = await self.users_collection.find_one(
-                {"_id": token_record["user_id"]}
-            )
+            user = await self.users_collection.find_one({"_id": token_record["user_id"]})
         except PyMongoError as e:
             logger.error("Error while fetching user: %s", str(e))
             raise HTTPException(

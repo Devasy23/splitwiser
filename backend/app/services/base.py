@@ -7,8 +7,20 @@ from bson import ObjectId, errors
 class BaseService:
     def __init__(self, collection_name: str):
         self.collection_name = collection_name
-        self.db = get_database()
-        self.collection = self.db[self.collection_name]
+        self._db = None
+        self._collection = None
+
+    @property
+    def db(self):
+        if self._db is None:
+            self._db = get_database()
+        return self._db
+
+    @property
+    def collection(self):
+        if self._collection is None:
+            self._collection = self.db[self.collection_name]
+        return self._collection
 
     def _to_json(self, item: Dict[str, Any]) -> Dict[str, Any]:
         """Converts a MongoDB document to a JSON-serializable dictionary."""
