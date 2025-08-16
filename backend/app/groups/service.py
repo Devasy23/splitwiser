@@ -170,7 +170,9 @@ class GroupService(BaseService):
             logger.error(f"Unexpected error converting group_id to ObjectId: {e}")
             return None
 
-        group = await self.collection.find_one({"_id": obj_id, "members.userId": user_id})
+        group = await self.collection.find_one(
+            {"_id": obj_id, "members.userId": user_id}
+        )
 
         if not group:
             return None
@@ -281,7 +283,9 @@ class GroupService(BaseService):
             return False
 
         # Check if user is a member
-        group = await self.collection.find_one({"_id": obj_id, "members.userId": user_id})
+        group = await self.collection.find_one(
+            {"_id": obj_id, "members.userId": user_id}
+        )
         if not group:
             raise HTTPException(
                 status_code=404, detail="Group not found or you are not a member"
@@ -337,7 +341,9 @@ class GroupService(BaseService):
         except Exception:
             return []
 
-        group = await self.collection.find_one({"_id": obj_id, "members.userId": user_id})
+        group = await self.collection.find_one(
+            {"_id": obj_id, "members.userId": user_id}
+        )
         if not group:
             return []
 

@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 
 from app.auth.security import get_current_user
+from app.dependencies import get_group_service
 from app.groups.schemas import (
     DeleteGroupResponse,
     GroupCreateRequest,
@@ -14,7 +15,6 @@ from app.groups.schemas import (
     MemberRoleUpdateRequest,
     RemoveMemberResponse,
 )
-from app.dependencies import get_group_service
 from app.groups.service import GroupService
 from fastapi import APIRouter, Depends, HTTPException, status
 
