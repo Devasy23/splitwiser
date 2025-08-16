@@ -57,3 +57,23 @@ async def get_current_user(
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+from app.auth.service import AuthService
+from app.expenses.service import ExpenseService
+from app.groups.service import GroupService
+from app.user.service import UserService
+
+
+def get_user_service() -> UserService:
+    return UserService()
+
+
+def get_expense_service() -> ExpenseService:
+    return ExpenseService()
+
+def get_group_service() -> GroupService:
+    return GroupService()
+
+def get_auth_service() -> AuthService:
+    return AuthService()

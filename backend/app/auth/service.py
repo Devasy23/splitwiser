@@ -71,14 +71,10 @@ if not firebase_admin._apps:
 
 class AuthService:
     def __init__(self):
-        # Initializes the AuthService instance.
-        pass
-
-    def get_db(self):
-        """
-        Returns a database connection instance from the application's database module.
-        """
-        return get_database()
+        self.db = get_database()
+        self.users_collection = self.db["users"]
+        self.refresh_tokens_collection = self.db["refresh_tokens"]
+        self.password_resets_collection = self.db["password_resets"]
 
     async def create_user_with_email(
         self, email: str, password: str, name: str
@@ -99,10 +95,8 @@ class AuthService:
         Raises:
             HTTPException: If a user with the given email already exists.
         """
-        db = self.get_db()
-
         # Check if user already exists
-        existing_user = await db.users.find_one({"email": email})
+        existing_user = await self.users_collection.find_one({"email": email})
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -122,7 +116,7 @@ class AuthService:
         }
 
         try:
-            result = await db.users.insert_one(user_doc)
+            result = await self.users_collection.insert_one(user_doc)
             user_doc["_id"] = str(result.inserted_id)
 
             # Create refresh token
@@ -154,9 +148,8 @@ class AuthService:
         Returns:
             A dictionary containing the authenticated user and a new refresh token.
         """
-        db = self.get_db()
         try:
-            user = await db.users.find_one({"email": email})
+            user = await self.users_collection.find_one({"email": email})
         except PyMongoError as e:
             logger.error(f"Database error during user lookup: {e}")
             raise HTTPException(
@@ -215,11 +208,9 @@ class AuthService:
                     detail="Email not provided by Google",
                 )
 
-            db = self.get_db()
-
             # Check if user exists
             try:
-                user = await db.users.find_one(
+                user = await self.users_collection.find_one(
                     {"$or": [{"email": email}, {"firebase_uid": firebase_uid}]}
                 )
             except PyMongoError as e:
@@ -238,7 +229,7 @@ class AuthService:
 
                 if update_data:
                     try:
-                        await db.users.update_one(
+                        await self.users_collection.update_one(
                             {"_id": user["_id"]}, {"$set": update_data}
                         )
                         user.update(update_data)
@@ -257,7 +248,7 @@ class AuthService:
                     "hashed_password": None,
                 }
                 try:
-                    result = await db.users.insert_one(user_doc)
+                    result = await self.users_collection.insert_one(user_doc)
                     user_doc["_id"] = result.inserted_id
                     user = user_doc
                 except PyMongoError as e:
@@ -303,11 +294,9 @@ class AuthService:
         Returns:
             A new refresh token string.
         """
-        db = self.get_db()
-
         # Find and validate refresh token
         try:
-            token_record = await db.refresh_tokens.find_one(
+            token_record = await self.refresh_tokens_collection.find_one(
                 {
                     "token": refresh_token,
                     "revoked": False,
@@ -329,7 +318,7 @@ class AuthService:
 
         # Get user
         try:
-            user = await db.users.find_one({"_id": token_record["user_id"]})
+            user = await self.users_collection.find_one({"_id": token_record["user_id"]})
         except PyMongoError as e:
             logger.error("Error while fetching user: %s", str(e))
             raise HTTPException(
@@ -355,7 +344,7 @@ class AuthService:
 
         # Revoke old token
         try:
-            await db.refresh_tokens.update_one(
+            await self.refresh_tokens_collection.update_one(
                 {"_id": token_record["_id"]}, {"$set": {"revoked": True}}
             )
         except PyMongoError as e:
@@ -393,10 +382,8 @@ class AuthService:
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
             )
 
-        db = self.get_db()
-
         try:
-            user = await db.users.find_one({"_id": user_id})
+            user = await self.users_collection.find_one({"_id": user_id})
         except Exception as e:
             logger.error("Error while verifying token: %s", str(e))
             raise HTTPException(
@@ -417,10 +404,8 @@ class AuthService:
 
         If the user exists, generates a password reset token with a 1-hour expiration and stores it in the database. The reset token and link are logged for development purposes. Always returns True to avoid revealing whether the email is registered.
         """
-        db = self.get_db()
-
         try:
-            user = await db.users.find_one({"email": email})
+            user = await self.users_collection.find_one({"email": email})
         except PyMongoError as e:
             logger.error(
                 f"Database error while fetching user by email {email}: {str(e)}"
@@ -439,7 +424,7 @@ class AuthService:
 
         try:
             # Store reset token
-            await db.password_resets.insert_one(
+            await self.password_resets_collection.insert_one(
                 {
                     "user_id": user["_id"],
                     "token": reset_token,
@@ -481,11 +466,9 @@ class AuthService:
         Raises:
             HTTPException: If the reset token is invalid or expired.
         """
-        db = self.get_db()
-
         try:
             # Find and validate reset token
-            reset_record = await db.password_resets.find_one(
+            reset_record = await self.password_resets_collection.find_one(
                 {
                     "token": reset_token,
                     "used": False,
@@ -502,18 +485,18 @@ class AuthService:
 
             # Update user password
             new_hash = get_password_hash(new_password)
-            await db.users.update_one(
+            await self.users_collection.update_one(
                 {"_id": reset_record["user_id"]},
                 {"$set": {"hashed_password": new_hash}},
             )
 
             # Mark token as used
-            await db.password_resets.update_one(
+            await self.password_resets_collection.update_one(
                 {"_id": reset_record["_id"]}, {"$set": {"used": True}}
             )
 
             # Revoke all refresh tokens for this user (force re-login)
-            await db.refresh_tokens.update_many(
+            await self.refresh_tokens_collection.update_many(
                 {"user_id": reset_record["user_id"]}, {"$set": {"revoked": True}}
             )
             logger.info(
@@ -542,15 +525,13 @@ class AuthService:
         Returns:
             The generated refresh token string.
         """
-        db = self.get_db()
-
         refresh_token = create_refresh_token()
         expires_at = datetime.now(timezone.utc) + timedelta(
             days=settings.refresh_token_expire_days
         )
 
         try:
-            await db.refresh_tokens.insert_one(
+            await self.refresh_tokens_collection.insert_one(
                 {
                     "token": refresh_token,
                     "user_id": (
@@ -573,5 +554,3 @@ class AuthService:
         return refresh_token
 
 
-# Create service instance
-auth_service = AuthService()
