@@ -72,10 +72,8 @@ def get_user_service() -> UserService:
 def get_expense_service() -> ExpenseService:
     return ExpenseService()
 
-
 def get_group_service() -> GroupService:
     return GroupService()
-
 
 def get_auth_service() -> AuthService:
     return AuthService()

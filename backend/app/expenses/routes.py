@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Optional
 
 from app.auth.security import get_current_user
 from app.config import logger
-from app.dependencies import get_expense_service
 from app.expenses.schemas import (
     AttachmentUploadResponse,
     BalanceSummaryResponse,
@@ -23,6 +22,7 @@ from app.expenses.schemas import (
     SettlementUpdateRequest,
     UserBalance,
 )
+from app.dependencies import get_expense_service
 from app.expenses.service import ExpenseService
 from fastapi import (
     APIRouter,
