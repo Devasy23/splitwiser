@@ -180,10 +180,7 @@ class ExpenseService(BaseService):
         # Get expenses with pagination
         skip = (page - 1) * limit
         expenses_cursor = (
-            self.collection.find(query)
-            .sort("createdAt", -1)
-            .skip(skip)
-            .limit(limit)
+            self.collection.find(query).sort("createdAt", -1).skip(skip).limit(limit)
         )
         expenses_docs = await expenses_cursor.to_list(None)
 
@@ -204,9 +201,7 @@ class ExpenseService(BaseService):
                 }
             },
         ]
-        summary_result = await self.collection.aggregate(pipeline).to_list(
-            None
-        )
+        summary_result = await self.collection.aggregate(pipeline).to_list(None)
         summary = (
             summary_result[0]
             if summary_result
@@ -411,9 +406,7 @@ class ExpenseService(BaseService):
                     # Continue anyway, as the expense update succeeded
 
             # Return updated expense
-            updated_expense = await self.collection.find_one(
-                {"_id": expense_obj_id}
-            )
+            updated_expense = await self.collection.find_one({"_id": expense_obj_id})
             if not updated_expense:
                 raise HTTPException(
                     status_code=500, detail="Failed to retrieve updated expense"
@@ -459,9 +452,7 @@ class ExpenseService(BaseService):
         await self.settlements_collection.delete_many({"expenseId": expense_id})
 
         # Delete the expense
-        result = await self.collection.delete_one(
-            {"_id": ObjectId(expense_id)}
-        )
+        result = await self.collection.delete_one({"_id": ObjectId(expense_id)})
         return result.deleted_count > 0
 
     async def calculate_optimized_settlements(
@@ -677,9 +668,7 @@ class ExpenseService(BaseService):
                 }
             },
         ]
-        expense_result = await self.collection.aggregate(pipeline).to_list(
-            None
-        )
+        expense_result = await self.collection.aggregate(pipeline).to_list(None)
         expense_stats = (
             expense_result[0]
             if expense_result
@@ -1283,5 +1272,3 @@ class ExpenseService(BaseService):
             "memberContributions": member_contributions,
             "expenseTrends": expense_trends,
         }
-
-
