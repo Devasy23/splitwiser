@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🏗 Setup repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🏗 Setup Node
         uses: actions/setup-node@v4
@@ -35,5 +35,5 @@ jobs:
         working-directory: ./frontend
 
       - name: 🚀 Create update
-        run: npx eas update --auto --non-interactive
+        run: eas update --auto --non-interactive
         working-directory: ./frontend

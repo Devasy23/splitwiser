@@ -970,17 +970,19 @@ class ExpenseService:
                 if member["userId"] != user_id:
                     friend_ids.add(member["userId"])
 
-        # Get user names
+        # Get user names & images
         users = await self.users_collection.find(
             {"_id": {"$in": [ObjectId(uid) for uid in friend_ids]}}
         ).to_list(None)
         user_names = {str(user["_id"]): user.get("name", "Unknown") for user in users}
+        user_images = {str(user["_id"]): user.get("imageUrl") for user in users}
 
         for friend_id in friend_ids:
             friend_balance_data = {
                 "userId": friend_id,
                 "userName": user_names.get(friend_id, "Unknown"),
-                "userImageUrl": None,  # Would need to be fetched from user profile
+                # Populate image directly from users collection to avoid extra client round-trips
+                "userImageUrl": user_images.get(friend_id),
                 "netBalance": 0,
                 "owesYou": False,
                 "breakdown": [],
