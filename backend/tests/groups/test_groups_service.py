@@ -477,3 +477,178 @@ class TestGroupService:
         assert result["name"] == "Partial Group"
         assert result["currency"] == "USD"  # default fallback
         assert result["members"] == []  # default fallback
+
+    # Test cases for ensure_user_in_group function
+    @pytest.mark.asyncio
+    async def test_ensure_user_in_group_success(self):
+        """Test successful user membership validation"""
+        mock_db = AsyncMock()
+        mock_collection = AsyncMock()
+        mock_db.groups = mock_collection
+
+        group_id = "642f1e4a9b3c2d1f6a1b2c3d"
+        user_id = "user123"
+        
+        expected_group = {
+            "_id": ObjectId(group_id),
+            "name": "Test Group",
+            "members": [
+                {
+                    "userId": user_id,
+                    "role": "member",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                }
+            ],
+        }
+
+        mock_collection.find_one.return_value = expected_group
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            result = await self.service.ensure_user_in_group(group_id, user_id)
+
+            assert result == expected_group
+            mock_collection.find_one.assert_called_once_with({
+                "_id": ObjectId(group_id),
+                "members": {"$elemMatch": {"userId": user_id}}
+            })
+
+    @pytest.mark.asyncio
+    async def test_ensure_user_in_group_invalid_group_id_format(self):
+        """Test with invalid ObjectId format"""
+        mock_db = AsyncMock()
+        
+        invalid_group_id = "invalid_object_id"
+        user_id = "user123"
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            with pytest.raises(HTTPException) as exc_info:
+                await self.service.ensure_user_in_group(invalid_group_id, user_id)
+
+            assert exc_info.value.status_code == 400
+            assert "Invalid group ID format" in str(exc_info.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_ensure_user_in_group_user_not_member(self):
+        """Test when user is not a member of the group"""
+        mock_db = AsyncMock()
+        mock_collection = AsyncMock()
+        mock_db.groups = mock_collection
+
+        group_id = "642f1e4a9b3c2d1f6a1b2c3d"
+        user_id = "user123"
+
+        mock_collection.find_one.return_value = None
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            with pytest.raises(HTTPException) as exc_info:
+                await self.service.ensure_user_in_group(group_id, user_id)
+
+            assert exc_info.value.status_code == 403
+            assert "You are not a member of this group" in str(exc_info.value.detail)
+
+    # Test cases for update_group_image_url function
+
+    @pytest.mark.asyncio
+    async def test_update_group_image_url_success(self):
+        """Test successful group image URL update"""
+        mock_db = AsyncMock()
+        mock_collection = AsyncMock()
+        mock_db.groups = mock_collection
+
+        group_id = "642f1e4a9b3c2d1f6a1b2c3d"
+        image_url = "https://example.com/image.jpg"
+
+        # Mock successful update (1 document modified)
+        mock_result = AsyncMock()
+        mock_result.modified_count = 1
+        mock_collection.update_one.return_value = mock_result
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            result = await self.service.update_group_image_url(group_id, image_url)
+
+            assert result is True
+            mock_collection.update_one.assert_called_once_with(
+                {"_id": ObjectId(group_id)},
+                {"$set": {"imageUrl": image_url}}
+            )
+
+    @pytest.mark.asyncio
+    async def test_update_group_image_url_no_document_modified(self):
+        """Test when no document is modified (group not found)"""
+        mock_db = AsyncMock()
+        mock_collection = AsyncMock()
+        mock_db.groups = mock_collection
+
+        group_id = "642f1e4a9b3c2d1f6a1b2c3d"
+        image_url = "https://example.com/image.jpg"
+
+        # Mock no documents modified
+        mock_result = AsyncMock()
+        mock_result.modified_count = 0
+        mock_collection.update_one.return_value = mock_result
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            result = await self.service.update_group_image_url(group_id, image_url)
+
+            assert result is False
+
+    @pytest.mark.asyncio
+    async def test_update_group_image_url_invalid_group_id_format(self):
+        """Test with invalid ObjectId format"""
+        mock_db = AsyncMock()
+        
+        invalid_group_id = "invalid_object_id"
+        image_url = "https://example.com/image.jpg"
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            result = await self.service.update_group_image_url(invalid_group_id, image_url)
+
+            assert result is False
+
+    @pytest.mark.asyncio
+    async def test_update_group_image_url_empty_image_url(self):
+        """Test updating with empty image URL"""
+        mock_db = AsyncMock()
+        mock_collection = AsyncMock()
+        mock_db.groups = mock_collection
+
+        group_id = "642f1e4a9b3c2d1f6a1b2c3d"
+        image_url = ""
+
+        # Mock successful update
+        mock_result = AsyncMock()
+        mock_result.modified_count = 1
+        mock_collection.update_one.return_value = mock_result
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            result = await self.service.update_group_image_url(group_id, image_url)
+
+            assert result is True
+            mock_collection.update_one.assert_called_once_with(
+                {"_id": ObjectId(group_id)},
+                {"$set": {"imageUrl": image_url}}
+            )
+
+    @pytest.mark.asyncio
+    async def test_update_group_image_url_none_image_url(self):
+        """Test updating with None image URL"""
+        mock_db = AsyncMock()
+        mock_collection = AsyncMock()
+        mock_db.groups = mock_collection
+
+        group_id = "642f1e4a9b3c2d1f6a1b2c3d"
+        image_url = None
+
+        # Mock successful update
+        mock_result = AsyncMock()
+        mock_result.modified_count = 1
+        mock_collection.update_one.return_value = mock_result
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            result = await self.service.update_group_image_url(group_id, image_url)
+
+            assert result is True
+            mock_collection.update_one.assert_called_once_with(
+                {"_id": ObjectId(group_id)},
+                {"$set": {"imageUrl": image_url}}
+            )

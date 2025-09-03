@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
+from fastapi import UploadFile
 
 from app.config import logger
 from app.database import get_database
@@ -92,5 +93,12 @@ class UserService:
         result = await db.users.delete_one({"_id": obj_id})
         return result.deleted_count > 0
 
+    async def update_user_avatar_url(self, user_id: str, image_url: str) -> bool:
+        db = self.get_db()
+        result = await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"imageUrl": image_url}}
+        )
+        return result.modified_count == 1
 
 user_service = UserService()
