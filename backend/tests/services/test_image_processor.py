@@ -1,7 +1,8 @@
-import pytest
 from io import BytesIO
-from PIL import Image
+
+import pytest
 from app.services import image_processor as ip
+from PIL import Image
 
 
 def make_test_image(fmt="PNG", size=(200, 100), color=(255, 0, 0)):
@@ -51,6 +52,7 @@ def test_add_watermark_places_watermark():
     out = ip.add_watermark(base, watermark)
     px = out.getpixel((190, 190))
     assert px[1] > 200  # green applied
+
 
 @pytest.mark.asyncio
 async def test_process_image_happy_path():

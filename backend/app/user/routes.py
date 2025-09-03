@@ -1,16 +1,24 @@
 from typing import Any, Dict
 
 from app.auth.security import get_current_user
+from app.config import logger
+from app.services.schemas import ImageUploadResponse
+from app.services.storage import storage_service
 from app.user.schemas import (
     DeleteUserResponse,
     UserProfileResponse,
-    UserProfileUpdateRequest
+    UserProfileUpdateRequest,
 )
-from app.services.schemas import ImageUploadResponse
 from app.user.service import user_service
-from app.services.storage import storage_service
-from app.config import logger
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    UploadFile,
+    status,
+)
 
 router = APIRouter(prefix="/users", tags=["User"])
 
@@ -59,17 +67,19 @@ async def delete_user_account(current_user: Dict[str, Any] = Depends(get_current
         success=True, message="User account scheduled for deletion."
     )
 
+
 @router.post("/me/avatar", response_model=ImageUploadResponse)
-async def upload_user_avatar(file: UploadFile = File(...),background_tasks: BackgroundTasks = BackgroundTasks(),
-                             current_user: dict = Depends(get_current_user)):
+async def upload_user_avatar(
+    file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    current_user: dict = Depends(get_current_user),
+):
     user_id = str(current_user["_id"])
 
     try:
         # Validate, process, upload
         urls = await storage_service.upload_image_workflow(
-            file=file,
-            folder="users",
-            entity_id=user_id
+            file=file, folder="users", entity_id=user_id
         )
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
@@ -77,28 +87,32 @@ async def upload_user_avatar(file: UploadFile = File(...),background_tasks: Back
         raise HTTPException(status_code=404, detail="Storage location not found.")
     except Exception as e:
         logger.exception(f"Unexpected error during avatar upload for user {user_id}")
-        raise HTTPException(status_code=500, detail="Image upload failed due to an internal error.")
+        raise HTTPException(
+            status_code=500, detail="Image upload failed due to an internal error."
+        )
 
     # Update DB in background
-    background_tasks.add_task(user_service.update_user_avatar_url, user_id, urls.get("full"))
+    background_tasks.add_task(
+        user_service.update_user_avatar_url, user_id, urls.get("full")
+    )
 
     return ImageUploadResponse(
-        success=True,
-        urls=urls,
-        message="Avatar uploaded successfully."
+        success=True, urls=urls, message="Avatar uploaded successfully."
     )
 
 
 @router.delete("/me/avatar", response_model=DeleteUserResponse)
-async def delete_user_avatar(current_user: dict = Depends(get_current_user),
-                              background_tasks: BackgroundTasks = BackgroundTasks()):
-    
+async def delete_user_avatar(
+    current_user: dict = Depends(get_current_user),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+):
+
     user_id = str(current_user["_id"])
 
     user = await user_service.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     image_url = user.get("imageUrl")
 
     if not image_url:

@@ -472,7 +472,7 @@ class GroupService:
             {"_id": obj_id}, {"$pull": {"members": {"userId": member_id}}}
         )
         return result.modified_count == 1
-    
+
     async def ensure_user_in_group(self, group_id: str, user_id: str) -> dict:
         """Ensure that the user is a member of the group. Raises HTTPException if not."""
         db = self.get_db()
@@ -487,16 +487,17 @@ class GroupService:
             logger.error(f"Unexpected error converting group_id to ObjectId: {e}")
             raise HTTPException(status_code=500, detail="Internal server error")
 
-        group = await db.groups.find_one({
-            "_id": obj_id,
-            "members": {"$elemMatch": {"userId": user_id}}
-        })
+        group = await db.groups.find_one(
+            {"_id": obj_id, "members": {"$elemMatch": {"userId": user_id}}}
+        )
 
         if not group:
-            raise HTTPException(status_code=403, detail="You are not a member of this group")
+            raise HTTPException(
+                status_code=403, detail="You are not a member of this group"
+            )
 
         return group  # Optional return if route needs to read group data
-    
+
     async def update_group_image_url(self, group_id: str, image_url: str) -> bool:
         """Update the group's image URL in the database."""
         db = self.get_db()
@@ -508,9 +509,9 @@ class GroupService:
             return False
 
         result = await db.groups.update_one(
-            {"_id": obj_id},
-            {"$set": {"imageUrl": image_url}}
+            {"_id": obj_id}, {"$set": {"imageUrl": image_url}}
         )
         return result.modified_count == 1
+
 
 group_service = GroupService()

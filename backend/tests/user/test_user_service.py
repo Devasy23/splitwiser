@@ -301,7 +301,9 @@ async def test_delete_user_invalid_object_id(mock_db_client, mock_get_database):
     mock_db_client.users.delete_one.assert_not_called()
     assert result is False
 
+
 # --- Tests for update_user_avatar_url ---
+
 
 @pytest.mark.asyncio
 async def test_update_user_avatar_url_success(mock_db_client, mock_get_database):
@@ -318,12 +320,14 @@ async def test_update_user_avatar_url_success(mock_db_client, mock_get_database)
 
     assert result is True
     mock_db_client.users.update_one.assert_called_once_with(
-        {"_id": ObjectId(user_id)},
-        {"$set": {"imageUrl": image_url}}
+        {"_id": ObjectId(user_id)}, {"$set": {"imageUrl": image_url}}
     )
 
+
 @pytest.mark.asyncio
-async def test_update_user_avatar_url_no_document_modified(mock_db_client, mock_get_database):
+async def test_update_user_avatar_url_no_document_modified(
+    mock_db_client, mock_get_database
+):
     """Test when no document is modified (user not found)"""
     user_id = "642f1e4a9b3c2d1f6a1b2c3d"
     image_url = "https://example.com/avatar.jpg"
@@ -337,8 +341,11 @@ async def test_update_user_avatar_url_no_document_modified(mock_db_client, mock_
 
     assert result is False
 
+
 @pytest.mark.asyncio
-async def test_update_user_avatar_url_invalid_object_id(mock_db_client, mock_get_database):
+async def test_update_user_avatar_url_invalid_object_id(
+    mock_db_client, mock_get_database
+):
     """Test with invalid ObjectId format"""
     invalid_user_id = "invalid_object_id"  # Not a 24-char hex string
     image_url = "https://example.com/avatar.jpg"
@@ -349,8 +356,11 @@ async def test_update_user_avatar_url_invalid_object_id(mock_db_client, mock_get
     # Should never hit the database
     mock_db_client.users.update_one.assert_not_called()
 
+
 @pytest.mark.asyncio
-async def test_update_user_avatar_url_empty_image_url(mock_db_client, mock_get_database):
+async def test_update_user_avatar_url_empty_image_url(
+    mock_db_client, mock_get_database
+):
     """Test updating with empty image URL"""
     user_id = "642f1e4a9b3c2d1f6a1b2c3d"
     image_url = ""
@@ -364,9 +374,9 @@ async def test_update_user_avatar_url_empty_image_url(mock_db_client, mock_get_d
 
     assert result is True
     mock_db_client.users.update_one.assert_called_once_with(
-        {"_id": ObjectId(user_id)},
-        {"$set": {"imageUrl": image_url}}
+        {"_id": ObjectId(user_id)}, {"$set": {"imageUrl": image_url}}
     )
+
 
 @pytest.mark.asyncio
 async def test_update_user_avatar_url_none_image_url(mock_db_client, mock_get_database):
@@ -383,6 +393,5 @@ async def test_update_user_avatar_url_none_image_url(mock_db_client, mock_get_da
 
     assert result is True
     mock_db_client.users.update_one.assert_called_once_with(
-        {"_id": ObjectId(user_id)},
-        {"$set": {"imageUrl": image_url}}
+        {"_id": ObjectId(user_id)}, {"$set": {"imageUrl": image_url}}
     )

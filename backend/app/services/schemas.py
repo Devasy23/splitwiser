@@ -1,5 +1,7 @@
-from pydantic import BaseModel
 from typing import Dict, Optional
+
+from pydantic import BaseModel
+
 
 class ImageUploadResponse(BaseModel):
     success: bool

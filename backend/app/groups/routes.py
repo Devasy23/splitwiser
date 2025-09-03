@@ -14,10 +14,18 @@ from app.groups.schemas import (
     MemberRoleUpdateRequest,
     RemoveMemberResponse,
 )
+from app.groups.service import group_service
 from app.services.schemas import ImageUploadResponse
 from app.services.storage import storage_service
-from app.groups.service import group_service
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    UploadFile,
+    status,
+)
 
 router = APIRouter(prefix="/groups", tags=["Groups"])
 
@@ -148,39 +156,46 @@ async def remove_group_member(
         raise HTTPException(status_code=400, detail="Failed to remove member")
     return RemoveMemberResponse(success=True, message="Member removed successfully")
 
+
 @router.post("/{group_id}/image", response_model=ImageUploadResponse)
-async def upload_group_image(group_id: str, file: UploadFile = File(...),
-                             background_tasks: BackgroundTasks = BackgroundTasks(),
-                             current_user: dict = Depends(get_current_user)):
+async def upload_group_image(
+    group_id: str,
+    file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    current_user: dict = Depends(get_current_user),
+):
 
     await group_service.ensure_user_in_group(group_id, current_user["_id"])
 
     try:
-        urls = await storage_service.upload_image_workflow(file=file, folder="groups", entity_id=group_id)
+        urls = await storage_service.upload_image_workflow(
+            file=file, folder="groups", entity_id=group_id
+        )
 
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception:
         raise HTTPException(status_code=500, detail="Group image upload failed")
 
-    background_tasks.add_task(group_service.update_group_image_url, group_id, urls.get("full"))
+    background_tasks.add_task(
+        group_service.update_group_image_url, group_id, urls.get("full")
+    )
 
     return ImageUploadResponse(
-        success=True,
-        urls=urls,
-        message="Group image uploaded successfully."
+        success=True, urls=urls, message="Group image uploaded successfully."
     )
+
 
 @router.delete("/{group_id}/image", response_model=DeleteGroupResponse)
 async def delete_group_avatar(
     group_id: str,
     current_user: dict = Depends(get_current_user),
-    background_tasks: BackgroundTasks = BackgroundTasks()
+    background_tasks: BackgroundTasks = BackgroundTasks(),
 ):
     group = await group_service.get_group_by_id(group_id, current_user["_id"])
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
-    
+
     await group_service.ensure_user_in_group(group_id, current_user["_id"])
 
     image_url = group.get("imageUrl")
@@ -198,4 +213,6 @@ async def delete_group_avatar(
 
     background_tasks.add_task(group_service.update_group_image_url, group_id, None)
 
-    return DeleteGroupResponse(success=True, message="Group image deleted successfully.")
+    return DeleteGroupResponse(
+        success=True, message="Group image deleted successfully."
+    )

@@ -1,11 +1,11 @@
 import imghdr
-from PIL import Image, UnidentifiedImageError, ImageFile
 from io import BytesIO
 from typing import Dict, Tuple
 
 from app.config import logger
+from PIL import Image, ImageFile, UnidentifiedImageError
 
-# Optional watermark path 
+# Optional watermark path
 WATERMARK_PATH = None  # Example: "app/assets/watermark.png"
 
 # Resize targets (square thumbnail + larger sizes)
@@ -15,9 +15,10 @@ RESIZE_CONFIG = {
     "full": (800, 800),
 }
 
-#Defining image file restrictions
+# Defining image file restrictions
 ImageFile.LOAD_TRUNCATED_IMAGES = False
-Image.MAX_IMAGE_PIXELS = 50_00_000 #50MB in worst case
+Image.MAX_IMAGE_PIXELS = 50_00_000  # 50MB in worst case
+
 
 def strip_exif(image: Image.Image) -> Image.Image:
     """
@@ -27,6 +28,7 @@ def strip_exif(image: Image.Image) -> Image.Image:
     clean_image.putdata(list(image.getdata()))
     return clean_image
 
+
 def validate_magic_bytes(file_content: bytes):
     """
     Validates the actual file type of image
@@ -34,7 +36,8 @@ def validate_magic_bytes(file_content: bytes):
     fmt = imghdr.what(None, h=file_content)
     if fmt not in ["jpeg", "png", "webp"]:
         raise ValueError("Invalid or unsupported image type.")
-    
+
+
 def add_watermark(image: Image.Image, watermark: Image.Image) -> Image.Image:
     """
     Adds watermark (bottom-right). Image and watermark must be RGBA.
@@ -77,7 +80,7 @@ async def process_image(file_content: bytes) -> Dict[str, bytes]:
     """
     try:
         validate_magic_bytes(file_content)
-    
+
         img = Image.open(BytesIO(file_content))
         img_format = img.format.upper()
 
@@ -102,7 +105,9 @@ async def process_image(file_content: bytes) -> Dict[str, bytes]:
 
             # Save to memory in WebP format
             buffer = BytesIO()
-            resized.save(buffer, format="WEBP", quality=85, method=6)  # High quality with compression
+            resized.save(
+                buffer, format="WEBP", quality=85, method=6
+            )  # High quality with compression
             buffer.seek(0)
 
             results[label] = buffer.read()
