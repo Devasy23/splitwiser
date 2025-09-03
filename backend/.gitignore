@@ -70,3 +70,6 @@ node_modules/
 
 # firebase-config files
 app/services/firebase
+
+# quarantine files
+app/services/quarantine/
