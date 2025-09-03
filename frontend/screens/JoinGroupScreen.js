@@ -1,29 +1,32 @@
-import React, { useState, useContext } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
-import { Button, TextInput, Appbar, Title } from 'react-native-paper';
-import { AuthContext } from '../context/AuthContext';
-import { joinGroup } from '../api/groups';
+import { useContext, useState } from "react";
+import { Alert, StyleSheet, View } from "react-native";
+import { Appbar, Button, TextInput, Title } from "react-native-paper";
+import { joinGroup } from "../api/groups";
+import { AuthContext } from "../context/AuthContext";
 
 const JoinGroupScreen = ({ navigation, route }) => {
   const { token } = useContext(AuthContext);
-  const [joinCode, setJoinCode] = useState('');
+  const [joinCode, setJoinCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const { onGroupJoined } = route.params;
 
   const handleJoinGroup = async () => {
     if (!joinCode) {
-      Alert.alert('Error', 'Please enter a join code.');
+      Alert.alert("Error", "Please enter a join code.");
       return;
     }
     setIsJoining(true);
     try {
-      await joinGroup(token, joinCode);
-      Alert.alert('Success', 'Successfully joined the group.');
+      await joinGroup(joinCode);
+      Alert.alert("Success", "Successfully joined the group.");
       onGroupJoined(); // Call the callback to refresh the groups list
       navigation.goBack();
     } catch (error) {
-      console.error('Failed to join group:', error);
-      Alert.alert('Error', 'Failed to join group. Please check the code and try again.');
+      console.error("Failed to join group:", error);
+      Alert.alert(
+        "Error",
+        "Failed to join group. Please check the code and try again."
+      );
     } finally {
       setIsJoining(false);
     }

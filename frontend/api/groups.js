@@ -1,92 +1,47 @@
-import axios from 'axios';
+import { apiClient } from "./client";
 
-const API_URL = 'https://splitwiser-production.up.railway.app';
+export const getGroups = () => apiClient.get("/groups");
 
-// This creates a new axios instance.
-// It's better to have a single instance that can be configured with interceptors.
-// I will create a single apiClient in a separate file later if needed.
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+export const getOptimizedSettlements = (groupId) =>
+  apiClient.post(`/groups/${groupId}/settlements/optimize`, {});
 
-export const getGroups = (token) => {
-  return apiClient.get('/groups', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export const createExpense = (groupId, expenseData) =>
+  apiClient.post(`/groups/${groupId}/expenses`, expenseData);
+
+export const getGroupDetails = (groupId) => {
+  return Promise.all([getGroupMembers(groupId), getGroupExpenses(groupId)]);
 };
 
-export const getOptimizedSettlements = (token, groupId) => {
-  return apiClient.post(`/groups/${groupId}/settlements/optimize`, {}, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-};
+export const getGroupMembers = (groupId) =>
+  apiClient.get(`/groups/${groupId}/members`);
 
-export const createExpense = (token, groupId, expenseData) => {
-  return apiClient.post(`/groups/${groupId}/expenses`, expenseData, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-};
+export const getGroupExpenses = (groupId) =>
+  apiClient.get(`/groups/${groupId}/expenses`);
 
-export const getGroupDetails = (token, groupId) => {
-    return Promise.all([
-        getGroupMembers(token, groupId),
-        getGroupExpenses(token, groupId),
-    ]);
-};
+export const createGroup = (name) => apiClient.post("/groups", { name });
 
-export const getGroupMembers = (token, groupId) => {
-  return apiClient.get(`/groups/${groupId}/members`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-};
+export const joinGroup = (joinCode) =>
+  apiClient.post("/groups/join", { joinCode });
 
-export const getGroupExpenses = (token, groupId) => {
-  return apiClient.get(`/groups/${groupId}/expenses`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-};
+export const getUserBalanceSummary = () =>
+  apiClient.get("/users/me/balance-summary");
 
-export const createGroup = (token, name) => {
-  return apiClient.post('/groups', { name }, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-};
+export const getFriendsBalance = () =>
+  apiClient.get("/users/me/friends-balance");
 
-export const joinGroup = (token, joinCode) => {
-  return apiClient.post('/groups/join', { joinCode }, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-};
+// New APIs for Group Settings
+export const getGroupById = (groupId) => apiClient.get(`/groups/${groupId}`);
 
-export const getUserBalanceSummary = (token) => {
-  return apiClient.get('/users/me/balance-summary', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-};
+export const updateGroup = (groupId, updates) =>
+  apiClient.patch(`/groups/${groupId}`, updates);
 
-export const getFriendsBalance = (token) => {
-  return apiClient.get('/users/me/friends-balance', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-};
+export const deleteGroup = (groupId) => apiClient.delete(`/groups/${groupId}`);
+
+export const leaveGroup = (groupId) =>
+  apiClient.post(`/groups/${groupId}/leave`, {});
+
+export const updateMemberRole = (groupId, memberId, role) =>
+  apiClient.patch(`/groups/${groupId}/members/${memberId}`, { role });
+
+export const removeMember = (groupId, memberId) =>
+  apiClient.delete(`/groups/${groupId}/members/${memberId}`);

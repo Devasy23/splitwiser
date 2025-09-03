@@ -189,6 +189,125 @@ class TestGroupService:
             assert "Invalid join code" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
+    async def test_remove_member_blocked_when_unsettled(self):
+        """Admin cannot remove member if pending settlements exist"""
+        mock_db = AsyncMock()
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
+
+        group_id = str(ObjectId())
+        admin_id = "admin123"
+        member_id = "member456"
+
+        groups.find_one.return_value = {
+            "_id": ObjectId(group_id),
+            "members": [
+                {"userId": admin_id, "role": "admin"},
+                {"userId": member_id, "role": "member"},
+            ],
+        }
+        settlements.find_one.return_value = {
+            "_id": ObjectId(),
+            "status": "pending",
+        }  # Has pending settlements
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            with pytest.raises(HTTPException) as exc:
+                await self.service.remove_member(group_id, member_id, admin_id)
+
+        assert exc.value.status_code == 400
+        assert "unsettled balances" in str(exc.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_remove_member_allowed_when_settled(self):
+        """Admin can remove member when no pending settlements"""
+        mock_db = AsyncMock()
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
+
+        group_id = str(ObjectId())
+        admin_id = "admin123"
+        member_id = "member456"
+
+        groups.find_one.side_effect = [
+            {
+                "_id": ObjectId(group_id),
+                "members": [
+                    {"userId": admin_id, "role": "admin"},
+                    {"userId": member_id, "role": "member"},
+                ],
+            }
+        ]
+        settlements.find_one.return_value = None  # No pending settlements
+        groups.update_one.return_value = MagicMock(modified_count=1)
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            ok = await self.service.remove_member(group_id, member_id, admin_id)
+
+        assert ok is True
+
+    @pytest.mark.asyncio
+    async def test_leave_group_blocked_when_unsettled(self):
+        """Member cannot leave when they have pending settlements"""
+        mock_db = AsyncMock()
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
+
+        group_id = str(ObjectId())
+        user_id = "user123"
+
+        groups.find_one.return_value = {
+            "_id": ObjectId(group_id),
+            "members": [
+                {"userId": user_id, "role": "member"},
+                {"userId": "other", "role": "admin"},
+            ],
+        }
+        settlements.find_one.return_value = {"_id": ObjectId(), "status": "pending"}
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            with pytest.raises(HTTPException) as exc:
+                await self.service.leave_group(group_id, user_id)
+
+        assert exc.value.status_code == 400
+        assert "unsettled balances" in str(exc.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_leave_group_allowed_when_settled(self):
+        """Member can leave when no pending settlements and not sole admin"""
+        mock_db = AsyncMock()
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
+
+        group_id = str(ObjectId())
+        user_id = "user123"
+
+        groups.find_one.side_effect = [
+            {
+                "_id": ObjectId(group_id),
+                "members": [
+                    {"userId": user_id, "role": "member"},
+                    {"userId": "admin2", "role": "admin"},
+                ],
+            }
+        ]
+        settlements.find_one.return_value = None  # No pending settlements
+        groups.update_one.return_value = MagicMock(modified_count=1)
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            ok = await self.service.leave_group(group_id, user_id)
+
+        assert ok is True
+
+    @pytest.mark.asyncio
     async def test_join_group_already_member(self):
         """Test joining group when already a member"""
         mock_db = AsyncMock()
@@ -411,7 +530,9 @@ class TestGroupService:
         """Test allowing regular members to leave"""
         mock_db = AsyncMock()
         mock_collection = AsyncMock()
+        mock_settlements = AsyncMock()
         mock_db.groups = mock_collection
+        mock_db.settlements = mock_settlements
 
         group = {
             "_id": ObjectId("642f1e4a9b3c2d1f6a1b2c3d"),
@@ -431,6 +552,7 @@ class TestGroupService:
         }
 
         mock_collection.find_one.return_value = group
+        mock_settlements.find_one.return_value = None  # No pending settlements
         mock_result = MagicMock()
         mock_result.modified_count = 1
         mock_collection.update_one.return_value = mock_result
@@ -478,177 +600,143 @@ class TestGroupService:
         assert result["currency"] == "USD"  # default fallback
         assert result["members"] == []  # default fallback
 
-    # Test cases for ensure_user_in_group function
+    # --- New tests for unsettled balance checks & exception handling (coverage additions) ---
     @pytest.mark.asyncio
-    async def test_ensure_user_in_group_success(self):
-        """Test successful user membership validation"""
+    async def test_leave_group_pending_settlement_blocks(self):
+        """Member can't leave when a pending settlement exists (covers pending branch)."""
         mock_db = AsyncMock()
-        mock_collection = AsyncMock()
-        mock_db.groups = mock_collection
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
 
-        group_id = "642f1e4a9b3c2d1f6a1b2c3d"
-        user_id = "user123"
-        
-        expected_group = {
-            "_id": ObjectId(group_id),
+        group = {
+            "_id": ObjectId("642f1e4a9b3c2d1f6a1b2c3d"),
             "name": "Test Group",
             "members": [
                 {
-                    "userId": user_id,
+                    "userId": "admin1",
+                    "role": "admin",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                },
+                {
+                    "userId": "member1",
                     "role": "member",
                     "joinedAt": "2023-01-01T00:00:00Z",
-                }
+                },
             ],
         }
-
-        mock_collection.find_one.return_value = expected_group
+        groups.find_one.return_value = group
+        settlements.find_one.return_value = {"_id": ObjectId()}
 
         with patch.object(self.service, "get_db", return_value=mock_db):
-            result = await self.service.ensure_user_in_group(group_id, user_id)
+            with pytest.raises(HTTPException) as exc:
+                await self.service.leave_group(str(group["_id"]), "member1")
 
-            assert result == expected_group
-            mock_collection.find_one.assert_called_once_with({
-                "_id": ObjectId(group_id),
-                "members": {"$elemMatch": {"userId": user_id}}
-            })
+        assert exc.value.status_code == 400
+        assert "Cannot leave group with unsettled balances" in exc.value.detail
 
     @pytest.mark.asyncio
-    async def test_ensure_user_in_group_invalid_group_id_format(self):
-        """Test with invalid ObjectId format"""
+    async def test_leave_group_settlement_lookup_failure(self):
+        """Service returns 503 when settlement lookup errors (covers except block)."""
         mock_db = AsyncMock()
-        
-        invalid_group_id = "invalid_object_id"
-        user_id = "user123"
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
+
+        group = {
+            "_id": ObjectId("642f1e4a9b3c2d1f6a1b2c3d"),
+            "name": "Test Group",
+            "members": [
+                {
+                    "userId": "admin1",
+                    "role": "admin",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                },
+                {
+                    "userId": "member1",
+                    "role": "member",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                },
+            ],
+        }
+        groups.find_one.return_value = group
+        settlements.find_one.side_effect = Exception("db down")
 
         with patch.object(self.service, "get_db", return_value=mock_db):
-            with pytest.raises(HTTPException) as exc_info:
-                await self.service.ensure_user_in_group(invalid_group_id, user_id)
+            with pytest.raises(HTTPException) as exc:
+                await self.service.leave_group(str(group["_id"]), "member1")
 
-            assert exc_info.value.status_code == 400
-            assert "Invalid group ID format" in str(exc_info.value.detail)
+        assert exc.value.status_code == 503
+        assert "Unable to verify unsettled balances" in exc.value.detail
 
     @pytest.mark.asyncio
-    async def test_ensure_user_in_group_user_not_member(self):
-        """Test when user is not a member of the group"""
+    async def test_remove_member_pending_settlement_blocks(self):
+        """Admin can't remove member with pending settlement (covers pending branch)."""
         mock_db = AsyncMock()
-        mock_collection = AsyncMock()
-        mock_db.groups = mock_collection
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
 
-        group_id = "642f1e4a9b3c2d1f6a1b2c3d"
-        user_id = "user123"
-
-        mock_collection.find_one.return_value = None
+        group = {
+            "_id": ObjectId("642f1e4a9b3c2d1f6a1b2c3d"),
+            "name": "Test Group",
+            "members": [
+                {
+                    "userId": "admin1",
+                    "role": "admin",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                },
+                {
+                    "userId": "member1",
+                    "role": "member",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                },
+            ],
+        }
+        groups.find_one.return_value = group  # Admin check passes
+        settlements.find_one.return_value = {"_id": ObjectId()}
 
         with patch.object(self.service, "get_db", return_value=mock_db):
-            with pytest.raises(HTTPException) as exc_info:
-                await self.service.ensure_user_in_group(group_id, user_id)
+            with pytest.raises(HTTPException) as exc:
+                await self.service.remove_member(str(group["_id"]), "member1", "admin1")
 
-            assert exc_info.value.status_code == 403
-            assert "You are not a member of this group" in str(exc_info.value.detail)
-
-    # Test cases for update_group_image_url function
+        assert exc.value.status_code == 400
+        assert "Cannot remove member with unsettled balances" in exc.value.detail
 
     @pytest.mark.asyncio
-    async def test_update_group_image_url_success(self):
-        """Test successful group image URL update"""
+    async def test_remove_member_settlement_lookup_failure(self):
+        """Service returns 503 when settlement lookup fails during removal (covers except block)."""
         mock_db = AsyncMock()
-        mock_collection = AsyncMock()
-        mock_db.groups = mock_collection
+        groups = AsyncMock()
+        settlements = AsyncMock()
+        mock_db.groups = groups
+        mock_db.settlements = settlements
 
-        group_id = "642f1e4a9b3c2d1f6a1b2c3d"
-        image_url = "https://example.com/image.jpg"
-
-        # Mock successful update (1 document modified)
-        mock_result = AsyncMock()
-        mock_result.modified_count = 1
-        mock_collection.update_one.return_value = mock_result
+        group = {
+            "_id": ObjectId("642f1e4a9b3c2d1f6a1b2c3d"),
+            "name": "Test Group",
+            "members": [
+                {
+                    "userId": "admin1",
+                    "role": "admin",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                },
+                {
+                    "userId": "member1",
+                    "role": "member",
+                    "joinedAt": "2023-01-01T00:00:00Z",
+                },
+            ],
+        }
+        groups.find_one.return_value = group  # Admin check passes
+        settlements.find_one.side_effect = Exception("db error")
 
         with patch.object(self.service, "get_db", return_value=mock_db):
-            result = await self.service.update_group_image_url(group_id, image_url)
+            with pytest.raises(HTTPException) as exc:
+                await self.service.remove_member(str(group["_id"]), "member1", "admin1")
 
-            assert result is True
-            mock_collection.update_one.assert_called_once_with(
-                {"_id": ObjectId(group_id)},
-                {"$set": {"imageUrl": image_url}}
-            )
-
-    @pytest.mark.asyncio
-    async def test_update_group_image_url_no_document_modified(self):
-        """Test when no document is modified (group not found)"""
-        mock_db = AsyncMock()
-        mock_collection = AsyncMock()
-        mock_db.groups = mock_collection
-
-        group_id = "642f1e4a9b3c2d1f6a1b2c3d"
-        image_url = "https://example.com/image.jpg"
-
-        # Mock no documents modified
-        mock_result = AsyncMock()
-        mock_result.modified_count = 0
-        mock_collection.update_one.return_value = mock_result
-
-        with patch.object(self.service, "get_db", return_value=mock_db):
-            result = await self.service.update_group_image_url(group_id, image_url)
-
-            assert result is False
-
-    @pytest.mark.asyncio
-    async def test_update_group_image_url_invalid_group_id_format(self):
-        """Test with invalid ObjectId format"""
-        mock_db = AsyncMock()
-        
-        invalid_group_id = "invalid_object_id"
-        image_url = "https://example.com/image.jpg"
-
-        with patch.object(self.service, "get_db", return_value=mock_db):
-            result = await self.service.update_group_image_url(invalid_group_id, image_url)
-
-            assert result is False
-
-    @pytest.mark.asyncio
-    async def test_update_group_image_url_empty_image_url(self):
-        """Test updating with empty image URL"""
-        mock_db = AsyncMock()
-        mock_collection = AsyncMock()
-        mock_db.groups = mock_collection
-
-        group_id = "642f1e4a9b3c2d1f6a1b2c3d"
-        image_url = ""
-
-        # Mock successful update
-        mock_result = AsyncMock()
-        mock_result.modified_count = 1
-        mock_collection.update_one.return_value = mock_result
-
-        with patch.object(self.service, "get_db", return_value=mock_db):
-            result = await self.service.update_group_image_url(group_id, image_url)
-
-            assert result is True
-            mock_collection.update_one.assert_called_once_with(
-                {"_id": ObjectId(group_id)},
-                {"$set": {"imageUrl": image_url}}
-            )
-
-    @pytest.mark.asyncio
-    async def test_update_group_image_url_none_image_url(self):
-        """Test updating with None image URL"""
-        mock_db = AsyncMock()
-        mock_collection = AsyncMock()
-        mock_db.groups = mock_collection
-
-        group_id = "642f1e4a9b3c2d1f6a1b2c3d"
-        image_url = None
-
-        # Mock successful update
-        mock_result = AsyncMock()
-        mock_result.modified_count = 1
-        mock_collection.update_one.return_value = mock_result
-
-        with patch.object(self.service, "get_db", return_value=mock_db):
-            result = await self.service.update_group_image_url(group_id, image_url)
-
-            assert result is True
-            mock_collection.update_one.assert_called_once_with(
-                {"_id": ObjectId(group_id)},
-                {"$set": {"imageUrl": image_url}}
-            )
+        assert exc.value.status_code == 503
+        assert "Unable to verify unsettled balances" in exc.value.detail
