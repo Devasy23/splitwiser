@@ -4,17 +4,6 @@ Thank you for your interest in keeping the `splitwiser` project secure. This doc
 
 ---
 
-## 📦 Supported Versions
-
-We aim to keep `splitwiser` up to date and secure. Please see below for the versions we currently support with security updates.
-
-| Version | Supported          |
-|---------|--------------------|
-| Latest  | ✅ Yes              |
-| Older   | ❌ No               |
-
----
-
 ## 🛡️ Reporting a Vulnerability
 
 If you discover a security vulnerability, **please do not open an issue** on GitHub.
@@ -27,8 +16,6 @@ Instead, follow these steps:
    - Steps to reproduce (if possible)
    - Potential impact
    - Any mitigation or workaround suggestions
-
-⌛ We aim to respond to security reports **within 72 hours**..
 
 ---
 
