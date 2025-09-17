@@ -4,16 +4,27 @@
 
 We are committed to addressing security vulnerabilities in a timely manner. Security updates are provided for the following versions of SplitWiser:
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
-| < 1.0   | :x:                |
-
++| 1.0.x   | ✅ Supported |
++| < 1.0   | ❌ Not supported |
 ## 🚨 Reporting a Vulnerability
 
 **Please do not report security vulnerabilities through public GitHub issues, discussions, or comments.**
 
 The security and privacy of our users are our highest priority. We encourage you to report any potential vulnerabilities directly and privately to our maintainers.
++### ✅ Safe Harbor
++If you make a good-faith effort to comply with this policy while researching and reporting, we will not pursue or support legal action against you. This includes accidental privacy violations or service disruptions that are promptly reported and minimized.
++
++### 🔬 Testing Guidelines
++- Do not perform denial-of-service, spam, or brute-force attacks.
++- Do not access, modify, or exfiltrate data that does not belong to you.
++- No social engineering, phishing, or physical attacks.
++- Respect rate limits; use test accounts and sample data where possible.
++
++### Out of Scope (examples)
++- Reports without a clear security impact (e.g., descriptive error messages).
++- Clickjacking on pages with no sensitive actions.
++- SPF/DMARC/DKIM configuration suggestions without exploitability.
++- Use of outdated libraries without a proven exploit path.
 
 **How to Report:**
 
@@ -27,10 +38,20 @@ The security and privacy of our users are our highest priority. We encourage you
 
 **What to Expect:**
 
--   **Within 48 hours:** You will receive an acknowledgment of your report.
+-   **Within 48 hours (business days):** Acknowledge receipt of your report.
 -   We will work with you to understand and validate the reported issue.
 -   We will keep you informed as we work on a fix and plan its release.
 -   We will notify you when the vulnerability is resolved and will happily credit you for your discovery (unless you wish to remain anonymous).
+
+-   +### ⏱️ Target timelines by severity
++| Severity  | Target fix/release window |
++|-----------|---------------------------|
++| Critical  | 7–14 days                 |
++| High      | ≤ 30 days                 |
++| Medium    | ≤ 60 days                 |
++| Low       | ≤ 90 days                 |
+
++These are targets, not guarantees; complex issues or upstream dependencies may require coordination.
 
 We deeply appreciate any effort to disclose vulnerabilities responsibly. Thank you for helping us keep SplitWiser and its users safe.
 
