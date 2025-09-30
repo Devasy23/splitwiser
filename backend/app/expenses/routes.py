@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from app.auth.security import get_current_user
 from app.config import logger
+from app.dependencies import get_expense_service
 from app.expenses.schemas import (
     AttachmentUploadResponse,
     BalanceSummaryResponse,
@@ -22,7 +23,7 @@ from app.expenses.schemas import (
     SettlementUpdateRequest,
     UserBalance,
 )
-from app.expenses.service import expense_service
+from app.expenses.service import ExpenseService
 from fastapi import (
     APIRouter,
     Depends,
@@ -49,6 +50,7 @@ async def create_expense(
     group_id: str,
     expense_data: ExpenseCreateRequest,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Create a new expense within a group"""
     try:
@@ -71,6 +73,7 @@ async def list_group_expenses(
     to_date: Optional[datetime] = Query(None, alias="to"),
     tags: Optional[str] = Query(None),
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """List all expenses for a group with pagination and filtering"""
     try:
@@ -90,6 +93,7 @@ async def get_single_expense(
     group_id: str,
     expense_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Retrieve details for a single expense"""
     try:
@@ -109,6 +113,7 @@ async def update_expense(
     expense_id: str,
     updates: ExpenseUpdateRequest,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Update an existing expense"""
     try:
@@ -130,6 +135,7 @@ async def delete_expense(
     group_id: str,
     expense_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Delete an expense"""
     try:
@@ -158,6 +164,7 @@ async def upload_attachment_for_expense(
     expense_id: str,
     file: UploadFile = File(...),
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Upload attachment for an expense"""
     try:
@@ -190,6 +197,7 @@ async def get_attachment(
     expense_id: str,
     key: str,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Get/download an attachment"""
     try:
@@ -219,6 +227,7 @@ async def manually_record_payment(
     group_id: str,
     settlement_data: SettlementCreateRequest,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Manually record a payment settlement between users in a group"""
     try:
@@ -242,6 +251,7 @@ async def get_group_settlements(
         "advanced", description="Settlement algorithm: 'normal' or 'advanced'"
     ),
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Retrieve pending and optimized settlements for a group"""
     try:
@@ -295,6 +305,7 @@ async def get_single_settlement(
     group_id: str,
     settlement_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Retrieve details for a single settlement"""
     try:
@@ -314,6 +325,7 @@ async def mark_settlement_as_paid(
     settlement_id: str,
     updates: SettlementUpdateRequest,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Mark a settlement as paid"""
     try:
@@ -332,6 +344,7 @@ async def delete_settlement(
     group_id: str,
     settlement_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Delete/undo a recorded settlement"""
     try:
@@ -355,6 +368,7 @@ async def calculate_optimized_settlements(
         "advanced", description="Settlement algorithm: 'normal' or 'advanced'"
     ),
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Calculate and return optimized (simplified) settlements for a group"""
     try:
@@ -399,6 +413,7 @@ balance_router = APIRouter(prefix="/users/me", tags=["User Balance"])
 @balance_router.get("/friends-balance", response_model=FriendsBalanceResponse)
 async def get_cross_group_friend_balances(
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Retrieve the current user's aggregated balances with all friends"""
     try:
@@ -411,6 +426,7 @@ async def get_cross_group_friend_balances(
 @balance_router.get("/balance-summary", response_model=BalanceSummaryResponse)
 async def get_overall_user_balance_summary(
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Retrieve an overall balance summary for the current user"""
     try:
@@ -426,6 +442,7 @@ async def get_user_balance_in_specific_group(
     group_id: str,
     user_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Get a specific user's balance within a particular group"""
     try:
@@ -449,6 +466,7 @@ async def group_expense_analytics(
     year: int = Query(...),
     month: Optional[int] = Query(None),
     current_user: Dict[str, Any] = Depends(get_current_user),
+    expense_service: ExpenseService = Depends(get_expense_service),
 ):
     """Provide expense analytics for a group"""
     try:

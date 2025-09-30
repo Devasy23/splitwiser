@@ -14,9 +14,10 @@ from app.auth.schemas import (
     TokenVerifyRequest,
     UserResponse,
 )
-from app.auth.security import create_access_token, oauth2_scheme  # Import oauth2_scheme
-from app.auth.service import auth_service
+from app.auth.security import create_access_token, oauth2_scheme
+from app.auth.service import AuthService
 from app.config import settings
+from app.dependencies import get_auth_service
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import (  # Import OAuth2PasswordRequestForm
     OAuth2PasswordRequestForm,
@@ -28,7 +29,10 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 @router.post(
     "/token", response_model=TokenResponse, include_in_schema=False
 )  # include_in_schema=False to hide from docs if desired, or True to show
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    auth_service: AuthService = Depends(get_auth_service),
+):
     """
     OAuth2 compatible token login, get an access token for future requests.
     This endpoint is used by Swagger UI for authorization.
@@ -59,7 +63,9 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 
 @router.post("/signup/email", response_model=AuthResponse)
-async def signup_with_email(request: EmailSignupRequest):
+async def signup_with_email(
+    request: EmailSignupRequest, auth_service: AuthService = Depends(get_auth_service)
+):
     """
     Registers a new user using email, password, and name, and returns authentication tokens and user information.
 
@@ -101,7 +107,9 @@ async def signup_with_email(request: EmailSignupRequest):
 
 
 @router.post("/login/email", response_model=AuthResponse)
-async def login_with_email(request: EmailLoginRequest):
+async def login_with_email(
+    request: EmailLoginRequest, auth_service: AuthService = Depends(get_auth_service)
+):
     """
     Authenticates a user using email and password credentials.
 
@@ -136,7 +144,9 @@ async def login_with_email(request: EmailLoginRequest):
 
 
 @router.post("/login/google", response_model=AuthResponse)
-async def login_with_google(request: GoogleLoginRequest):
+async def login_with_google(
+    request: GoogleLoginRequest, auth_service: AuthService = Depends(get_auth_service)
+):
     """
     Authenticates or registers a user using a Google OAuth ID token.
 
@@ -169,7 +179,9 @@ async def login_with_google(request: GoogleLoginRequest):
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh_token(request: RefreshTokenRequest):
+async def refresh_token(
+    request: RefreshTokenRequest, auth_service: AuthService = Depends(get_auth_service)
+):
     """
     Refreshes JWT tokens using a valid refresh token.
 
@@ -213,7 +225,9 @@ async def refresh_token(request: RefreshTokenRequest):
 
 
 @router.post("/token/verify", response_model=UserResponse)
-async def verify_token(request: TokenVerifyRequest):
+async def verify_token(
+    request: TokenVerifyRequest, auth_service: AuthService = Depends(get_auth_service)
+):
     """
     Verifies an access token and returns the associated user information.
 
@@ -236,7 +250,9 @@ async def verify_token(request: TokenVerifyRequest):
 
 
 @router.post("/password/reset/request", response_model=SuccessResponse)
-async def request_password_reset(request: PasswordResetRequest):
+async def request_password_reset(
+    request: PasswordResetRequest, auth_service: AuthService = Depends(get_auth_service)
+):
     """
     Initiates a password reset process by sending a reset link to the provided email address.
 
@@ -256,7 +272,9 @@ async def request_password_reset(request: PasswordResetRequest):
 
 
 @router.post("/password/reset/confirm", response_model=SuccessResponse)
-async def confirm_password_reset(request: PasswordResetConfirm):
+async def confirm_password_reset(
+    request: PasswordResetConfirm, auth_service: AuthService = Depends(get_auth_service)
+):
     """
     Resets a user's password using a valid password reset token.
 
