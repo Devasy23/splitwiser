@@ -6,7 +6,8 @@ This document provides essential context for AI assistants working with the Spli
 
 Splitwiser is an expense tracking and splitting application with:
 - Backend: FastAPI + MongoDB 
-- Frontend: Expo/React Native mobile app
+- Mobile: Expo/React Native mobile app
+- Web: React + Vite + TypeScript web app
 
 The app allows users to create groups, add expenses with flexible splitting options, track balances, and handle settlements.
 
@@ -23,8 +24,8 @@ The app allows users to create groups, add expenses with flexible splitting opti
   - `app/groups/`: Group creation & management
   - `app/expenses/`: Expense tracking & splitting
 
-### Frontend (Expo/React Native)
-- Located in `/frontend/`
+### Mobile (Expo/React Native)
+- Located in `/mobile/`
 - `App.js`: Main application entry point
 - `screens/`: Contains all screen components
 - `navigation/`: App navigation structure
@@ -32,11 +33,19 @@ The app allows users to create groups, add expenses with flexible splitting opti
 - `context/`: React context providers (AuthContext)
 - `utils/`: Utility functions (currency, balance calculations)
 
+### Web (React + Vite + TypeScript)
+- Located in `/web/`
+- `App.tsx`: Main application entry point
+- `pages/`: Contains page components
+- `components/`: Reusable UI components
+- `contexts/`: React context providers
+- `services/`: API client and service modules
+
 ## Key Development Patterns
 
 ### API Communication
 ```javascript
-// Example API call from frontend/api/client.js
+// Example API call from mobile/api/client.js
 import axios from 'axios';
 
 const client = axios.create({
@@ -47,7 +56,7 @@ const client = axios.create({
 
 ### State Management
 - Backend: MongoDB stores persistent data
-- Frontend: React Context for auth state, component state for UI
+- Mobile/Web: React Context for auth state, component state for UI
 
 ### Expense Handling
 - Support for different split types: equal, unequal, percentage-based
@@ -63,11 +72,17 @@ const client = axios.create({
    pip install -r requirements.txt
    uvicorn main:app --reload
    ```
-2. Frontend:
+2. Mobile:
    ```bash
-   cd frontend
+   cd mobile
    npm install
    npx expo start
+   ```
+3. Web:
+   ```bash
+   cd web
+   npm install
+   npm run dev
    ```
 
 ### Testing
@@ -79,12 +94,15 @@ const client = axios.create({
 - `backend/main.py`: Main FastAPI application entry point
 - `backend/app/config.py`: Configuration settings
 - `backend/app/database.py`: MongoDB connection
-- `frontend/App.js`: Main React Native entry point
-- `frontend/context/AuthContext.js`: Authentication state management
+- `mobile/App.js`: Main React Native entry point
+- `mobile/context/AuthContext.js`: Authentication state management
+- `web/App.tsx`: Main web app entry point
+- `web/contexts/AuthContext.tsx`: Web authentication state management
 
 ## Common Tasks
 
 - Adding new API endpoint: Add route to appropriate service router file in `backend/app/`
-- Adding new screen: Create component in `frontend/screens/` and add to navigation
-- API integration: Add service functions in `frontend/api/`
+- Adding new mobile screen: Create component in `mobile/screens/` and add to navigation
+- Adding new web page: Create component in `web/pages/` and add to routing
+- API integration: Add service functions in `mobile/api/` or `web/services/`
 - Troubleshooting auth: Check JWT token handling in `backend/app/auth/security.py`
