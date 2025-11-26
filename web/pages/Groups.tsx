@@ -1,15 +1,15 @@
+import { motion, Variants } from 'framer-motion';
+import { ArrowRight, Plus, TrendingDown, TrendingUp, Users } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { getGroups, createGroup, joinGroup, getBalanceSummary } from '../services/api';
-import { Group, BalanceSummary, GroupBalanceSummary } from '../types';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Skeleton } from '../components/ui/Skeleton';
 import { Modal } from '../components/ui/Modal';
-import { Plus, Users, ArrowRight, TrendingUp, TrendingDown } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useTheme } from '../contexts/ThemeContext';
+import { Skeleton } from '../components/ui/Skeleton';
 import { THEMES } from '../constants';
-import { motion, Variants } from 'framer-motion';
+import { useTheme } from '../contexts/ThemeContext';
+import { createGroup, getBalanceSummary, getGroups, joinGroup } from '../services/api';
+import { BalanceSummary, Group, GroupBalanceSummary } from '../types';
 
 export const Groups = () => {
   const [groups, setGroups] = useState<Group[]>([]);

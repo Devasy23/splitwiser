@@ -1,6 +1,6 @@
 import React from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
 import { THEMES } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export const ThemeWrapper = ({ children }: { children: React.ReactNode }) => {
   const { style, mode } = useTheme();
