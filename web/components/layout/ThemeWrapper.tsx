@@ -8,12 +8,12 @@ export const ThemeWrapper = ({ children }: { children: React.ReactNode }) => {
   let bgClass = "";
 
   if (style === THEMES.NEOBRUTALISM) {
-    bgClass = mode === 'dark' ? 'bg-[#1a1a1a] text-white' : 'bg-[#fffdf5] text-black'; // Off-yellowish white for Neo Light
+    bgClass = mode === 'dark' ? 'theme-neo-dark text-white' : 'theme-neo-light text-black';
   } else {
     // Glassmorphism - Vibrant gradients
     bgClass = mode === 'dark' 
-      ? 'bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-900 via-slate-900 to-black text-white' 
-      : 'bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-200 via-purple-100 to-white text-gray-900';
+      ? 'theme-glass-dark text-white' 
+      : 'theme-glass-light text-gray-900';
   }
 
   return (

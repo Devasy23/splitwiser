@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'Space Grotesk', monospace;
@@ -9,6 +11,23 @@
   --color-neo-accent: #00cc88;
   --color-neo-bg: #f0f0f0;
   --color-neo-dark: #1a1a1a;
+}
+
+/* Theme backgrounds */
+.theme-neo-light {
+  background-color: #fffdf5;
+}
+
+.theme-neo-dark {
+  background-color: #1a1a1a;
+}
+
+.theme-glass-light {
+  background: radial-gradient(ellipse at top right, #c7d2fe, #e9d5ff, #ffffff);
+}
+
+.theme-glass-dark {
+  background: radial-gradient(ellipse at top right, #312e81, #0f172a, #000000);
 }
 
 /* Scrollbar hiding for cleaner UI */

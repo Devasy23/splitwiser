@@ -125,8 +125,8 @@ export const Groups = () => {
                 onClick={() => navigate(`/groups/${group._id}`)}
                 className={`group cursor-pointer transition-all duration-300 relative overflow-hidden flex flex-col h-full
                   ${style === THEMES.NEOBRUTALISM 
-                    ? 'border-2 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]' 
-                    : 'rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md hover:bg-white/10 shadow-lg'}
+                    ? `border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] ${mode === 'dark' ? 'bg-zinc-800' : 'bg-white'}` 
+                    : `rounded-2xl border shadow-lg backdrop-blur-md ${mode === 'dark' ? 'border-white/20 bg-white/10 hover:bg-white/15' : 'border-black/10 bg-white/60 hover:bg-white/80'}`}
                 `}
               >
                 <div className={`h-24 w-full flex items-center px-6 relative overflow-hidden ${style === THEMES.NEOBRUTALISM ? 'bg-neo-main border-b-2 border-black' : 'bg-gradient-to-r from-blue-500/20 to-purple-500/20'}`}>
