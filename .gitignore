@@ -70,6 +70,10 @@ firebase-service-account*.json
 firebase-adminsdk*.json
 service-account*.json
 
+# Google OAuth Secrets
+client_*.plist
+client_secret_*.json
+
 # IDE
 .vscode/settings.json
 .idea/
@@ -78,3 +82,15 @@ service-account*.json
 # Logs
 *.log
 logs/
+
+# Backend local files
+backend/backups/
+backend/logs/
+backend/migrations/*.log
+migration_*.log
+
+# PDFs and docs that shouldn't be tracked
+*.pdf
+
+# Root level requirements (use backend/requirements.txt)
+/requirements.txt
