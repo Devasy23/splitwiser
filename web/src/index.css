@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'Space Grotesk', monospace;
+  
+  --color-neo-main: #8855ff;
+  --color-neo-second: #ff9900;
+  --color-neo-accent: #00cc88;
+  --color-neo-bg: #f0f0f0;
+  --color-neo-dark: #1a1a1a;
+}
+
+/* Scrollbar hiding for cleaner UI */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
