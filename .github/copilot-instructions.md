@@ -6,8 +6,8 @@ This document provides essential context for AI assistants working with the Spli
 
 Splitwiser is an expense tracking and splitting application with:
 - Backend: FastAPI + MongoDB 
-- Frontend POC: Streamlit
-- Planned Frontend: Expo/React Native (in development)
+- Mobile: Expo/React Native mobile app
+- Web: React + Vite + TypeScript web app
 
 The app allows users to create groups, add expenses with flexible splitting options, track balances, and handle settlements.
 
@@ -23,35 +23,40 @@ The app allows users to create groups, add expenses with flexible splitting opti
   - `app/user/`: User profile management
   - `app/groups/`: Group creation & management
   - `app/expenses/`: Expense tracking & splitting
-  
-### Frontend POC (Streamlit)
-- Located in `/ui-poc/`
-- `Home.py`: Entry point with login/registration
-- `pages/`: Contains main application pages
-  - `Groups.py`: Group management & expense creation 
-  - `Friends.py`: Friend balance tracking
+
+### Mobile (Expo/React Native)
+- Located in `/mobile/`
+- `App.js`: Main application entry point
+- `screens/`: Contains all screen components
+- `navigation/`: App navigation structure
+- `api/`: API client and service modules
+- `context/`: React context providers (AuthContext)
+- `utils/`: Utility functions (currency, balance calculations)
+
+### Web (React + Vite + TypeScript)
+- Located in `/web/`
+- `App.tsx`: Main application entry point
+- `pages/`: Contains page components
+- `components/`: Reusable UI components
+- `contexts/`: React context providers
+- `services/`: API client and service modules
 
 ## Key Development Patterns
 
 ### API Communication
-```python
-# Example API call with retry logic from Groups.py
-response = make_api_request(
-    method="get",
-    url=f"{API_URL}/groups/{group_id}",
-    headers={"Authorization": f"Bearer {st.session_state.access_token}"},
-    max_retries=3
-)
+```javascript
+// Example API call from mobile/api/client.js
+import axios from 'axios';
+
+const client = axios.create({
+  baseURL: API_URL,
+  headers: { 'Content-Type': 'application/json' }
+});
 ```
 
 ### State Management
 - Backend: MongoDB stores persistent data
-- Frontend: Streamlit session state manages user session
-```python
-# Session state initialization (see Home.py)
-if "access_token" not in st.session_state:
-    st.session_state.access_token = None
-```
+- Mobile/Web: React Context for auth state, component state for UI
 
 ### Expense Handling
 - Support for different split types: equal, unequal, percentage-based
@@ -67,34 +72,37 @@ if "access_token" not in st.session_state:
    pip install -r requirements.txt
    uvicorn main:app --reload
    ```
-2. Frontend POC:
+2. Mobile:
    ```bash
-   cd ui-poc
-   pip install -r requirements.txt
-   streamlit run Home.py
+   cd mobile
+   npm install
+   npx expo start
    ```
-3. Test Data Generation:
+3. Web:
    ```bash
-   cd ui-poc
-   python setup_test_data.py
+   cd web
+   npm install
+   npm run dev
    ```
 
 ### Testing
 - Backend tests in `/backend/tests/`
 - Run tests with: `cd backend && pytest`
-- Test data setup script: `/ui-poc/setup_test_data.py`
 
 ## Critical Files & Dependencies
 
 - `backend/main.py`: Main FastAPI application entry point
 - `backend/app/config.py`: Configuration settings
 - `backend/app/database.py`: MongoDB connection
-- `ui-poc/Home.py`: Streamlit application entry point
-- `ui-poc/openapi.json`: API specification for frontend reference
+- `mobile/App.js`: Main React Native entry point
+- `mobile/context/AuthContext.js`: Authentication state management
+- `web/App.tsx`: Main web app entry point
+- `web/contexts/AuthContext.tsx`: Web authentication state management
 
 ## Common Tasks
 
-- Adding new API endpoint: Add route to appropriate service router file
-- Adding new UI component: Modify files in `/ui-poc/pages/`
-- Testing data flow: Use the `setup_test_data.py` to create test scenarios
-- Troubleshooting auth: Check JWT token handling in `app/auth/security.py`
+- Adding new API endpoint: Add route to appropriate service router file in `backend/app/`
+- Adding new mobile screen: Create component in `mobile/screens/` and add to navigation
+- Adding new web page: Create component in `web/pages/` and add to routing
+- API integration: Add service functions in `mobile/api/` or `web/services/`
+- Troubleshooting auth: Check JWT token handling in `backend/app/auth/security.py`

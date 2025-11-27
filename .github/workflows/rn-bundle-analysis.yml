@@ -3,11 +3,11 @@ name: React Native Bundle Analysis
 on:
   pull_request:
     paths:
-      - 'frontend/**'
+      - 'mobile/**'
     branches: [ main, master ]
   push:
     paths:
-      - 'frontend/**'
+      - 'mobile/**'
     branches: [ main, master ]
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
+        cache-dependency-path: mobile/package-lock.json
 
     - name: Setup EAS
       uses: expo/expo-github-action@v8
@@ -34,10 +34,10 @@ jobs:
 
     - name: Install Dependencies
       run: npm install
-      working-directory: ./frontend
+      working-directory: mobile/
 
     - name: Analyze React Native Bundle Size
-      working-directory: ./frontend
+      working-directory: mobile/
       run: |
         echo "📊 Analyzing React Native bundle size..."
         
@@ -105,11 +105,11 @@ jobs:
         fi
 
     - name: Upload RN Bundle Analysis Report
-      if: always() && hashFiles('frontend/bundle-analysis.md') != ''
+      if: always() && hashFiles('mobile/bundle-analysis.md') != ''
       uses: actions/upload-artifact@v4
       with:
         name: rn-bundle-analysis-report
-        path: frontend/bundle-analysis.md
+        path: mobile/bundle-analysis.md
         retention-days: 30
 
     - name: RN Bundle Analysis Skipped

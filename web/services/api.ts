@@ -1,0 +1,50 @@
+import axios from 'axios';
+
+const API_URL = 'https://splitwiser-production.up.railway.app';
+
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => Promise.reject(error));
+
+// Auth
+export const login = async (data: any) => api.post('/auth/login/email', data);
+export const signup = async (data: any) => api.post('/auth/signup/email', data);
+export const getProfile = async () => api.get('/users/me');
+
+// Groups
+export const getGroups = async () => api.get('/groups');
+export const createGroup = async (data: {name: string, currency?: string}) => api.post('/groups', data);
+export const getGroupDetails = async (id: string) => api.get(`/groups/${id}`);
+export const updateGroup = async (id: string, data: {name?: string, imageUrl?: string}) => api.patch(`/groups/${id}`, data);
+export const deleteGroup = async (id: string) => api.delete(`/groups/${id}`);
+export const getGroupMembers = async (id: string) => api.get(`/groups/${id}/members`);
+export const joinGroup = async (joinCode: string) => api.post('/groups/join', { joinCode });
+
+// Expenses
+export const getExpenses = async (groupId: string) => api.get(`/groups/${groupId}/expenses`);
+export const createExpense = async (groupId: string, data: any) => api.post(`/groups/${groupId}/expenses`, data);
+export const updateExpense = async (groupId: string, expenseId: string, data: any) => api.patch(`/groups/${groupId}/expenses/${expenseId}`, data);
+export const deleteExpense = async (groupId: string, expenseId: string) => api.delete(`/groups/${groupId}/expenses/${expenseId}`);
+
+// Settlements
+export const getSettlements = async (groupId: string) => api.get(`/groups/${groupId}/settlements?status=pending`);
+export const createSettlement = async (groupId: string, data: {payer_id: string, payee_id: string, amount: number}) => api.post(`/groups/${groupId}/settlements`, data);
+export const getOptimizedSettlements = async (groupId: string) => api.post(`/groups/${groupId}/settlements/optimize`);
+export const markSettlementPaid = async (groupId: string, settlementId: string) => api.patch(`/groups/${groupId}/settlements/${settlementId}`, { status: 'completed' });
+
+// Users
+export const getBalanceSummary = async () => api.get('/users/me/balance-summary');
+export const getFriendsBalance = async () => api.get('/users/me/friends-balance');
+
+export default api;
