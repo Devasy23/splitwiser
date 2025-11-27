@@ -3,11 +3,11 @@ name: Bundle Analysis
 on:
   pull_request:
     paths:
-      - 'frontend/**'
+      - 'web/**'
     branches: [ main, master ]
   push:
     paths:
-      - 'frontend/**'
+      - 'web/**'
     branches: [ main, master ]
 
 jobs:
@@ -24,11 +24,11 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
+        cache-dependency-path: web/package-lock.json
     
     - name: Install Dependencies
       run: npm install
-      working-directory: ./frontend
+      working-directory: web/
     
     - name: Setup EAS
       uses: expo/expo-github-action@v8
@@ -63,10 +63,10 @@ jobs:
             exit 0
           fi
         fi
-      working-directory: ./frontend
+      working-directory: web/
     
     - name: Analyze Bundle Size
-      working-directory: ./frontend
+      working-directory: web/
       run: |
         # Install analysis tools
         npm install --no-save @expo/metro-config metro-visualizer
@@ -145,19 +145,19 @@ jobs:
         fi
     
     - name: Upload Bundle Analysis Report
-      if: always() && hashFiles('frontend/bundle-analysis.md') != ''
+      if: always() && hashFiles('web/bundle-analysis.md') != ''
       uses: actions/upload-artifact@v4
       with:
         name: bundle-analysis-report
-        path: frontend/bundle-analysis.md
+        path: web/bundle-analysis.md
         retention-days: 30
     
     - name: Upload Bundle Analysis to Codecov
       uses: codecov/codecov-action@v5
-      if: github.actor != 'dependabot[bot]' && hashFiles('frontend/bundle-analysis.md') != ''
+      if: github.actor != 'dependabot[bot]' && hashFiles('web/bundle-analysis.md') != ''
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        flags: bundle,frontend,javascript
+        flags: bundle,web,javascript
         name: "Bundle Analysis"
         fail_ci_if_error: false
     
