@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Alert, FlatList, StyleSheet, View } from "react-native";
+import { Alert, FlatList, StyleSheet, View, Animated } from "react-native";
 import {
   ActivityIndicator,
   Appbar,
@@ -14,14 +14,18 @@ import {
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 import { formatCurrency, getCurrencySymbol } from "../utils/currency";
+import { useTheme } from "../context/ThemeContext";
+import { THEMES, COLORS } from "../constants/theme";
+import { ThemeWrapper } from "../components/ThemeWrapper";
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const HomeScreen = ({ navigation }) => {
   const { token, logout, user } = useContext(AuthContext);
+  const { style, mode } = useTheme();
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [groupSettlements, setGroupSettlements] = useState({}); // Track settlement status for each group
+  const [groupSettlements, setGroupSettlements] = useState({});
 
-  // State for the Create Group modal
   const [modalVisible, setModalVisible] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
@@ -29,13 +33,11 @@ const HomeScreen = ({ navigation }) => {
   const showModal = () => setModalVisible(true);
   const hideModal = () => setModalVisible(false);
 
-  // Calculate settlement status for a group
   const calculateSettlementStatus = async (groupId, userId) => {
     try {
       const response = await getOptimizedSettlements(groupId);
       const settlements = response.data.optimizedSettlements || [];
 
-      // Check if user has any pending settlements
       const userOwes = settlements.filter((s) => s.fromUserId === userId);
       const userIsOwed = settlements.filter((s) => s.toUserId === userId);
 
@@ -73,7 +75,6 @@ const HomeScreen = ({ navigation }) => {
       const groupsList = response.data.groups;
       setGroups(groupsList);
 
-      // Fetch settlement status for each group
       if (user?._id) {
         const settlementPromises = groupsList.map(async (group) => {
           const status = await calculateSettlementStatus(group._id, user._id);
@@ -111,7 +112,7 @@ const HomeScreen = ({ navigation }) => {
       await createGroup(newGroupName);
       hideModal();
       setNewGroupName("");
-      await fetchGroups(); // Refresh the groups list
+      await fetchGroups();
     } catch (error) {
       console.error("Failed to create group:", error);
       Alert.alert("Error", "Failed to create group.");
@@ -120,53 +121,66 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const currencySymbol = getCurrencySymbol();
-
   const renderGroup = ({ item }) => {
     const settlementStatus = groupSettlements[item._id];
 
-    // Generate settlement status text
     const getSettlementStatusText = () => {
       if (!settlementStatus) {
         return "Calculating balances...";
       }
-
       if (settlementStatus.isSettled) {
         return "✓ You are settled up.";
       }
-
       if (settlementStatus.netBalance > 0) {
         return `You are owed ${formatCurrency(settlementStatus.netBalance)}.`;
       } else if (settlementStatus.netBalance < 0) {
-        return `You owe ${formatCurrency(
-          Math.abs(settlementStatus.netBalance)
-        )}.`;
+        return `You owe ${formatCurrency(Math.abs(settlementStatus.netBalance))}.`;
       }
-
       return "You are settled up.";
     };
 
-    // Get text color based on settlement status
     const getStatusColor = () => {
       if (!settlementStatus || settlementStatus.isSettled) {
-        return "#4CAF50"; // Green for settled
+        return COLORS.neo.accent;
       }
-
       if (settlementStatus.netBalance > 0) {
-        return "#4CAF50"; // Green for being owed money
+        return COLORS.neo.accent;
       } else if (settlementStatus.netBalance < 0) {
-        return "#F44336"; // Red for owing money
+        return style === THEMES.NEOBRUTALISM ? '#ff4444' : '#ff6b6b';
       }
-
-      return "#4CAF50"; // Default green
+      return COLORS.neo.accent;
     };
 
-    const isImage =
-      item.imageUrl && /^(https?:|data:image)/.test(item.imageUrl);
+    const isImage = item.imageUrl && /^(https?:|data:image)/.test(item.imageUrl);
     const groupIcon = item.imageUrl || item.name?.charAt(0) || "?";
+
+    // Neo-Brutalism Styles
+    const cardStyle = style === THEMES.NEOBRUTALISM ? {
+      backgroundColor: mode === 'dark' ? COLORS.neo.dark : COLORS.neo.white,
+      borderWidth: 3,
+      borderColor: COLORS.neo.dark,
+      borderRadius: 0,
+      shadowColor: COLORS.neo.dark,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 1,
+      shadowRadius: 0,
+      elevation: 0, // Disable android elevation for clean neo look
+      marginBottom: 16,
+    } : {
+      // Glassmorphism Styles
+      backgroundColor: mode === 'dark' ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.7)',
+      borderColor: 'rgba(255, 255, 255, 0.2)',
+      borderWidth: 1,
+      borderRadius: 16,
+      marginBottom: 16,
+      elevation: 4,
+    };
+
+    const textColor = style === THEMES.NEOBRUTALISM && mode !== 'dark' ? COLORS.neo.dark : COLORS.neo.white;
+
     return (
       <Card
-        style={styles.card}
+        style={cardStyle}
         onPress={() =>
           navigation.navigate("GroupDetails", {
             groupId: item._id,
@@ -177,16 +191,29 @@ const HomeScreen = ({ navigation }) => {
       >
         <Card.Title
           title={item.name}
+          titleStyle={{
+            fontFamily: 'SpaceGrotesk_700Bold',
+            fontSize: 18,
+            color: style === THEMES.NEOBRUTALISM ? (mode === 'dark' ? COLORS.neo.white : COLORS.neo.dark) : (mode === 'dark' ? 'white' : 'black')
+          }}
           left={(props) =>
             isImage ? (
-              <Avatar.Image {...props} source={{ uri: item.imageUrl }} />
+              <Avatar.Image {...props} source={{ uri: item.imageUrl }} style={{ backgroundColor: 'transparent' }} />
             ) : (
-              <Avatar.Text {...props} label={groupIcon} />
+              <View style={{
+                width: 40, height: 40,
+                backgroundColor: COLORS.neo.main,
+                justifyContent: 'center', alignItems: 'center',
+                borderWidth: style === THEMES.NEOBRUTALISM ? 2 : 0,
+                borderColor: COLORS.neo.dark,
+              }}>
+                 <Text style={{ fontFamily: 'SpaceGrotesk_700Bold', color: 'white' }}>{groupIcon}</Text>
+              </View>
             )
           }
         />
         <Card.Content>
-          <Text style={[styles.settlementStatus, { color: getStatusColor() }]}>
+          <Text style={[styles.settlementStatus, { color: getStatusColor(), fontFamily: 'Inter_400Regular' }]}>
             {getSettlementStatusText()}
           </Text>
         </Card.Content>
@@ -194,37 +221,71 @@ const HomeScreen = ({ navigation }) => {
     );
   };
 
+  const headerStyle = {
+      backgroundColor: style === THEMES.NEOBRUTALISM ? COLORS.neo.main : 'transparent',
+      elevation: 0,
+      borderBottomWidth: style === THEMES.NEOBRUTALISM ? 3 : 0,
+      borderBottomColor: COLORS.neo.dark,
+  };
+
+  const contentColor = style === THEMES.NEOBRUTALISM ? 'white' : (mode === 'dark' ? 'white' : COLORS.neo.dark);
+
   return (
-    <View style={styles.container}>
+    <ThemeWrapper>
       <Portal>
         <Modal
           visible={modalVisible}
           onDismiss={hideModal}
-          contentContainerStyle={styles.modalContainer}
+          contentContainerStyle={[
+              styles.modalContainer,
+              style === THEMES.NEOBRUTALISM ? {
+                  borderWidth: 3,
+                  borderColor: COLORS.neo.dark,
+                  borderRadius: 0,
+                  shadowOffset: { width: 4, height: 4 },
+                  shadowOpacity: 1,
+                  shadowRadius: 0,
+                  shadowColor: COLORS.neo.dark,
+              } : {
+                  borderRadius: 16,
+                  backgroundColor: mode === 'dark' ? '#1e1e1e' : 'white',
+              }
+          ]}
         >
-          <Text style={styles.modalTitle}>Create a New Group</Text>
+          <Text style={[styles.modalTitle, { fontFamily: 'SpaceGrotesk_700Bold' }]}>Create a New Group</Text>
           <TextInput
             label="Group Name"
             value={newGroupName}
             onChangeText={setNewGroupName}
-            style={styles.input}
+            style={[styles.input, { backgroundColor: 'transparent' }]}
+            mode="outlined"
+            outlineColor={COLORS.neo.dark}
+            activeOutlineColor={COLORS.neo.main}
           />
           <Button
             mode="contained"
             onPress={handleCreateGroup}
             loading={isCreatingGroup}
             disabled={isCreatingGroup}
+            style={{
+                borderRadius: style === THEMES.NEOBRUTALISM ? 0 : 20,
+                borderWidth: style === THEMES.NEOBRUTALISM ? 2 : 0,
+                borderColor: COLORS.neo.dark,
+                backgroundColor: COLORS.neo.second,
+            }}
+            labelStyle={{ fontFamily: 'SpaceGrotesk_700Bold', color: COLORS.neo.dark }}
           >
             Create
           </Button>
         </Modal>
       </Portal>
 
-      <Appbar.Header>
-        <Appbar.Content title="Your Groups" />
-        <Appbar.Action icon="plus" onPress={showModal} />
+      <Appbar.Header style={headerStyle}>
+        <Appbar.Content title="Your Groups" titleStyle={{ fontFamily: 'SpaceGrotesk_700Bold', color: contentColor }} />
+        <Appbar.Action icon="plus" color={contentColor} onPress={showModal} />
         <Appbar.Action
           icon="account-plus"
+          color={contentColor}
           onPress={() =>
             navigation.navigate("JoinGroup", { onGroupJoined: fetchGroups })
           }
@@ -233,7 +294,7 @@ const HomeScreen = ({ navigation }) => {
 
       {isLoading ? (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={COLORS.neo.main} />
         </View>
       ) : (
         <FlatList
@@ -242,7 +303,7 @@ const HomeScreen = ({ navigation }) => {
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>
+            <Text style={[styles.emptyText, { fontFamily: 'Inter_400Regular', color: mode === 'dark' ? 'white' : 'black' }]}>
               No groups found. Create or join one!
             </Text>
           }
@@ -250,14 +311,11 @@ const HomeScreen = ({ navigation }) => {
           refreshing={isLoading}
         />
       )}
-    </View>
+    </ThemeWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   loaderContainer: {
     flex: 1,
     justifyContent: "center",
@@ -265,9 +323,6 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: 16,
-  },
-  card: {
-    marginBottom: 16,
   },
   settlementStatus: {
     fontWeight: "500",
@@ -281,7 +336,6 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     padding: 20,
     margin: 20,
-    borderRadius: 8,
   },
   modalTitle: {
     fontSize: 20,
