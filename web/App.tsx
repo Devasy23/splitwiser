@@ -1,14 +1,15 @@
 import React from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { Layout } from './components/layout/Layout';
+import { ThemeWrapper } from './components/layout/ThemeWrapper';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Auth } from './pages/Auth';
 import { Dashboard } from './pages/Dashboard';
-import { Groups } from './pages/Groups';
-import { GroupDetails } from './pages/GroupDetails';
 import { Friends } from './pages/Friends';
-import { Layout } from './components/layout/Layout';
-import { ThemeWrapper } from './components/layout/ThemeWrapper';
+import { GroupDetails } from './pages/GroupDetails';
+import { Groups } from './pages/Groups';
+import { Profile } from './pages/Profile';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
@@ -35,7 +36,7 @@ const AppRoutes = () => {
           <Route path="/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
           <Route path="/groups/:id" element={<ProtectedRoute><GroupDetails /></ProtectedRoute>} />
           <Route path="/friends" element={<ProtectedRoute><Friends /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><div className="p-8 text-center text-xl">Profile Management Coming Soon</div></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           
           <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
         </Routes>

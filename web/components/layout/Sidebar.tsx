@@ -1,9 +1,8 @@
-import React from 'react';
+import { CreditCard, Layers, LayoutDashboard, LogOut, Moon, Sun, UserCircle, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
 import { THEMES } from '../../constants';
-import { LayoutDashboard, Users, UserCircle, LogOut, Sun, Moon, Layers, CreditCard, UserPlus } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { Button } from '../ui/Button';
 
 export const Sidebar = () => {
@@ -56,9 +55,13 @@ export const Sidebar = () => {
       <div className="mt-auto flex flex-col gap-4">
         {user && (
           <div className={`p-4 flex items-center gap-3 ${style === THEMES.NEOBRUTALISM ? 'border-2 border-black bg-white text-black' : 'rounded-xl bg-black/20 text-white'}`}>
-             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center font-bold text-white">
-                {user.name.charAt(0)}
-             </div>
+             {user.imageUrl && /^(https?:|data:image)/.test(user.imageUrl) ? (
+                <img src={user.imageUrl} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
+             ) : (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center font-bold text-white">
+                   {user.name.charAt(0)}
+                </div>
+             )}
              <div className="flex-1 overflow-hidden">
                <p className="font-bold truncate">{user.name}</p>
              </div>

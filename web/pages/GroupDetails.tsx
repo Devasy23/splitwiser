@@ -1,21 +1,29 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  getGroupDetails, getExpenses, getGroupMembers, createExpense, 
-  getOptimizedSettlements, updateExpense, deleteExpense, 
-  createSettlement, updateGroup, deleteGroup 
-} from '../services/api';
-import { Group, Expense, GroupMember, SplitType } from '../types';
-import { Card } from '../components/ui/Card';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight, Banknote, Check, Copy, DollarSign, Hash, Layers, LogOut, Pencil, PieChart, Plus, Receipt, Settings, Share2, Trash2, UserMinus } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
-import { Skeleton } from '../components/ui/Skeleton';
 import { Modal } from '../components/ui/Modal';
+import { Skeleton } from '../components/ui/Skeleton';
+import { THEMES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { THEMES } from '../constants';
-import { Plus, Receipt, Copy, Check, Users, DollarSign, PieChart, Hash, Layers, ArrowRight, Settings, Pencil, Trash2, Banknote } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import {
+    createExpense,
+    createSettlement,
+    deleteExpense,
+    deleteGroup,
+    getExpenses,
+    getGroupDetails,
+    getGroupMembers,
+    getOptimizedSettlements,
+    leaveGroup, removeMember,
+    updateExpense,
+    updateGroup
+} from '../services/api';
+import { Expense, Group, GroupMember, SplitType } from '../types';
 
 type UnequalMode = 'amount' | 'percentage' | 'shares';
 
@@ -55,6 +63,14 @@ export const GroupDetails = () => {
 
   // Group Settings State
   const [editGroupName, setEditGroupName] = useState('');
+  const [settingsTab, setSettingsTab] = useState<'info' | 'members' | 'danger'>('info');
+  const [copied, setCopied] = useState(false);
+
+  // Check if current user is admin
+  const isAdmin = useMemo(() => {
+    const me = members.find(m => m.userId === user?._id);
+    return me?.role === 'admin';
+  }, [members, user?._id]);
 
   useEffect(() => {
     if (id) fetchData();
@@ -100,19 +116,46 @@ export const GroupDetails = () => {
   };
 
   const copyToClipboard = () => {
-    if (group?.joinCode) navigator.clipboard.writeText(group.joinCode);
+    if (group?.joinCode) {
+      navigator.clipboard.writeText(group.joinCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const shareInvite = async () => {
+    if (!group?.joinCode) return;
+    const text = `Join my group on Splitwiser! Use code ${group.joinCode}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join my Splitwiser group',
+          text,
+        });
+      } catch (err) {
+        // User cancelled or share failed, fallback to clipboard
+        navigator.clipboard.writeText(text);
+        alert('Invite copied to clipboard!');
+      }
+    } else {
+      navigator.clipboard.writeText(text);
+      alert('Invite copied to clipboard!');
+    }
   };
 
   const remainingAmount = useMemo(() => {
     const total = parseFloat(amount) || 0;
     if (splitType === SplitType.EQUAL) return 0;
 
+    const values = Object.values(splitValues) as string[];
+    
     if (unequalMode === 'amount') {
-        const sum = Object.values(splitValues).reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
+        const sum = values.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
         return total - sum;
     }
     if (unequalMode === 'percentage') {
-        const sum = Object.values(splitValues).reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
+        const sum = values.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
         return 100 - sum;
     }
     return 0;
@@ -151,7 +194,7 @@ export const GroupDetails = () => {
     if (!id) return;
 
     const numAmount = parseFloat(amount);
-    let requestSplits = [];
+    let requestSplits: { userId: string; amount: number }[] = [];
 
     if (splitType === SplitType.EQUAL) {
         const involvedMembers = members.filter(m => selectedUsers.has(m.userId));
@@ -160,18 +203,19 @@ export const GroupDetails = () => {
         requestSplits = involvedMembers.map(m => ({ userId: m.userId, amount: splitAmount }));
     } else {
         // Handle Unequal
+        const splitVals = Object.values(splitValues) as string[];
         if (unequalMode === 'amount') {
-            const sum = Object.values(splitValues).reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
+            const sum = splitVals.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
             if (Math.abs(sum - numAmount) > 0.01) return alert(`Amounts must match total.`);
-            requestSplits = Object.entries(splitValues).map(([uid, val]) => ({ userId: uid, amount: parseFloat(val) || 0 }));
+            requestSplits = Object.entries(splitValues).map(([uid, val]) => ({ userId: uid, amount: parseFloat(val as string) || 0 }));
         } else if (unequalMode === 'percentage') {
-             const sum = Object.values(splitValues).reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
+             const sum = splitVals.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
              if (Math.abs(sum - 100) > 0.1) return alert(`Percentages must equal 100%.`);
-             requestSplits = Object.entries(splitValues).map(([uid, val]) => ({ userId: uid, amount: (numAmount * (parseFloat(val) || 0)) / 100 }));
+             requestSplits = Object.entries(splitValues).map(([uid, val]) => ({ userId: uid, amount: (numAmount * (parseFloat(val as string) || 0)) / 100 }));
         } else if (unequalMode === 'shares') {
-            const totalShares = Object.values(splitValues).reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
+            const totalShares = splitVals.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
             if (totalShares === 0) return alert("Total shares cannot be zero.");
-            requestSplits = Object.entries(splitValues).map(([uid, val]) => ({ userId: uid, amount: (numAmount * (parseFloat(val) || 0)) / totalShares }));
+            requestSplits = Object.entries(splitValues).map(([uid, val]) => ({ userId: uid, amount: (numAmount * (parseFloat(val as string) || 0)) / totalShares }));
         }
     }
 
@@ -250,6 +294,41 @@ export const GroupDetails = () => {
               navigate('/groups');
           } catch (err) {
               alert("Failed to delete group");
+          }
+      }
+  };
+
+  const handleLeaveGroup = async () => {
+      if (!id) return;
+      if (window.confirm("You can only leave when your balances are settled. Continue?")) {
+          try {
+              await leaveGroup(id);
+              alert('You have left the group');
+              navigate('/groups');
+          } catch (err: any) {
+              alert(err.response?.data?.detail || "Cannot leave - please settle balances first");
+          }
+      }
+  };
+
+  const handleKickMember = async (memberId: string, memberName: string) => {
+      if (!id || !isAdmin) return;
+      if (memberId === user?._id) return; // Can't kick yourself
+      
+      if (window.confirm(`Are you sure you want to remove ${memberName} from the group?`)) {
+          try {
+              // Check if member has unsettled balances
+              const hasUnsettled = settlements.some(
+                  s => (s.fromUserId === memberId || s.toUserId === memberId) && (s.amount || 0) > 0
+              );
+              if (hasUnsettled) {
+                  alert('Cannot remove: This member has unsettled balances in the group.');
+                  return;
+              }
+              await removeMember(id, memberId);
+              fetchData();
+          } catch (err: any) {
+              alert(err.response?.data?.detail || "Failed to remove member");
           }
       }
   };
@@ -682,29 +761,148 @@ export const GroupDetails = () => {
       {/* Settings Modal */}
       <Modal
          isOpen={isSettingsModalOpen}
-         onClose={() => setIsSettingsModalOpen(false)}
+         onClose={() => { setIsSettingsModalOpen(false); setSettingsTab('info'); }}
          title="Group Settings"
       >
-          <div className="space-y-6">
-              <form onSubmit={handleUpdateGroup} className="space-y-4">
-                  <Input 
-                      label="Group Name"
-                      value={editGroupName}
-                      onChange={e => setEditGroupName(e.target.value)}
-                      required
-                  />
-                  <div className="flex justify-end">
-                      <Button type="submit">Save Changes</Button>
-                  </div>
-              </form>
-              
-              <div className="border-t border-gray-500/20 pt-6">
-                  <h4 className="font-bold text-red-500 mb-2">Danger Zone</h4>
-                  <p className="text-sm opacity-60 mb-4">Deleting this group is permanent and cannot be undone.</p>
-                  <Button variant="danger" className="w-full" onClick={handleDeleteGroup}>
-                      <Trash2 size={16} /> Delete Group
-                  </Button>
+          <div className="space-y-4">
+              {/* Tabs */}
+              <div className={`flex gap-1 p-1 rounded-lg ${style === THEMES.NEOBRUTALISM ? 'border-2 border-black bg-gray-100' : 'bg-white/10'}`}>
+                  <button 
+                      onClick={() => setSettingsTab('info')}
+                      className={`flex-1 px-3 py-2 rounded-md text-sm font-bold transition-all ${settingsTab === 'info' ? (style === THEMES.NEOBRUTALISM ? 'bg-white border-2 border-black' : 'bg-white/20') : 'opacity-60 hover:opacity-100'}`}
+                  >
+                      Info
+                  </button>
+                  <button 
+                      onClick={() => setSettingsTab('members')}
+                      className={`flex-1 px-3 py-2 rounded-md text-sm font-bold transition-all ${settingsTab === 'members' ? (style === THEMES.NEOBRUTALISM ? 'bg-white border-2 border-black' : 'bg-white/20') : 'opacity-60 hover:opacity-100'}`}
+                  >
+                      Members
+                  </button>
+                  <button 
+                      onClick={() => setSettingsTab('danger')}
+                      className={`flex-1 px-3 py-2 rounded-md text-sm font-bold transition-all ${settingsTab === 'danger' ? (style === THEMES.NEOBRUTALISM ? 'bg-red-100 border-2 border-black text-red-600' : 'bg-red-500/20 text-red-400') : 'opacity-60 hover:opacity-100'}`}
+                  >
+                      Danger
+                  </button>
               </div>
+
+              {/* Info Tab */}
+              {settingsTab === 'info' && (
+                  <div className="space-y-4">
+                      <form onSubmit={handleUpdateGroup} className="space-y-4">
+                          <Input 
+                              label="Group Name"
+                              value={editGroupName}
+                              onChange={e => setEditGroupName(e.target.value)}
+                              disabled={!isAdmin}
+                              required
+                          />
+                          {isAdmin && (
+                              <div className="flex justify-end">
+                                  <Button type="submit">Save Changes</Button>
+                              </div>
+                          )}
+                      </form>
+
+                      {/* Invite Section */}
+                      <div className={`p-4 rounded-lg ${style === THEMES.NEOBRUTALISM ? 'border-2 border-black bg-gray-50' : 'bg-white/5 border border-white/10'}`}>
+                          <h4 className="font-bold mb-3">Invite Others</h4>
+                          <div className="flex items-center gap-2 mb-3">
+                              <span className="text-sm opacity-70">Join Code:</span>
+                              <code className={`px-2 py-1 rounded font-mono font-bold ${style === THEMES.NEOBRUTALISM ? 'bg-white border-2 border-black' : 'bg-white/10'}`}>
+                                  {group.joinCode}
+                              </code>
+                              <button 
+                                  onClick={copyToClipboard}
+                                  className="p-1.5 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                                  title="Copy code"
+                              >
+                                  {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
+                              </button>
+                          </div>
+                          <Button variant="secondary" className="w-full" onClick={shareInvite}>
+                              <Share2 size={16} /> Share Invite
+                          </Button>
+                      </div>
+                  </div>
+              )}
+
+              {/* Members Tab */}
+              {settingsTab === 'members' && (
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                      {members.map(m => {
+                          const isSelf = m.userId === user?._id;
+                          const memberImageUrl = m.user?.imageUrl;
+                          const isValidImage = memberImageUrl && /^(https?:|data:image)/.test(memberImageUrl);
+                          
+                          return (
+                              <div 
+                                  key={m.userId}
+                                  className={`flex items-center justify-between p-3 rounded-lg ${style === THEMES.NEOBRUTALISM ? 'border-2 border-black bg-white' : 'bg-white/5 border border-white/10'}`}
+                              >
+                                  <div className="flex items-center gap-3">
+                                      {isValidImage ? (
+                                          <img src={memberImageUrl} alt={m.user?.name} className="w-10 h-10 rounded-full object-cover" />
+                                      ) : (
+                                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                                              {(m.user?.name || '?').charAt(0)}
+                                          </div>
+                                      )}
+                                      <div>
+                                          <p className="font-medium">{m.user?.name} {isSelf && <span className="text-xs opacity-50">(You)</span>}</p>
+                                          {m.role === 'admin' && (
+                                              <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                                                  Admin
+                                              </span>
+                                          )}
+                                      </div>
+                                  </div>
+                                  {isAdmin && !isSelf && (
+                                      <button
+                                          onClick={() => handleKickMember(m.userId, m.user?.name || 'Unknown')}
+                                          className="p-2 rounded-full text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                                          title="Remove member"
+                                      >
+                                          <UserMinus size={18} />
+                                      </button>
+                                  )}
+                              </div>
+                          );
+                      })}
+                  </div>
+              )}
+
+              {/* Danger Tab */}
+              {settingsTab === 'danger' && (
+                  <div className="space-y-4">
+                      <div className={`p-4 rounded-lg ${style === THEMES.NEOBRUTALISM ? 'border-2 border-black bg-red-50' : 'bg-red-500/10 border border-red-500/30'}`}>
+                          <h4 className="font-bold text-red-600 dark:text-red-400 mb-2">Leave Group</h4>
+                          <p className="text-sm opacity-70 mb-4">
+                              You can leave this group only when your balances are settled.
+                          </p>
+                          <Button 
+                              variant="secondary" 
+                              className="w-full border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              onClick={handleLeaveGroup}
+                          >
+                              <LogOut size={16} /> Leave Group
+                          </Button>
+                      </div>
+
+                      {isAdmin && (
+                          <div className={`p-4 rounded-lg ${style === THEMES.NEOBRUTALISM ? 'border-2 border-black bg-red-100' : 'bg-red-500/20 border border-red-500/50'}`}>
+                              <h4 className="font-bold text-red-600 dark:text-red-400 mb-2">Delete Group</h4>
+                              <p className="text-sm opacity-70 mb-4">
+                                  This action is permanent and cannot be undone. Remove all members first.
+                              </p>
+                              <Button variant="danger" className="w-full" onClick={handleDeleteGroup}>
+                                  <Trash2 size={16} /> Delete Group
+                              </Button>
+                          </div>
+                      )}
+                  </div>
+              )}
           </div>
       </Modal>
     </div>
