@@ -20,6 +20,7 @@ api.interceptors.request.use((config) => {
 // Auth
 export const login = async (data: any) => api.post('/auth/login/email', data);
 export const signup = async (data: any) => api.post('/auth/signup/email', data);
+export const loginWithGoogle = async (idToken: string) => api.post('/auth/login/google', { id_token: idToken });
 export const getProfile = async () => api.get('/users/me');
 
 // Groups
@@ -46,5 +47,10 @@ export const markSettlementPaid = async (groupId: string, settlementId: string) 
 // Users
 export const getBalanceSummary = async () => api.get('/users/me/balance-summary');
 export const getFriendsBalance = async () => api.get('/users/me/friends-balance');
+export const updateProfile = async (data: { name?: string; imageUrl?: string }) => api.patch('/users/me', data);
+
+// Group Management
+export const leaveGroup = async (groupId: string) => api.post(`/groups/${groupId}/leave`);
+export const removeMember = async (groupId: string, userId: string) => api.delete(`/groups/${groupId}/members/${userId}`);
 
 export default api;
