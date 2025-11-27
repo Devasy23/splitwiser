@@ -214,6 +214,11 @@ export const Friends = () => {
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ delay: index * 0.05 }}
                 onClick={() => toggleExpand(friend.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(friend.id); } }}
+                tabIndex={0}
+                role="button"
+                aria-expanded={expandedId === friend.id}
+                aria-label={`${friend.userName}, ${friend.netBalance > 0 ? 'owes you' : friend.netBalance < 0 ? 'you owe' : 'settled'} ${formatCurrency(friend.netBalance)}`}
                 className={`cursor-pointer group relative overflow-hidden flex flex-col transition-all duration-300 ${isNeo
                     ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-none'
                     : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 backdrop-blur-sm rounded-3xl'

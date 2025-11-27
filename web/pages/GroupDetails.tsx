@@ -444,6 +444,10 @@ export const GroupDetails = () => {
                                     animate={{ opacity: 1, scale: 1 }}
                                     whileHover={{ scale: 1.02 }}
                                     onClick={() => openEditExpense(expense)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEditExpense(expense); } }}
+                                    tabIndex={0}
+                                    role="button"
+                                    aria-label={`Expense: ${expense.description}, ${group.currency} ${expense.amount.toFixed(2)}`}
                                     className={`p-5 flex items-center gap-5 cursor-pointer group relative overflow-hidden ${style === THEMES.NEOBRUTALISM
                                         ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none'
                                         : 'bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm hover:bg-white/10 transition-all'
