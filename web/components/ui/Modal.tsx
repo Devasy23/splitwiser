@@ -1,8 +1,8 @@
-import React from 'react';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { useTheme } from '../../contexts/ThemeContext';
-import { THEMES } from '../../constants';
+import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { X } from 'lucide-react';
+import React from 'react';
+import { THEMES } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface ModalProps {
   isOpen: boolean;
@@ -22,20 +22,20 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
 
   const modalVariants: Variants = style === THEMES.NEOBRUTALISM ? {
     hidden: { y: '100%', rotate: -5, opacity: 0 },
-    visible: { 
-      y: 0, 
-      rotate: 0, 
+    visible: {
+      y: 0,
+      rotate: 0,
       opacity: 1,
-      transition: { type: 'spring', damping: 15, stiffness: 200 } 
+      transition: { type: 'spring', damping: 15, stiffness: 200 }
     },
     exit: { y: '100%', rotate: 5, opacity: 0 }
   } : {
     hidden: { scale: 0.8, opacity: 0, backdropFilter: 'blur(0px)' },
-    visible: { 
-      scale: 1, 
-      opacity: 1, 
+    visible: {
+      scale: 1,
+      opacity: 1,
       backdropFilter: 'blur(10px)',
-      transition: { type: 'spring', damping: 20, stiffness: 300 } 
+      transition: { type: 'spring', damping: 20, stiffness: 300 }
     },
     exit: { scale: 0.8, opacity: 0 }
   };
@@ -58,8 +58,8 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
             animate="visible"
             exit="exit"
             className={`relative w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] 
-              ${style === THEMES.NEOBRUTALISM 
-                ? 'bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]' 
+              ${style === THEMES.NEOBRUTALISM
+                ? 'bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none'
                 : 'bg-gray-900/80 border border-white/20 rounded-3xl shadow-2xl text-white'}`}
           >
             {/* Header */}

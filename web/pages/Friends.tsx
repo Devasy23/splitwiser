@@ -1,8 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, ChevronUp, Info, Users, X } from 'lucide-react';
+import { ArrowRight, Search, TrendingDown, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Card } from '../components/ui/Card';
-import { Skeleton } from '../components/ui/Skeleton';
 import { THEMES } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
 import { getFriendsBalance, getGroups } from '../services/api';
@@ -26,8 +24,8 @@ interface Friend {
 export const Friends = () => {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedFriends, setExpandedFriends] = useState<Set<string>>(new Set());
-  const [showTooltip, setShowTooltip] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const { style } = useTheme();
 
   useEffect(() => {
@@ -38,16 +36,14 @@ export const Friends = () => {
           getFriendsBalance(),
           getGroups()
         ]);
-        
+
         const friendsData = friendsRes.data.friendsBalance || [];
         const groups = groupsRes.data.groups || [];
-        
-        // Create groups map for icons
+
         const gMap = new Map<string, { name: string; imageUrl?: string }>(
           groups.map((g: any) => [g._id, { name: g.name, imageUrl: g.imageUrl }])
         );
 
-        // Transform friends data
         const transformedFriends = friendsData.map((friend: any) => ({
           id: friend.userId,
           userId: friend.userId,
@@ -72,219 +68,212 @@ export const Friends = () => {
     fetchData();
   }, []);
 
-  const toggleExpand = (friendId: string) => {
-    setExpandedFriends(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(friendId)) {
-        newSet.delete(friendId);
-      } else {
-        newSet.add(friendId);
-      }
-      return newSet;
-    });
+  const toggleExpand = (id: string) => {
+    setExpandedId(expandedId === id ? null : id);
   };
+
+  const filteredFriends = friends.filter(f =>
+    f.userName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalOwedToYou = friends.reduce((acc, curr) => curr.netBalance > 0 ? acc + curr.netBalance : acc, 0);
+  const totalYouOwe = friends.reduce((acc, curr) => curr.netBalance < 0 ? acc + Math.abs(curr.netBalance) : acc, 0);
 
   const formatCurrency = (amount: number) => {
     return `$${Math.abs(amount).toFixed(2)}`;
   };
 
   const getAvatarContent = (imageUrl: string | undefined, name: string, size: 'sm' | 'lg' = 'lg') => {
-    const sizeClass = size === 'lg' ? 'w-12 h-12 text-lg' : 'w-9 h-9 text-sm';
-    
+    const sizeClass = size === 'lg' ? 'w-14 h-14 text-xl' : 'w-10 h-10 text-sm';
+    const isNeo = style === THEMES.NEOBRUTALISM;
+
     if (imageUrl && /^(https?:|data:image)/.test(imageUrl)) {
       return (
         <img
           src={imageUrl}
           alt={name}
-          className={`${sizeClass} rounded-full object-cover`}
+          className={`${sizeClass} object-cover border-2 border-white dark:border-gray-800 shadow-sm ${isNeo ? 'rounded-none' : 'rounded-full'}`}
         />
       );
     }
-    
-    // Check for base64 without prefix
-    if (imageUrl && /^[A-Za-z0-9+/=]+$/.test(imageUrl.substring(0, 50))) {
-      return (
-        <img
-          src={`data:image/jpeg;base64,${imageUrl}`}
-          alt={name}
-          className={`${sizeClass} rounded-full object-cover`}
-        />
-      );
-    }
-
     return (
-      <div className={`${sizeClass} rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white`}>
-        {(name || '?').charAt(0)}
+      <div className={`${sizeClass} flex items-center justify-center font-bold text-white shadow-sm ${isNeo ? 'bg-black rounded-none' : 'bg-gradient-to-br from-blue-500 to-purple-600 rounded-full'
+        }`}>
+        {name.charAt(0)}
       </div>
     );
   };
 
-  // Skeleton loading component
-  const SkeletonRow = () => (
-    <div className="flex items-center gap-4 p-4">
-      <Skeleton className="w-12 h-12 rounded-full" />
-      <div className="flex-1">
-        <Skeleton className="h-4 w-32 mb-2" />
-        <Skeleton className="h-3 w-24" />
-      </div>
-    </div>
-  );
-
-  if (loading) {
-    return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <h1 className="text-4xl font-extrabold mb-8">Friends</h1>
-        <Card>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <SkeletonRow key={i} />
-          ))}
-        </Card>
-      </div>
-    );
-  }
+  const isNeo = style === THEMES.NEOBRUTALISM;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto min-h-screen">
-      <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
-        <h1 className="text-4xl font-extrabold mb-2">Friends</h1>
-        <p className="opacity-70 mb-6">Your balances across all shared groups</p>
-      </motion.div>
-
-      {/* Tooltip/Explanation Banner */}
-      <AnimatePresence>
-        {showTooltip && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={`mb-6 p-4 rounded-lg flex items-start gap-3 ${
-              style === THEMES.NEOBRUTALISM
-                ? 'bg-blue-100 border-2 border-black'
-                : 'bg-blue-500/10 border border-blue-500/30'
-            }`}
-          >
-            <Info size={20} className="text-blue-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm flex-1 opacity-80">
-              💡 These amounts show your direct balance with each friend across all shared groups. 
-              Click on a friend to see the breakdown by group. Check individual group details for 
-              optimized settlement suggestions.
-            </p>
-            <button
-              onClick={() => setShowTooltip(false)}
-              className="opacity-50 hover:opacity-100 transition-opacity"
-            >
-              <X size={18} />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Friends List */}
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-8 min-h-screen">
+      {/* Immersive Header */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className={`relative overflow-hidden ${isNeo ? 'rounded-none border-2 border-black' : 'rounded-3xl'}`}
       >
-        <Card className="overflow-hidden">
-          {friends.length === 0 ? (
-            <div className="py-12 text-center opacity-50 flex flex-col items-center">
-              <Users size={48} className="mb-4 opacity-50" />
-              <p className="text-lg font-medium">No balances with friends yet.</p>
-              <p className="text-sm">Join or create a group and add expenses to get started!</p>
+        <div className={`absolute inset-0 ${isNeo ? 'bg-pink-200' : 'bg-gradient-to-r from-purple-600 to-pink-600'}`} />
+        <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] filter contrast-125 brightness-100" />
+
+        <div className="relative z-10 p-8 md:p-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <span className={`px-3 py-1 text-xs font-black uppercase tracking-widest ${isNeo ? 'bg-black text-white rounded-none' : 'bg-white/20 text-white backdrop-blur-md rounded-full'}`}>
+                Dashboard
+              </span>
             </div>
-          ) : (
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {friends.map((friend, index) => {
-                const isExpanded = expandedFriends.has(friend.id);
-                const balanceColor = friend.netBalance < 0 ? 'text-red-500' : 'text-emerald-500';
-                const balanceText = friend.netBalance < 0
-                  ? `You owe ${formatCurrency(friend.netBalance)}`
-                  : friend.netBalance > 0
-                    ? `Owes you ${formatCurrency(friend.netBalance)}`
-                    : 'Settled up';
+            <h1 className={`text-5xl md:text-7xl font-black tracking-tighter ${isNeo ? 'text-black' : 'text-white'}`}>
+              Friends
+            </h1>
+          </div>
 
-                return (
-                  <motion.div
-                    key={friend.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    {/* Friend Row */}
-                    <button
-                      onClick={() => toggleExpand(friend.id)}
-                      className={`w-full flex items-center justify-between p-4 transition-colors hover:bg-black/5 dark:hover:bg-white/5`}
-                    >
-                      <div className="flex items-center gap-4">
-                        {getAvatarContent(friend.userImageUrl, friend.userName)}
-                        <div className="text-left">
-                          <h3 className="font-bold text-lg">{friend.userName}</h3>
-                          <p className={`text-sm font-medium ${friend.netBalance !== 0 ? balanceColor : 'opacity-50'}`}>
-                            {balanceText}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {friend.breakdown.length > 0 && (
-                          <span className="text-xs opacity-50 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-full">
-                            {friend.breakdown.length} group{friend.breakdown.length !== 1 ? 's' : ''}
-                          </span>
-                        )}
-                        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                      </div>
-                    </button>
-
-                    {/* Expanded Group Breakdown */}
-                    <AnimatePresence>
-                      {isExpanded && friend.breakdown.length > 0 && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
-                          <div className={`pl-8 pr-4 pb-4 space-y-2 ${
-                            style === THEMES.NEOBRUTALISM
-                              ? 'bg-gray-50 dark:bg-gray-800'
-                              : 'bg-black/5 dark:bg-white/5'
-                          }`}>
-                            {friend.breakdown.map((group) => {
-                              const groupBalanceColor = group.balance < 0 ? 'text-red-500' : 'text-emerald-500';
-                              const groupBalanceText = group.balance < 0
-                                ? `You owe ${formatCurrency(group.balance)}`
-                                : `Owes you ${formatCurrency(group.balance)}`;
-
-                              return (
-                                <div
-                                  key={group.groupId}
-                                  className={`flex items-center justify-between p-3 rounded-lg ${
-                                    style === THEMES.NEOBRUTALISM
-                                      ? 'bg-white border-2 border-black'
-                                      : 'bg-white/10'
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-3">
-                                    {getAvatarContent(group.imageUrl, group.groupName, 'sm')}
-                                    <span className="font-medium">{group.groupName}</span>
-                                  </div>
-                                  <span className={`font-mono font-bold text-sm ${groupBalanceColor}`}>
-                                    {groupBalanceText}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
+          <div className="w-full md:w-auto relative">
+            <Search className={`absolute left-4 top-1/2 -translate-y-1/2 ${isNeo ? 'text-black' : 'text-white/60'}`} size={20} />
+            <input
+              type="text"
+              placeholder="Find a friend..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`pl-12 pr-4 py-4 outline-none transition-all w-full md:w-80 font-bold ${isNeo
+                  ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none placeholder:text-black/40'
+                  : 'bg-white/10 border border-white/20 focus:bg-white/20 focus:border-white/30 backdrop-blur-md rounded-2xl text-white placeholder:text-white/40'
+                }`}
+            />
+          </div>
+        </div>
       </motion.div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className={`p-6 flex items-center justify-between ${isNeo
+              ? 'bg-emerald-100 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none'
+              : 'bg-emerald-500/10 border border-emerald-500/20 rounded-3xl'
+            }`}
+        >
+          <div>
+            <p className={`text-sm font-bold uppercase tracking-wider mb-1 ${isNeo ? 'text-black/60' : 'text-emerald-500'}`}>Total Owed to You</p>
+            <h3 className={`text-4xl font-black ${isNeo ? 'text-black' : 'text-emerald-500'}`}>{formatCurrency(totalOwedToYou)}</h3>
+          </div>
+          <div className={`w-12 h-12 flex items-center justify-center ${isNeo ? 'bg-black text-white rounded-none' : 'bg-emerald-500 text-white rounded-full'}`}>
+            <TrendingUp size={24} />
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className={`p-6 flex items-center justify-between ${isNeo
+              ? 'bg-orange-100 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none'
+              : 'bg-orange-500/10 border border-orange-500/20 rounded-3xl'
+            }`}
+        >
+          <div>
+            <p className={`text-sm font-bold uppercase tracking-wider mb-1 ${isNeo ? 'text-black/60' : 'text-orange-500'}`}>Total You Owe</p>
+            <h3 className={`text-4xl font-black ${isNeo ? 'text-black' : 'text-orange-500'}`}>{formatCurrency(totalYouOwe)}</h3>
+          </div>
+          <div className={`w-12 h-12 flex items-center justify-center ${isNeo ? 'bg-black text-white rounded-none' : 'bg-orange-500 text-white rounded-full'}`}>
+            <TrendingDown size={24} />
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Friends Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+        <AnimatePresence mode='popLayout'>
+          {filteredFriends.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="col-span-full text-center py-20 opacity-50"
+            >
+              <Users size={48} className="mx-auto mb-4 opacity-50" />
+              <p className="text-xl font-bold">No friends found</p>
+            </motion.div>
+          ) : (
+            filteredFriends.map((friend, index) => (
+              <motion.div
+                layout
+                key={friend.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ delay: index * 0.05 }}
+                onClick={() => toggleExpand(friend.id)}
+                className={`cursor-pointer group relative overflow-hidden flex flex-col transition-all duration-300 ${isNeo
+                    ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-none'
+                    : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 backdrop-blur-sm rounded-3xl'
+                  }`}
+              >
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    {getAvatarContent(friend.userImageUrl, friend.userName, 'lg')}
+                    <div className={`px-3 py-1 text-xs font-bold uppercase tracking-wider ${friend.netBalance > 0
+                        ? (isNeo ? 'bg-emerald-200 text-black border border-black' : 'bg-emerald-500/20 text-emerald-400')
+                        : friend.netBalance < 0
+                          ? (isNeo ? 'bg-orange-200 text-black border border-black' : 'bg-orange-500/20 text-orange-400')
+                          : (isNeo ? 'bg-gray-200 text-black border border-black' : 'bg-white/10 text-white/60')
+                      } ${isNeo ? 'rounded-none' : 'rounded-full'}`}>
+                      {friend.netBalance > 0 ? 'Owes You' : friend.netBalance < 0 ? 'You Owe' : 'Settled'}
+                    </div>
+                  </div>
+
+                  <h3 className="text-2xl font-bold mb-1">{friend.userName}</h3>
+                  <p className={`text-3xl font-black ${friend.netBalance > 0
+                      ? 'text-emerald-500'
+                      : friend.netBalance < 0
+                        ? 'text-orange-500'
+                        : 'opacity-30'
+                    }`}>
+                    {formatCurrency(friend.netBalance)}
+                  </p>
+                </div>
+
+                <AnimatePresence>
+                  {expandedId === friend.id && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className={`border-t ${isNeo ? 'border-black bg-gray-50' : 'border-white/10 bg-black/20'}`}
+                    >
+                      <div className="p-4 space-y-3">
+                        <p className="text-xs font-bold uppercase opacity-50 tracking-wider">Group Breakdown</p>
+                        {friend.breakdown.map(g => (
+                          <div key={g.groupId} className="flex justify-between items-center text-sm">
+                            <div className="flex items-center gap-3">
+                              {getAvatarContent(g.imageUrl, g.groupName, 'sm')}
+                              <span className="font-medium opacity-80">{g.groupName}</span>
+                            </div>
+                            <span className={`font-bold ${g.balance > 0 ? 'text-emerald-500' : g.balance < 0 ? 'text-orange-500' : 'opacity-50'}`}>
+                              {g.balance > 0 ? '+' : ''}{formatCurrency(g.balance)}
+                            </span>
+                          </div>
+                        ))}
+                        {friend.breakdown.length === 0 && (
+                          <p className="text-sm opacity-50 italic">No active groups</p>
+                        )}
+                        <button className={`w-full mt-4 py-2 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${isNeo
+                            ? 'bg-black text-white hover:bg-gray-800 rounded-none'
+                            : 'bg-white/10 hover:bg-white/20 rounded-xl'
+                          }`}>
+                          View Details <ArrowRight size={14} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };

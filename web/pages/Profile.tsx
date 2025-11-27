@@ -1,224 +1,275 @@
 import { motion } from 'framer-motion';
-import { Camera, ChevronRight, LogOut, Mail, MessageSquare, User, X } from 'lucide-react';
+import { Camera, ChevronRight, CreditCard, LogOut, Mail, MessageSquare, Settings, Shield, User } from 'lucide-react';
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
+import { THEMES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { updateProfile } from '../services/api';
 
 export const Profile = () => {
-  const { user, logout } = useAuth();
-  const { style, mode } = useTheme();
-  const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+    const { user, logout } = useAuth();
+    const { style } = useTheme();
+    const navigate = useNavigate();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editName, setEditName] = useState(user?.name || '');
-  const [pickedImage, setPickedImage] = useState<{ url: string; base64: string } | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editName, setEditName] = useState(user?.name || '');
+    const [pickedImage, setPickedImage] = useState<{ url: string; base64: string } | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
-  const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      // result is already in data:image/...;base64,... format
-      setPickedImage({ url: result, base64: result });
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = reader.result as string;
+            setPickedImage({ url: result, base64: result });
+        };
+        reader.readAsDataURL(file);
     };
-    reader.readAsDataURL(file);
-  };
 
-  const handleSaveProfile = async () => {
-    if (!editName.trim()) {
-      alert('Name cannot be empty');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const updates: { name?: string; imageUrl?: string } = {};
-      if (editName !== user?.name) {
-        updates.name = editName;
-      }
-      if (pickedImage?.base64) {
-        updates.imageUrl = pickedImage.base64;
-      }
-
-      if (Object.keys(updates).length > 0) {
-        await updateProfile(updates);
-        // Reload page to refresh user data
-        window.location.reload();
-      }
-      setIsEditModalOpen(false);
-    } catch (error) {
-      console.error('Failed to update profile:', error);
-      alert('Failed to update profile');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const openEditModal = () => {
-    setEditName(user?.name || '');
-    setPickedImage(null);
-    setIsEditModalOpen(true);
-  };
-
-  const handleComingSoon = () => {
-    alert('This feature is coming soon!');
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
-  // Determine avatar display
-  const avatarUrl = pickedImage?.url || user?.imageUrl;
-  const isValidImageUrl = avatarUrl && /^(https?:|data:image)/.test(avatarUrl);
-
-  const menuItems = [
-    { label: 'Edit Profile', icon: User, onClick: openEditModal },
-    { label: 'Email Settings', icon: Mail, onClick: handleComingSoon },
-    { label: 'Send Feedback', icon: MessageSquare, onClick: handleComingSoon },
-    { label: 'Logout', icon: LogOut, onClick: handleLogout, danger: true },
-  ];
-
-  return (
-    <div className="p-6 max-w-2xl mx-auto min-h-screen">
-      <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-        <h1 className="text-4xl font-extrabold mb-8">Account</h1>
-      </motion.div>
-
-      {/* Profile Header */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.1 }}
-      >
-        <Card className="mb-6">
-          <div className="flex flex-col items-center py-6">
-            <div className="relative mb-4">
-              {isValidImageUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={user?.name}
-                  className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
-                />
-              ) : (
-                <div
-                  className={`w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold text-white bg-gradient-to-br from-blue-500 to-purple-600 border-4 border-white shadow-lg`}
-                >
-                  {user?.name?.charAt(0) || 'A'}
-                </div>
-              )}
-            </div>
-            <h2 className="text-2xl font-bold">{user?.name}</h2>
-            <p className="text-sm opacity-60 mt-1">{user?.email}</p>
-          </div>
-        </Card>
-      </motion.div>
-
-      {/* Menu Items */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <Card>
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {menuItems.map((item, index) => (
-              <button
-                key={item.label}
-                onClick={item.onClick}
-                className={`w-full flex items-center justify-between px-4 py-4 transition-colors hover:bg-black/5 dark:hover:bg-white/5 ${
-                  item.danger ? 'text-red-500 hover:text-red-600' : ''
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon size={20} />
-                  <span className="font-medium">{item.label}</span>
-                </div>
-                <ChevronRight size={18} className="opacity-40" />
-              </button>
-            ))}
-          </div>
-        </Card>
-      </motion.div>
-
-      {/* Edit Profile Modal */}
-      <Modal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        title="Edit Profile"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setIsEditModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveProfile} disabled={isSaving}>
-              {isSaving ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </>
+    const handleSaveProfile = async () => {
+        if (!editName.trim()) {
+            alert('Name cannot be empty');
+            return;
         }
-      >
-        <div className="space-y-6">
-          {/* Avatar Section */}
-          <div className="flex flex-col items-center">
-            <div className="relative mb-4">
-              {pickedImage?.url || (user?.imageUrl && /^(https?:|data:image)/.test(user.imageUrl)) ? (
-                <img
-                  src={pickedImage?.url || user?.imageUrl}
-                  alt="Profile"
-                  className="w-24 h-24 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
-                />
-              ) : (
-                <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold text-white bg-gradient-to-br from-blue-500 to-purple-600">
-                  {editName?.charAt(0) || user?.name?.charAt(0) || 'A'}
-                </div>
-              )}
-              {pickedImage && (
-                <button
-                  onClick={() => setPickedImage(null)}
-                  className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImagePick}
-              className="hidden"
-            />
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Camera size={16} />
-              {pickedImage ? 'Change Photo' : 'Add Photo'}
-            </Button>
-          </div>
 
-          {/* Name Input */}
-          <Input
-            label="Name"
-            value={editName}
-            onChange={(e) => setEditName(e.target.value)}
-            placeholder="Enter your name"
-            required
-          />
+        setIsSaving(true);
+        try {
+            const updates: { name?: string; imageUrl?: string } = {};
+            if (editName !== user?.name) {
+                updates.name = editName;
+            }
+            if (pickedImage?.base64) {
+                updates.imageUrl = pickedImage.base64;
+            }
+
+            if (Object.keys(updates).length > 0) {
+                await updateProfile(updates);
+                window.location.reload();
+            }
+            setIsEditModalOpen(false);
+        } catch (error) {
+            console.error('Failed to update profile:', error);
+            alert('Failed to update profile');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const openEditModal = () => {
+        setEditName(user?.name || '');
+        setPickedImage(null);
+        setIsEditModalOpen(true);
+    };
+
+    const handleComingSoon = () => {
+        alert('This feature is coming soon!');
+    };
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
+
+    const avatarUrl = pickedImage?.url || user?.imageUrl;
+    const isValidImageUrl = avatarUrl && /^(https?:|data:image)/.test(avatarUrl);
+    const isNeo = style === THEMES.NEOBRUTALISM;
+
+    const menuSections = [
+        {
+            title: 'Account',
+            items: [
+                { label: 'Edit Profile', icon: User, onClick: openEditModal, desc: 'Update your personal info' },
+                { label: 'Email Settings', icon: Mail, onClick: handleComingSoon, desc: 'Manage email preferences' },
+                { label: 'Security', icon: Shield, onClick: handleComingSoon, desc: 'Password and 2FA' },
+            ]
+        },
+        {
+            title: 'App',
+            items: [
+                { label: 'Appearance', icon: Settings, onClick: handleComingSoon, desc: 'Theme and display settings' },
+                { label: 'Send Feedback', icon: MessageSquare, onClick: handleComingSoon, desc: 'Help us improve' },
+            ]
+        }
+    ];
+
+    return (
+        <div className="min-h-screen pb-20">
+            {/* Hero Header */}
+            <div className="relative h-64 w-full overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-purple-700 dark:from-blue-900 dark:to-purple-900" />
+                {/* Abstract shapes */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <h1 className="text-white/20 text-9xl font-black tracking-tighter select-none">PROFILE</h1>
+                </div>
+            </div>
+
+            <div className="max-w-3xl mx-auto px-6 -mt-20 relative z-10">
+                {/* Profile Card */}
+                <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className={`p-6 mb-8 ${isNeo
+                            ? 'bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none'
+                            : 'bg-white/80 dark:bg-black/40 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl'
+                        }`}
+                >
+                    <div className="flex flex-col md:flex-row items-center gap-6">
+                        <div className="relative group cursor-pointer" onClick={openEditModal}>
+                            <div className={`w-32 h-32 p-1 ${isNeo ? 'bg-black rounded-none' : 'bg-gradient-to-br from-blue-500 to-purple-500 rounded-full'}`}>
+                                {isValidImageUrl ? (
+                                    <img
+                                        src={avatarUrl}
+                                        alt={user?.name}
+                                        className={`w-full h-full object-cover border-4 border-white dark:border-gray-900 ${isNeo ? 'rounded-none' : 'rounded-full'}`}
+                                    />
+                                ) : (
+                                    <div className={`w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-4xl font-bold text-gray-500 border-4 border-white dark:border-gray-900 ${isNeo ? 'rounded-none' : 'rounded-full'}`}>
+                                        {user?.name?.charAt(0) || 'A'}
+                                    </div>
+                                )}
+                            </div>
+                            <div className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${isNeo ? 'rounded-none' : 'rounded-full'}`}>
+                                <div className="bg-black/50 p-2 text-white rounded-full">
+                                    <Camera size={24} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 text-center md:text-left">
+                            <h2 className="text-3xl font-black mb-1">{user?.name}</h2>
+                            <p className="opacity-60 font-medium mb-4">{user?.email}</p>
+                            <div className="flex flex-wrap justify-center md:justify-start gap-3">
+                                <div className={`px-4 py-2 text-sm font-bold flex items-center gap-2 ${isNeo ? 'bg-yellow-200 border-2 border-black rounded-none' : 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 rounded-xl'
+                                    }`}>
+                                    <CreditCard size={16} />
+                                    <span>Pro Member</span>
+                                </div>
+                                <div className={`px-4 py-2 text-sm font-bold flex items-center gap-2 ${isNeo ? 'bg-blue-200 border-2 border-black rounded-none' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl'
+                                    }`}>
+                                    <Shield size={16} />
+                                    <span>Verified</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+
+                {/* Menu Sections */}
+                <div className="space-y-6">
+                    {menuSections.map((section, idx) => (
+                        <motion.div
+                            key={section.title}
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.1 + (idx * 0.1) }}
+                        >
+                            <h3 className="text-sm font-bold uppercase tracking-wider opacity-50 mb-3 ml-2">{section.title}</h3>
+                            <div className={`overflow-hidden ${isNeo
+                                    ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none'
+                                    : 'bg-white/5 border border-white/10 backdrop-blur-sm rounded-2xl'
+                                }`}>
+                                {section.items.map((item, itemIdx) => (
+                                    <button
+                                        key={item.label}
+                                        onClick={item.onClick}
+                                        className={`w-full flex items-center gap-4 p-4 transition-all hover:bg-black/5 dark:hover:bg-white/5 ${itemIdx !== section.items.length - 1 ? 'border-b border-gray-200/50 dark:border-gray-700/50' : ''
+                                            }`}
+                                    >
+                                        <div className={`w-10 h-10 flex items-center justify-center ${isNeo ? 'bg-black text-white rounded-none' : 'bg-white/10 rounded-full'
+                                            }`}>
+                                            <item.icon size={20} />
+                                        </div>
+                                        <div className="flex-1 text-left">
+                                            <h4 className="font-bold">{item.label}</h4>
+                                            <p className="text-xs opacity-60">{item.desc}</p>
+                                        </div>
+                                        <ChevronRight size={18} className="opacity-30" />
+                                    </button>
+                                ))}
+                            </div>
+                        </motion.div>
+                    ))}
+
+                    <motion.button
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                        onClick={handleLogout}
+                        className={`w-full p-4 font-bold flex items-center justify-center gap-2 transition-all group ${isNeo
+                                ? 'bg-red-500 text-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none'
+                                : 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 rounded-2xl'
+                            }`}
+                    >
+                        <LogOut size={20} />
+                        <span>Log Out</span>
+                    </motion.button>
+                </div>
+            </div>
+
+            {/* Edit Profile Modal */}
+            <Modal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                title="Edit Profile"
+                footer={
+                    <>
+                        <Button variant="ghost" onClick={() => setIsEditModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSaveProfile} disabled={isSaving}>
+                            {isSaving ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </>
+                }
+            >
+                <div className="space-y-6">
+                    <div className="flex flex-col items-center">
+                        <div className="relative mb-4 group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                            {pickedImage?.url || (user?.imageUrl && /^(https?:|data:image)/.test(user.imageUrl)) ? (
+                                <img
+                                    src={pickedImage?.url || user?.imageUrl}
+                                    alt="Profile"
+                                    className={`w-32 h-32 object-cover border-4 border-gray-100 dark:border-gray-800 ${isNeo ? 'rounded-none' : 'rounded-full'}`}
+                                />
+                            ) : (
+                                <div className={`w-32 h-32 flex items-center justify-center text-4xl font-bold text-white bg-gradient-to-br from-blue-500 to-purple-600 ${isNeo ? 'rounded-none' : 'rounded-full'}`}>
+                                    {editName?.charAt(0) || user?.name?.charAt(0) || 'A'}
+                                </div>
+                            )}
+                            <div className={`absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${isNeo ? 'rounded-none' : 'rounded-full'}`}>
+                                <Camera className="text-white" size={32} />
+                            </div>
+                        </div>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImagePick}
+                            className="hidden"
+                        />
+                        <p className="text-sm opacity-50">Click to change photo</p>
+                    </div>
+
+                    <Input
+                        label="Display Name"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        placeholder="Enter your name"
+                        required
+                        className={isNeo ? 'rounded-none' : ''}
+                    />
+                </div>
+            </Modal>
         </div>
-      </Modal>
-    </div>
-  );
+    );
 };
