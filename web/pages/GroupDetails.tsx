@@ -124,9 +124,14 @@ export const GroupDetails = () => {
 
     const copyToClipboard = () => {
         if (group?.joinCode) {
-            navigator.clipboard.writeText(group.joinCode);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            navigator.clipboard.writeText(group.joinCode)
+                .then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                })
+                .catch(() => {
+                    alert('Failed to copy to clipboard');
+                });
         }
     };
 
@@ -262,11 +267,22 @@ export const GroupDetails = () => {
     const handleRecordPayment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!id) return;
+        
+        const numAmount = parseFloat(paymentAmount);
+        if (paymentPayerId === paymentPayeeId) {
+            alert('Payer and payee cannot be the same');
+            return;
+        }
+        if (!numAmount || numAmount <= 0) {
+            alert('Please enter a valid amount');
+            return;
+        }
+        
         try {
             await createSettlement(id, {
                 payer_id: paymentPayerId,
                 payee_id: paymentPayeeId,
-                amount: parseFloat(paymentAmount)
+                amount: numAmount
             });
             setIsPaymentModalOpen(false);
             setPaymentAmount('');
@@ -501,7 +517,7 @@ export const GroupDetails = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: idx * 0.1 }}
-                                key={idx}
+                                key={`${s.fromUserId}-${s.toUserId}`}
                                 className={`p-6 flex flex-col items-center justify-center text-center gap-4 relative overflow-hidden ${style === THEMES.NEOBRUTALISM
                                     ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none'
                                     : 'bg-white/5 border border-white/10 rounded-3xl backdrop-blur-sm'

@@ -24,6 +24,7 @@ interface Friend {
 export const Friends = () => {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { style } = useTheme();
@@ -67,8 +68,10 @@ export const Friends = () => {
         }));
 
         setFriends(transformedFriends);
+        setError(null);
       } catch (err) {
         console.error('Failed to fetch friends balance data:', err);
+        setError('Unable to load friends data. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -192,10 +195,34 @@ export const Friends = () => {
         </motion.div>
       </div>
 
+      {/* Error State */}
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`p-4 flex items-center justify-between ${isNeo
+            ? 'bg-red-100 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none'
+            : 'bg-red-500/10 border border-red-500/20 rounded-2xl'
+          }`}
+        >
+          <p className={`font-bold ${isNeo ? 'text-black' : 'text-red-400'}`}>{error}</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className={`px-4 py-2 font-bold text-sm ${isNeo
+              ? 'bg-black text-white hover:bg-gray-800 rounded-none'
+              : 'bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg'
+            }`}
+          >
+            Retry
+          </button>
+        </motion.div>
+      )}
+
       {/* Friends Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
         <AnimatePresence mode='popLayout'>
-          {filteredFriends.length === 0 ? (
+          {filteredFriends.length === 0 && !error ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -213,18 +240,18 @@ export const Friends = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ delay: index * 0.05 }}
-                onClick={() => toggleExpand(friend.id)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(friend.id); } }}
-                tabIndex={0}
-                role="button"
-                aria-expanded={expandedId === friend.id}
-                aria-label={`${friend.userName}, ${friend.netBalance > 0 ? 'owes you' : friend.netBalance < 0 ? 'you owe' : 'settled'} ${formatCurrency(friend.netBalance)}`}
-                className={`cursor-pointer group relative overflow-hidden flex flex-col transition-all duration-300 ${isNeo
+                className={`group relative overflow-hidden flex flex-col transition-all duration-300 ${isNeo
                     ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-none'
                     : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 backdrop-blur-sm rounded-3xl'
                   }`}
               >
-                <div className="p-6">
+                <button
+                  type="button"
+                  onClick={() => toggleExpand(friend.id)}
+                  aria-expanded={expandedId === friend.id}
+                  aria-label={`${friend.userName}, ${friend.netBalance > 0 ? 'owes you' : friend.netBalance < 0 ? 'you owe' : 'settled'} ${formatCurrency(friend.netBalance)}`}
+                  className="w-full p-6 text-left cursor-pointer">
+
                   <div className="flex items-start justify-between mb-4">
                     {getAvatarContent(friend.userImageUrl, friend.userName, 'lg')}
                     <div className={`px-3 py-1 text-xs font-bold uppercase tracking-wider ${friend.netBalance > 0
@@ -246,7 +273,7 @@ export const Friends = () => {
                     }`}>
                     {friend.netBalance > 0 ? '+' : friend.netBalance < 0 ? '-' : ''}{formatCurrency(friend.netBalance)}
                   </p>
-                </div>
+                </button>
 
                 <AnimatePresence>
                   {expandedId === friend.id && (
