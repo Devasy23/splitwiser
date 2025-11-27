@@ -11,7 +11,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { updateProfile } from '../services/api';
 
 export const Profile = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, updateUserInContext } = useAuth();
     const { style } = useTheme();
     const navigate = useNavigate();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -20,6 +20,7 @@ export const Profile = () => {
     const [editName, setEditName] = useState(user?.name || '');
     const [pickedImage, setPickedImage] = useState<{ url: string; base64: string } | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -35,10 +36,11 @@ export const Profile = () => {
 
     const handleSaveProfile = async () => {
         if (!editName.trim()) {
-            alert('Name cannot be empty');
+            setSaveError('Name cannot be empty');
             return;
         }
 
+        setSaveError(null);
         setIsSaving(true);
         try {
             const updates: { name?: string; imageUrl?: string } = {};
@@ -50,13 +52,14 @@ export const Profile = () => {
             }
 
             if (Object.keys(updates).length > 0) {
-                await updateProfile(updates);
-                window.location.reload();
+                const response = await updateProfile(updates);
+                const updatedUser = { ...user!, ...updates, ...(response.data || {}) };
+                updateUserInContext(updatedUser);
             }
             setIsEditModalOpen(false);
         } catch (error) {
             console.error('Failed to update profile:', error);
-            alert('Failed to update profile');
+            setSaveError('Failed to update profile. Please try again.');
         } finally {
             setIsSaving(false);
         }
@@ -124,7 +127,14 @@ export const Profile = () => {
                         }`}
                 >
                     <div className="flex flex-col md:flex-row items-center gap-6">
-                        <div className="relative group cursor-pointer" onClick={openEditModal}>
+                        <div
+                            className="relative group cursor-pointer"
+                            onClick={openEditModal}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEditModal(); } }}
+                            tabIndex={0}
+                            role="button"
+                            aria-label="Edit profile picture"
+                        >
                             <div className={`w-32 h-32 p-1 ${isNeo ? 'bg-black rounded-none' : 'bg-gradient-to-br from-blue-500 to-purple-500 rounded-full'}`}>
                                 {isValidImageUrl ? (
                                     <img
@@ -180,6 +190,7 @@ export const Profile = () => {
                                 }`}>
                                 {section.items.map((item, itemIdx) => (
                                     <button
+                                        type="button"
                                         key={item.label}
                                         onClick={item.onClick}
                                         className={`w-full flex items-center gap-4 p-4 transition-all hover:bg-black/5 dark:hover:bg-white/5 ${itemIdx !== section.items.length - 1 ? 'border-b border-gray-200/50 dark:border-gray-700/50' : ''
@@ -201,6 +212,7 @@ export const Profile = () => {
                     ))}
 
                     <motion.button
+                        type="button"
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.3 }}
@@ -233,8 +245,20 @@ export const Profile = () => {
                 }
             >
                 <div className="space-y-6">
+                    {saveError && (
+                        <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm text-center">
+                            {saveError}
+                        </div>
+                    )}
                     <div className="flex flex-col items-center">
-                        <div className="relative mb-4 group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                        <div
+                            className="relative mb-4 group cursor-pointer"
+                            onClick={() => fileInputRef.current?.click()}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
+                            tabIndex={0}
+                            role="button"
+                            aria-label="Change profile photo"
+                        >
                             {pickedImage?.url || (user?.imageUrl && /^(https?:|data:image)/.test(user.imageUrl)) ? (
                                 <img
                                     src={pickedImage?.url || user?.imageUrl}

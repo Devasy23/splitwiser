@@ -356,7 +356,7 @@ export const GroupDetails = () => {
                             <span className={`px-3 py-1 text-xs font-black uppercase tracking-widest ${style === THEMES.NEOBRUTALISM ? 'bg-black text-white rounded-none' : 'bg-white/20 text-white backdrop-blur-md rounded-full'}`}>
                                 Group
                             </span>
-                            <button onClick={copyToClipboard} className="flex items-center gap-1 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">
+                            <button type="button" onClick={copyToClipboard} className="flex items-center gap-1 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">
                                 <Copy size={12} /> {group.joinCode} {copied && <Check size={12} />}
                             </button>
                         </div>
@@ -378,6 +378,7 @@ export const GroupDetails = () => {
                                 </div>
                             )}
                             <button
+                                type="button"
                                 onClick={() => setIsSettingsModalOpen(true)}
                                 className={`w-12 h-12 flex items-center justify-center border-4 hover:scale-110 transition-transform ${style === THEMES.NEOBRUTALISM ? 'border-black bg-black text-white rounded-none' : 'border-indigo-600 bg-white/20 text-white backdrop-blur-md rounded-full'}`}
                             >
@@ -400,12 +401,14 @@ export const GroupDetails = () => {
             <div className="flex justify-center">
                 <div className={`p-1.5 flex gap-2 ${style === THEMES.NEOBRUTALISM ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none' : 'bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl'}`}>
                     <button
+                        type="button"
                         onClick={() => setActiveTab('expenses')}
                         className={`px-6 py-2 font-bold transition-all flex items-center gap-2 ${activeTab === 'expenses' ? (style === THEMES.NEOBRUTALISM ? 'bg-black text-white rounded-none' : 'bg-white/20 text-white shadow-sm rounded-xl') : 'opacity-60 hover:opacity-100'}`}
                     >
                         <Receipt size={18} /> Expenses
                     </button>
                     <button
+                        type="button"
                         onClick={() => setActiveTab('settlements')}
                         className={`px-6 py-2 font-bold transition-all flex items-center gap-2 ${activeTab === 'settlements' ? (style === THEMES.NEOBRUTALISM ? 'bg-emerald-500 text-white rounded-none' : 'bg-emerald-500/20 text-emerald-400 shadow-sm rounded-xl') : 'opacity-60 hover:opacity-100'}`}
                     >
@@ -778,18 +781,21 @@ export const GroupDetails = () => {
                 <div className="space-y-4">
                     <div className={`flex gap-1 p-1 ${style === THEMES.NEOBRUTALISM ? 'border-2 border-black bg-gray-100 rounded-none' : 'bg-white/10 rounded-lg'}`}>
                         <button
+                            type="button"
                             onClick={() => setSettingsTab('info')}
                             className={`flex-1 px-3 py-2 text-sm font-bold transition-all ${settingsTab === 'info' ? (style === THEMES.NEOBRUTALISM ? 'bg-white border-2 border-black rounded-none' : 'bg-white/20 rounded-md') : 'opacity-60 hover:opacity-100'}`}
                         >
                             Info
                         </button>
                         <button
+                            type="button"
                             onClick={() => setSettingsTab('members')}
                             className={`flex-1 px-3 py-2 text-sm font-bold transition-all ${settingsTab === 'members' ? (style === THEMES.NEOBRUTALISM ? 'bg-white border-2 border-black rounded-none' : 'bg-white/20 rounded-md') : 'opacity-60 hover:opacity-100'}`}
                         >
                             Members
                         </button>
                         <button
+                            type="button"
                             onClick={() => setSettingsTab('danger')}
                             className={`flex-1 px-3 py-2 text-sm font-bold transition-all ${settingsTab === 'danger' ? (style === THEMES.NEOBRUTALISM ? 'bg-red-100 border-2 border-black text-red-600 rounded-none' : 'bg-red-500/20 text-red-400 rounded-md') : 'opacity-60 hover:opacity-100'}`}
                         >
@@ -841,6 +847,7 @@ export const GroupDetails = () => {
                                     </div>
                                     {isAdmin && m.userId !== user?._id && (
                                         <button
+                                            type="button"
                                             onClick={() => handleKickMember(m.userId, m.user?.name)}
                                             className={`text-red-500 hover:bg-red-500/10 p-2 transition-colors ${style === THEMES.NEOBRUTALISM ? 'rounded-none' : 'rounded'}`}
                                             title="Remove member"
@@ -881,7 +888,8 @@ export const GroupDetails = () => {
 };
 
 const ScaleIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" role="img" aria-labelledby="scale-icon-title">
+        <title id="scale-icon-title">Balance scale icon</title>
         <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
         <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
         <path d="M7 21h10" />

@@ -42,7 +42,7 @@ export const Dashboard = () => {
           </div>
           <p className="opacity-70 font-medium">Owed to You</p>
           <h2 className={`text-3xl font-extrabold ${style === THEMES.NEOBRUTALISM ? 'text-black' : 'text-emerald-500'}`}>
-            ${summary?.totalOwedToYou.toFixed(2)}
+            ${(summary?.totalOwedToYou ?? 0).toFixed(2)}
           </h2>
         </Card>
 
@@ -52,7 +52,7 @@ export const Dashboard = () => {
           </div>
           <p className="opacity-70 font-medium">You Owe</p>
           <h2 className={`text-3xl font-extrabold ${style === THEMES.NEOBRUTALISM ? 'text-black' : 'text-red-500'}`}>
-            ${summary?.totalYouOwe.toFixed(2)}
+            ${(summary?.totalYouOwe ?? 0).toFixed(2)}
           </h2>
         </Card>
 
@@ -62,7 +62,7 @@ export const Dashboard = () => {
           </div>
           <p className="opacity-70 font-medium">Net Balance</p>
           <h2 className={`text-3xl font-extrabold ${summary && summary.netBalance >= 0 ? (style === THEMES.NEOBRUTALISM ? 'text-black' : 'text-emerald-500') : (style === THEMES.NEOBRUTALISM ? 'text-black' : 'text-red-500')}`}>
-            ${summary?.netBalance.toFixed(2)}
+            ${(summary?.netBalance ?? 0).toFixed(2)}
           </h2>
         </Card>
       </div>

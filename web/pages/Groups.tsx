@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 import { ArrowRight, Plus, Search, TrendingDown, TrendingUp, Users } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -73,8 +73,9 @@ export const Groups = () => {
     }
   };
 
-  const filteredGroups = groups.filter(g =>
-    g.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredGroups = useMemo(() => 
+    groups.filter(g => g.name.toLowerCase().includes(searchTerm.toLowerCase())),
+    [groups, searchTerm]
   );
 
   const containerVariants: Variants = {
@@ -183,7 +184,7 @@ export const Groups = () => {
                             : (isNeo ? 'bg-red-200 text-black border-2 border-black rounded-none' : 'bg-red-500/20 text-red-500 border border-red-500/30 rounded-full')
                           }`}>
                           {balanceAmount > 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                          {balanceAmount > 0 ? 'Owed' : 'Owe'} ${Math.abs(balanceAmount).toFixed(2)}
+                          {balanceAmount > 0 ? 'Owed' : 'Owe'} {group.currency} {Math.abs(balanceAmount).toFixed(2)}
                         </div>
                       )}
                     </div>

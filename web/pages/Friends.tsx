@@ -41,16 +41,24 @@ export const Friends = () => {
         const groups = groupsRes.data.groups || [];
 
         const gMap = new Map<string, { name: string; imageUrl?: string }>(
-          groups.map((g: any) => [g._id, { name: g.name, imageUrl: g.imageUrl }])
+          groups.map((g: { _id: string; name: string; imageUrl?: string }) => [g._id, { name: g.name, imageUrl: g.imageUrl }])
         );
 
-        const transformedFriends = friendsData.map((friend: any) => ({
+        interface FriendBalanceData {
+          userId: string;
+          userName: string;
+          userImageUrl?: string;
+          netBalance: number;
+          breakdown?: { groupId: string; groupName: string; balance: number }[];
+        }
+
+        const transformedFriends = friendsData.map((friend: FriendBalanceData) => ({
           id: friend.userId,
           userId: friend.userId,
           userName: friend.userName,
           userImageUrl: friend.userImageUrl,
           netBalance: friend.netBalance,
-          breakdown: (friend.breakdown || []).map((group: any) => ({
+          breakdown: (friend.breakdown || []).map((group: { groupId: string; groupName: string; balance: number }) => ({
             groupId: group.groupId,
             groupName: group.groupName,
             balance: group.balance,
@@ -252,14 +260,14 @@ export const Friends = () => {
                               <span className="font-medium opacity-80">{g.groupName}</span>
                             </div>
                             <span className={`font-bold ${g.balance > 0 ? 'text-emerald-500' : g.balance < 0 ? 'text-orange-500' : 'opacity-50'}`}>
-                              {g.balance > 0 ? '+' : ''}{formatCurrency(g.balance)}
+                              {g.balance > 0 ? '+' : g.balance < 0 ? '-' : ''}{formatCurrency(g.balance)}
                             </span>
                           </div>
                         ))}
                         {friend.breakdown.length === 0 && (
                           <p className="text-sm opacity-50 italic">No active groups</p>
                         )}
-                        <button className={`w-full mt-4 py-2 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${isNeo
+                        <button type="button" className={`w-full mt-4 py-2 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${isNeo
                             ? 'bg-black text-white hover:bg-gray-800 rounded-none'
                             : 'bg-white/10 hover:bg-white/20 rounded-xl'
                           }`}>
