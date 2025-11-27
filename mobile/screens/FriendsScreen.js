@@ -12,9 +12,13 @@ import {
 import { getFriendsBalance, getGroups } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 import { formatCurrency } from "../utils/currency";
+import { ThemeWrapper } from "../components/ThemeWrapper";
+import { useTheme } from "../context/ThemeContext";
+import { THEMES, COLORS } from "../constants/theme";
 
 const FriendsScreen = () => {
   const { token, user } = useContext(AuthContext);
+  const { style, mode } = useTheme();
   const [friends, setFriends] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showTooltip, setShowTooltip] = useState(true);
@@ -24,7 +28,6 @@ const FriendsScreen = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch friends balance + groups concurrently for group icons
         const friendsResponse = await getFriendsBalance();
         const friendsData = friendsResponse.data.friendsBalance || [];
         const groupsResponse = await getGroups();
@@ -61,17 +64,15 @@ const FriendsScreen = () => {
   }, [token, isFocused]);
 
   const renderFriend = ({ item }) => {
-    const balanceColor = item.netBalance < 0 ? "red" : "green";
+    const balanceColor = item.netBalance < 0 ? (style === THEMES.NEOBRUTALISM ? '#ff4444' : '#ff6b6b') : COLORS.neo.accent;
     const balanceText =
       item.netBalance < 0
         ? `You owe ${formatCurrency(Math.abs(item.netBalance))}`
         : `Owes you ${formatCurrency(item.netBalance)}`;
 
-    // Determine if we have an image URL or a base64 payload
     const hasImage = !!item.imageUrl;
     let imageUri = null;
     if (hasImage) {
-      // If it's a raw base64 string without prefix, add a default MIME prefix
       if (
         /^data:image/.test(item.imageUrl) ||
         /^https?:\/\//.test(item.imageUrl)
@@ -82,13 +83,30 @@ const FriendsScreen = () => {
       }
     }
 
+    const listItemStyle = style === THEMES.NEOBRUTALISM ? {
+        backgroundColor: mode === 'dark' ? COLORS.neo.dark : COLORS.neo.white,
+        borderWidth: 2,
+        borderColor: COLORS.neo.dark,
+        marginBottom: 8,
+    } : {
+        backgroundColor: mode === 'dark' ? 'rgba(30,30,30,0.4)' : 'rgba(255,255,255,0.4)',
+        borderRadius: 8,
+        marginBottom: 8,
+    };
+
+    const textColor = style === THEMES.NEOBRUTALISM && mode !== 'dark' ? COLORS.neo.dark : COLORS.neo.white;
+
     return (
+      <View style={listItemStyle}>
       <List.Accordion
         title={item.name}
+        titleStyle={{ fontFamily: 'SpaceGrotesk_700Bold', color: textColor }}
         description={item.netBalance !== 0 ? balanceText : "Settled up"}
         descriptionStyle={{
           color: item.netBalance !== 0 ? balanceColor : "gray",
+          fontFamily: 'Inter_400Regular'
         }}
+        style={{ backgroundColor: 'transparent' }}
         left={(props) =>
           imageUri ? (
             <Avatar.Image {...props} size={40} source={{ uri: imageUri }} />
@@ -97,17 +115,19 @@ const FriendsScreen = () => {
               {...props}
               size={40}
               label={(item.name || "?").charAt(0)}
+              style={{ backgroundColor: COLORS.neo.main }}
+              labelStyle={{ fontFamily: 'SpaceGrotesk_700Bold' }}
             />
           )
         }
       >
         {item.groups.map((group) => {
-          const groupBalanceColor = group.balance < 0 ? "red" : "green";
+          const groupBalanceColor = group.balance < 0 ? (style === THEMES.NEOBRUTALISM ? '#ff4444' : '#ff6b6b') : COLORS.neo.accent;
           const groupBalanceText =
             group.balance < 0
               ? `You owe ${formatCurrency(Math.abs(group.balance))}`
               : `Owes you ${formatCurrency(group.balance)}`;
-          // Prepare group icon (imageUrl may be base64 or URL)
+
           let groupImageUri = null;
           if (group.imageUrl) {
             if (
@@ -126,8 +146,9 @@ const FriendsScreen = () => {
             <List.Item
               key={group.id}
               title={group.name}
+              titleStyle={{ fontFamily: 'Inter_400Regular', color: textColor }}
               description={groupBalanceText}
-              descriptionStyle={{ color: groupBalanceColor }}
+              descriptionStyle={{ color: groupBalanceColor, fontFamily: 'Inter_400Regular' }}
               left={(props) =>
                 groupImageUri ? (
                   <Avatar.Image
@@ -140,6 +161,7 @@ const FriendsScreen = () => {
                     {...props}
                     size={36}
                     label={(group.name || "?").charAt(0)}
+                    style={{ backgroundColor: COLORS.neo.second }}
                   />
                 )
               }
@@ -147,10 +169,10 @@ const FriendsScreen = () => {
           );
         })}
       </List.Accordion>
+      </View>
     );
   };
 
-  // Shimmer skeleton components
   const opacityAnim = useRef(new Animated.Value(0.3)).current;
   useEffect(() => {
     const loop = Animated.loop(
@@ -174,46 +196,66 @@ const FriendsScreen = () => {
   const SkeletonRow = () => (
     <View style={styles.skeletonRow}>
       <Animated.View
-        style={[styles.skeletonAvatar, { opacity: opacityAnim }]}
+        style={[styles.skeletonAvatar, { opacity: opacityAnim, backgroundColor: mode === 'dark' ? '#333' : '#e0e0e0' }]}
       />
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Animated.View
-          style={[styles.skeletonLine, { width: "60%", opacity: opacityAnim }]}
+          style={[styles.skeletonLine, { width: "60%", opacity: opacityAnim, backgroundColor: mode === 'dark' ? '#333' : '#e0e0e0' }]}
         />
         <Animated.View
           style={[
             styles.skeletonLineSmall,
-            { width: "40%", opacity: opacityAnim },
+            { width: "40%", opacity: opacityAnim, backgroundColor: mode === 'dark' ? '#333' : '#e0e0e0' },
           ]}
         />
       </View>
     </View>
   );
 
+  const headerStyle = {
+      backgroundColor: style === THEMES.NEOBRUTALISM ? COLORS.neo.main : 'transparent',
+      elevation: 0,
+      borderBottomWidth: style === THEMES.NEOBRUTALISM ? 3 : 0,
+      borderBottomColor: COLORS.neo.dark,
+  };
+  const contentColor = style === THEMES.NEOBRUTALISM ? 'white' : (mode === 'dark' ? 'white' : COLORS.neo.dark);
+
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <Appbar.Header>
-          <Appbar.Content title="Friends" />
+      <ThemeWrapper>
+        <Appbar.Header style={headerStyle}>
+          <Appbar.Content title="Friends" titleStyle={{ fontFamily: 'SpaceGrotesk_700Bold', color: contentColor }} />
         </Appbar.Header>
         <View style={styles.skeletonContainer}>
           {Array.from({ length: 5 }).map((_, i) => (
             <SkeletonRow key={i} />
           ))}
         </View>
-      </View>
+      </ThemeWrapper>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Appbar.Header>
-        <Appbar.Content title="Friends" />
+    <ThemeWrapper>
+      <Appbar.Header style={headerStyle}>
+        <Appbar.Content title="Friends" titleStyle={{ fontFamily: 'SpaceGrotesk_700Bold', color: contentColor }} />
       </Appbar.Header>
       {showTooltip && (
-        <View style={styles.explanationContainer}>
+        <View style={[styles.explanationContainer,
+            style === THEMES.NEOBRUTALISM ? {
+                backgroundColor: COLORS.neo.lightBg,
+                borderLeftWidth: 4,
+                borderLeftColor: COLORS.neo.main,
+                borderWidth: 2,
+                borderColor: COLORS.neo.dark,
+                borderRadius: 0,
+            } : {
+                backgroundColor: 'rgba(240, 248, 255, 0.8)',
+                borderRadius: 8,
+            }
+        ]}>
           <View style={styles.explanationContent}>
-            <Text style={styles.explanationText}>
+            <Text style={[styles.explanationText, { fontFamily: 'Inter_400Regular' }]}>
               💡 These amounts show your direct balance with each friend across
               all shared groups. Check individual group details for optimized
               settlement suggestions.
@@ -231,26 +273,18 @@ const FriendsScreen = () => {
         data={friends}
         renderItem={renderFriend}
         keyExtractor={(item) => item.id}
-        ItemSeparatorComponent={Divider}
+        ItemSeparatorComponent={style === THEMES.NEOBRUTALISM ? null : Divider}
+        contentContainerStyle={{ padding: 16 }}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No balances with friends yet.</Text>
+          <Text style={[styles.emptyText, { color: mode === 'dark' ? 'white' : 'black', fontFamily: 'Inter_400Regular' }]}>No balances with friends yet.</Text>
         }
       />
-    </View>
+    </ThemeWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   explanationContainer: {
-    backgroundColor: "#f0f8ff",
     margin: 8,
     borderRadius: 8,
     borderLeftWidth: 4,
@@ -288,17 +322,14 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#e0e0e0",
   },
   skeletonLine: {
     height: 14,
-    backgroundColor: "#e0e0e0",
     borderRadius: 6,
     marginBottom: 6,
   },
   skeletonLineSmall: {
     height: 12,
-    backgroundColor: "#e0e0e0",
     borderRadius: 6,
   },
 });
