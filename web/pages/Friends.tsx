@@ -239,7 +239,7 @@ export const Friends = () => {
                         ? 'text-orange-500'
                         : 'opacity-30'
                     }`}>
-                    {formatCurrency(friend.netBalance)}
+                    {friend.netBalance > 0 ? '+' : friend.netBalance < 0 ? '-' : ''}{formatCurrency(friend.netBalance)}
                   </p>
                 </div>
 

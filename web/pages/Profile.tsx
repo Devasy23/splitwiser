@@ -26,6 +26,17 @@ export const Profile = () => {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+            setSaveError('Image must be less than 5MB');
+            return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+            setSaveError('Please select a valid image file');
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = () => {
             const result = reader.result as string;

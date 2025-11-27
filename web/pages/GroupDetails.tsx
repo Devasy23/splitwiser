@@ -26,6 +26,14 @@ import { Expense, Group, GroupMember, SplitType } from '../types';
 
 type UnequalMode = 'amount' | 'percentage' | 'shares';
 
+interface Settlement {
+    fromUserId: string;
+    fromUserName: string;
+    toUserId: string;
+    toUserName: string;
+    amount: number;
+}
+
 export const GroupDetails = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -35,7 +43,7 @@ export const GroupDetails = () => {
     const [group, setGroup] = useState<Group | null>(null);
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [members, setMembers] = useState<GroupMember[]>([]);
-    const [settlements, setSettlements] = useState<any[]>([]);
+    const [settlements, setSettlements] = useState<Settlement[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'expenses' | 'settlements'>('expenses');
 
@@ -178,7 +186,7 @@ export const GroupDetails = () => {
             setSelectedUsers(new Set(expense.splits.map(s => s.userId)));
         } else {
             setUnequalMode('amount');
-            const vals: any = {};
+            const vals: Record<string, string> = {};
             expense.splits.forEach(s => vals[s.userId] = s.amount.toString());
             setSplitValues(vals);
         }

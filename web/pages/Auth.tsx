@@ -8,9 +8,9 @@ import { THEMES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import {
-    login as apiLogin,
-    signup as apiSignup,
-    loginWithGoogle,
+  login as apiLogin,
+  signup as apiSignup,
+  loginWithGoogle,
 } from '../services/api';
 import { signInWithGoogle } from '../services/firebase';
 
@@ -34,7 +34,10 @@ export const Auth = () => {
     try {
       const idToken = await signInWithGoogle();
       const res = await loginWithGoogle(idToken);
-      const { access_token, user } = res.data;
+      const { access_token, user } = res.data ?? {};
+      if (!access_token || !user) {
+        throw new Error('Invalid response from server');
+      }
       login(access_token, user);
       navigate('/dashboard');
     } catch (err: any) {
@@ -42,8 +45,11 @@ export const Auth = () => {
       if (err.code === 'auth/popup-closed-by-user') {
         setError('');
       } else if (err.response) {
+        const detail = err.response.data?.detail;
         setError(
-          err.response.data?.detail || 'Google authentication failed'
+          typeof detail === 'string'
+            ? detail
+            : detail?.[0]?.msg || 'Google authentication failed'
         );
       } else {
         setError(err.message || 'Google authentication failed. Please try again.');
@@ -71,8 +77,11 @@ export const Auth = () => {
       navigate('/dashboard');
     } catch (err: any) {
       if (err.response) {
+        const detail = err.response.data?.detail;
         setError(
-          err.response.data?.detail?.[0]?.msg || 'Authentication failed'
+          typeof detail === 'string'
+            ? detail
+            : detail?.[0]?.msg || 'Authentication failed'
         );
       } else {
         setError('Something went wrong');
@@ -161,7 +170,11 @@ export const Auth = () => {
                 }`}
             >
               {googleLoading ? (
-                <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                <div 
+                  className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin"
+                  role="status"
+                  aria-label="Signing in with Google"
+                />
               ) : (
                 <svg className="w-5 h-5" viewBox="0 0 24 24" role="img" aria-labelledby="google-logo-title">
                   <title id="google-logo-title">Google logo</title>
