@@ -34,81 +34,27 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware - Enhanced configuration for production
-allowed_origins = []
+# CORS middleware
 if settings.allow_all_origins:
-    # Allow all origins in development mode
-    allowed_origins = ["*"]
-    logger.debug("Development mode: CORS configured to allow all origins")
-elif settings.allowed_origins:
-    # Use specified origins in production mode
-    allowed_origins = [
-        origin.strip()
-        for origin in settings.allowed_origins.split(",")
-        if origin.strip()
-    ]
+    logger.info("Allowing all origins for CORS")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 else:
-    # Fallback to allow all origins if not specified (not recommended for production)
-    allowed_origins = ["*"]
-
-logger.info(f"Allowed CORS origins: {allowed_origins}")
+    logger.info(f"Allowing specific origins for CORS: {settings.allowed_origins}")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 app.add_middleware(RequestResponseLoggingMiddleware)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-    allow_headers=[
-        "Accept",
-        "Accept-Language",
-        "Content-Language",
-        "Content-Type",
-        "Authorization",
-        "X-Requested-With",
-        "Origin",
-        "Cache-Control",
-        "Pragma",
-        "X-CSRFToken",
-    ],
-    expose_headers=["*"],
-    max_age=3600,  # Cache preflight responses for 1 hour
-)
-
-
-# Add a catch-all OPTIONS handler that should work for any path
-@app.options("/{path:path}")
-async def options_handler(request: Request, path: str):
-    """Handle all OPTIONS requests"""
-    logger.info(f"OPTIONS request received for path: /{path}")
-    logger.info(f"Origin: {request.headers.get('origin', 'No origin header')}")
-
-    response = Response(status_code=200)
-
-    # Manually set CORS headers for debugging
-    origin = request.headers.get("origin")
-    if origin and (origin in allowed_origins or "*" in allowed_origins):
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Methods"] = (
-            "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH"
-        )
-        response.headers["Access-Control-Allow-Headers"] = (
-            "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, Origin, Cache-Control, Pragma, X-CSRFToken"
-        )
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Max-Age"] = "3600"
-    elif "*" in allowed_origins:
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = (
-            "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH"
-        )
-        response.headers["Access-Control-Allow-Headers"] = (
-            "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, Origin, Cache-Control, Pragma, X-CSRFToken"
-        )
-        response.headers["Access-Control-Max-Age"] = "3600"
-
-    return response
 
 
 # Health check

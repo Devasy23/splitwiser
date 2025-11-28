@@ -4,17 +4,16 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from app.config import logger
-from app.database import get_database
+from app.services.base import BaseService
 from bson import ObjectId, errors
 from fastapi import HTTPException
 
 
-class GroupService:
+class GroupService(BaseService):
     def __init__(self):
-        pass
-
-    def get_db(self):
-        return get_database()
+        super().__init__("groups")
+        self.users_collection = self.db["users"]
+        self.settlements_collection = self.db["settlements"]
 
     def generate_join_code(self, length: int = 6) -> str:
         """Generate a random alphanumeric join code"""
@@ -25,7 +24,6 @@ class GroupService:
         self, members: List[dict]
     ) -> List[dict]:
         """Private method to enrich member data with user details from users collection"""
-        db = self.get_db()
         enriched_members = []
 
         for member in members:
@@ -34,7 +32,7 @@ class GroupService:
                 try:
                     # Fetch user details from users collection
                     user_obj_id = ObjectId(member_user_id)
-                    user = await db.users.find_one({"_id": user_obj_id})
+                    user = await self.users_collection.find_one({"_id": user_obj_id})
 
                     # Create enriched member object
                     enriched_member = {
@@ -123,13 +121,11 @@ class GroupService:
 
     async def create_group(self, group_data: dict, user_id: str) -> dict:
         """Create a new group with the user as admin"""
-        db = self.get_db()
-
         # Generate unique join code
         join_code = None
         for _ in range(10):  # Try up to 10 times to generate unique code
             join_code = self.generate_join_code()
-            existing = await db.groups.find_one({"joinCode": join_code})
+            existing = await self.collection.find_one({"joinCode": join_code})
             if not existing:
                 break
 
@@ -149,14 +145,13 @@ class GroupService:
             "members": [{"userId": user_id, "role": "admin", "joinedAt": now}],
         }
 
-        result = await db.groups.insert_one(group_doc)
-        created_group = await db.groups.find_one({"_id": result.inserted_id})
+        result = await self.collection.insert_one(group_doc)
+        created_group = await self.collection.find_one({"_id": result.inserted_id})
         return self.transform_group_document(created_group)
 
     async def get_user_groups(self, user_id: str) -> List[dict]:
         """Get all groups where user is a member"""
-        db = self.get_db()
-        cursor = db.groups.find({"members.userId": user_id})
+        cursor = self.collection.find({"members.userId": user_id})
         groups = []
         async for group in cursor:
             transformed = self.transform_group_document(group)
@@ -166,7 +161,6 @@ class GroupService:
 
     async def get_group_by_id(self, group_id: str, user_id: str) -> Optional[dict]:
         """Get group details by ID with enriched member information, only if user is a member"""
-        db = self.get_db()
         try:
             obj_id = ObjectId(group_id)
         except errors.InvalidId:
@@ -176,7 +170,9 @@ class GroupService:
             logger.error(f"Unexpected error converting group_id to ObjectId: {e}")
             return None
 
-        group = await db.groups.find_one({"_id": obj_id, "members.userId": user_id})
+        group = await self.collection.find_one(
+            {"_id": obj_id, "members.userId": user_id}
+        )
 
         if not group:
             return None
@@ -197,7 +193,6 @@ class GroupService:
         self, group_id: str, updates: dict, user_id: str
     ) -> Optional[dict]:
         """Update group metadata (admin only)"""
-        db = self.get_db()
         try:
             obj_id = ObjectId(group_id)
         except errors.InvalidId:
@@ -208,7 +203,7 @@ class GroupService:
             return None
 
         # Check if user is admin
-        group = await db.groups.find_one(
+        group = await self.collection.find_one(
             {
                 "_id": obj_id,
                 "members": {"$elemMatch": {"userId": user_id, "role": "admin"}},
@@ -219,14 +214,13 @@ class GroupService:
                 status_code=403, detail="Only group admins can update group details"
             )
 
-        result = await db.groups.find_one_and_update(
+        result = await self.collection.find_one_and_update(
             {"_id": obj_id}, {"$set": updates}, return_document=True
         )
         return self.transform_group_document(result)
 
     async def delete_group(self, group_id: str, user_id: str) -> bool:
         """Delete group (admin only)"""
-        db = self.get_db()
         try:
             obj_id = ObjectId(group_id)
         except errors.InvalidId:
@@ -237,7 +231,7 @@ class GroupService:
             return False
 
         # Check if user is admin
-        group = await db.groups.find_one(
+        group = await self.collection.find_one(
             {
                 "_id": obj_id,
                 "members": {"$elemMatch": {"userId": user_id, "role": "admin"}},
@@ -248,15 +242,13 @@ class GroupService:
                 status_code=403, detail="Only group admins can delete groups"
             )
 
-        result = await db.groups.delete_one({"_id": obj_id})
+        result = await self.collection.delete_one({"_id": obj_id})
         return result.deleted_count == 1
 
     async def join_group_by_code(self, join_code: str, user_id: str) -> Optional[dict]:
         """Join a group using join code"""
-        db = self.get_db()
-
         # Find group by join code
-        group = await db.groups.find_one({"joinCode": join_code.upper()})
+        group = await self.collection.find_one({"joinCode": join_code.upper()})
         if not group:
             raise HTTPException(status_code=404, detail="Invalid join code")
 
@@ -276,7 +268,7 @@ class GroupService:
             "joinedAt": datetime.now(timezone.utc),
         }
 
-        result = await db.groups.find_one_and_update(
+        result = await self.collection.find_one_and_update(
             {"_id": group["_id"]},
             {"$push": {"members": new_member}},
             return_document=True,
@@ -285,14 +277,15 @@ class GroupService:
 
     async def leave_group(self, group_id: str, user_id: str) -> bool:
         """Leave a group (only if user has no outstanding balances)"""
-        db = self.get_db()
         try:
             obj_id = ObjectId(group_id)
         except Exception:
             return False
 
         # Check if user is a member
-        group = await db.groups.find_one({"_id": obj_id, "members.userId": user_id})
+        group = await self.collection.find_one(
+            {"_id": obj_id, "members.userId": user_id}
+        )
         if not group:
             raise HTTPException(
                 status_code=404, detail="Group not found or you are not a member"
@@ -314,7 +307,7 @@ class GroupService:
 
         # Block leaving when there are unsettled balances involving this user
         try:
-            pending = await db.settlements.find_one(
+            pending = await self.settlements_collection.find_one(
                 {
                     "groupId": group_id,  # settlements store string groupId
                     "status": "pending",
@@ -336,20 +329,21 @@ class GroupService:
                 detail="Cannot leave group with unsettled balances. Please settle up first.",
             )
 
-        result = await db.groups.update_one(
+        result = await self.collection.update_one(
             {"_id": obj_id}, {"$pull": {"members": {"userId": user_id}}}
         )
         return result.modified_count == 1
 
     async def get_group_members(self, group_id: str, user_id: str) -> List[dict]:
         """Get list of group members with detailed user information"""
-        db = self.get_db()
         try:
             obj_id = ObjectId(group_id)
         except Exception:
             return []
 
-        group = await db.groups.find_one({"_id": obj_id, "members.userId": user_id})
+        group = await self.collection.find_one(
+            {"_id": obj_id, "members.userId": user_id}
+        )
         if not group:
             return []
 
@@ -364,14 +358,13 @@ class GroupService:
         self, group_id: str, member_id: str, new_role: str, user_id: str
     ) -> bool:
         """Update member role (admin only)"""
-        db = self.get_db()
         try:
             obj_id = ObjectId(group_id)
         except Exception:
             return False
 
         # Check if user is admin
-        group = await db.groups.find_one(
+        group = await self.collection.find_one(
             {
                 "_id": obj_id,
                 "members": {"$elemMatch": {"userId": user_id, "role": "admin"}},
@@ -400,7 +393,7 @@ class GroupService:
                     detail="Cannot demote yourself when you are the only admin. Promote another member to admin first.",
                 )
 
-        result = await db.groups.update_one(
+        result = await self.collection.update_one(
             {"_id": obj_id, "members.userId": member_id},
             {"$set": {"members.$.role": new_role}},
         )
@@ -408,14 +401,13 @@ class GroupService:
 
     async def remove_member(self, group_id: str, member_id: str, user_id: str) -> bool:
         """Remove a member from group (admin only)"""
-        db = self.get_db()
         try:
             obj_id = ObjectId(group_id)
         except Exception:
             return False
 
         # Check if group exists and user is admin
-        group = await db.groups.find_one(
+        group = await self.collection.find_one(
             {
                 "_id": obj_id,
                 "members": {"$elemMatch": {"userId": user_id, "role": "admin"}},
@@ -423,7 +415,7 @@ class GroupService:
         )
         if not group:
             # Check if group exists at all
-            group_exists = await db.groups.find_one({"_id": obj_id})
+            group_exists = await self.collection.find_one({"_id": obj_id})
             if not group_exists:
                 raise HTTPException(status_code=404, detail="Group not found")
             else:
@@ -446,7 +438,7 @@ class GroupService:
 
         # Block removal when there are unsettled balances involving the target member
         try:
-            pending = await db.settlements.find_one(
+            pending = await self.settlements_collection.find_one(
                 {
                     "groupId": group_id,  # settlements store string groupId
                     "status": "pending",
@@ -468,10 +460,7 @@ class GroupService:
                 detail="Cannot remove member with unsettled balances. Please settle up first.",
             )
 
-        result = await db.groups.update_one(
+        result = await self.collection.update_one(
             {"_id": obj_id}, {"$pull": {"members": {"userId": member_id}}}
         )
         return result.modified_count == 1
-
-
-group_service = GroupService()
