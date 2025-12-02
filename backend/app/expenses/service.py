@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from app.config import logger
-from app.database import mongodb
 from app.expenses.schemas import (
     ExpenseCreateRequest,
     ExpenseResponse,
@@ -14,29 +13,17 @@ from app.expenses.schemas import (
     SettlementStatus,
     SplitType,
 )
+from app.services.base import BaseService
 from bson import ObjectId, errors
 from fastapi import HTTPException
 
 
-class ExpenseService:
+class ExpenseService(BaseService):
     def __init__(self):
-        pass
-
-    @property
-    def expenses_collection(self):
-        return mongodb.database.expenses
-
-    @property
-    def settlements_collection(self):
-        return mongodb.database.settlements
-
-    @property
-    def groups_collection(self):
-        return mongodb.database.groups
-
-    @property
-    def users_collection(self):
-        return mongodb.database.users
+        super().__init__("expenses")
+        self.settlements_collection = self.db["settlements"]
+        self.groups_collection = self.db["groups"]
+        self.users_collection = self.db["users"]
 
     async def create_expense(
         self, group_id: str, expense_data: ExpenseCreateRequest, user_id: str
@@ -92,7 +79,7 @@ class ExpenseService:
         }
 
         # Insert expense
-        await self.expenses_collection.insert_one(expense_doc)
+        await self.collection.insert_one(expense_doc)
 
         # Create settlements
         settlements = await self._create_settlements_for_expense(
@@ -188,15 +175,12 @@ class ExpenseService:
             query["tags"] = {"$in": tags}
 
         # Get total count
-        total = await self.expenses_collection.count_documents(query)
+        total = await self.collection.count_documents(query)
 
         # Get expenses with pagination
         skip = (page - 1) * limit
         expenses_cursor = (
-            self.expenses_collection.find(query)
-            .sort("createdAt", -1)
-            .skip(skip)
-            .limit(limit)
+            self.collection.find(query).sort("createdAt", -1).skip(skip).limit(limit)
         )
         expenses_docs = await expenses_cursor.to_list(None)
 
@@ -217,9 +201,7 @@ class ExpenseService:
                 }
             },
         ]
-        summary_result = await self.expenses_collection.aggregate(pipeline).to_list(
-            None
-        )
+        summary_result = await self.collection.aggregate(pipeline).to_list(None)
         summary = (
             summary_result[0]
             if summary_result
@@ -269,7 +251,7 @@ class ExpenseService:
                 status_code=403, detail="You are not a member of this group"
             )
 
-        expense_doc = await self.expenses_collection.find_one(
+        expense_doc = await self.collection.find_one(
             {"_id": expense_obj_id, "groupId": group_id}
         )
         if not expense_doc:  # Expense not found
@@ -307,7 +289,7 @@ class ExpenseService:
                 raise HTTPException(status_code=400, detail="Invalid expense ID format")
 
             # Verify user access and that they created the expense
-            expense_doc = await self.expenses_collection.find_one(
+            expense_doc = await self.collection.find_one(
                 {"_id": expense_obj_id, "groupId": group_id, "createdBy": user_id}
             )
             if not expense_doc:  # Expense not found or user not authorized
@@ -379,7 +361,7 @@ class ExpenseService:
                 }
 
                 # Update expense with both $set and $push operations
-                result = await self.expenses_collection.update_one(
+                result = await self.collection.update_one(
                     {"_id": expense_obj_id},
                     {"$set": update_doc, "$push": {"history": history_entry}},
                 )
@@ -390,7 +372,7 @@ class ExpenseService:
                     )
             else:
                 # No actual changes, just update the timestamp
-                result = await self.expenses_collection.update_one(
+                result = await self.collection.update_one(
                     {"_id": expense_obj_id}, {"$set": update_doc}
                 )
 
@@ -408,7 +390,7 @@ class ExpenseService:
                     )
 
                     # Get updated expense
-                    updated_expense = await self.expenses_collection.find_one(
+                    updated_expense = await self.collection.find_one(
                         {"_id": expense_obj_id}
                     )
 
@@ -424,9 +406,7 @@ class ExpenseService:
                     # Continue anyway, as the expense update succeeded
 
             # Return updated expense
-            updated_expense = await self.expenses_collection.find_one(
-                {"_id": expense_obj_id}
-            )
+            updated_expense = await self.collection.find_one({"_id": expense_obj_id})
             if not updated_expense:
                 raise HTTPException(
                     status_code=500, detail="Failed to retrieve updated expense"
@@ -456,7 +436,7 @@ class ExpenseService:
         """Delete an expense"""
 
         # Verify user access and that they created the expense
-        expense_doc = await self.expenses_collection.find_one(
+        expense_doc = await self.collection.find_one(
             {"_id": ObjectId(expense_id), "groupId": group_id, "createdBy": user_id}
         )
         if not expense_doc:
@@ -472,9 +452,7 @@ class ExpenseService:
         await self.settlements_collection.delete_many({"expenseId": expense_id})
 
         # Delete the expense
-        result = await self.expenses_collection.delete_one(
-            {"_id": ObjectId(expense_id)}
-        )
+        result = await self.collection.delete_one({"_id": ObjectId(expense_id)})
         return result.deleted_count > 0
 
     async def calculate_optimized_settlements(
@@ -690,9 +668,7 @@ class ExpenseService:
                 }
             },
         ]
-        expense_result = await self.expenses_collection.aggregate(pipeline).to_list(
-            None
-        )
+        expense_result = await self.collection.aggregate(pipeline).to_list(None)
         expense_stats = (
             expense_result[0]
             if expense_result
@@ -909,7 +885,7 @@ class ExpenseService:
 
         # Get recent expenses where user was involved
         recent_expenses = (
-            await self.expenses_collection.find(
+            await self.collection.find(
                 {
                     "groupId": group_id,
                     "$or": [
@@ -1204,7 +1180,7 @@ class ExpenseService:
             period_str = f"{now.year}-{now.month:02d}"
 
         # Get expenses in the period
-        expenses = await self.expenses_collection.find(
+        expenses = await self.collection.find(
             {"groupId": group_id, "createdAt": {"$gte": start_date, "$lt": end_date}}
         ).to_list(None)
 
@@ -1296,7 +1272,3 @@ class ExpenseService:
             "memberContributions": member_contributions,
             "expenseTrends": expense_trends,
         }
-
-
-# Create service instance
-expense_service = ExpenseService()

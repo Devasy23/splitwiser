@@ -1,12 +1,13 @@
 from typing import Any, Dict
 
 from app.auth.security import get_current_user
+from app.dependencies import get_user_service
 from app.user.schemas import (
     DeleteUserResponse,
     UserProfileResponse,
     UserProfileUpdateRequest,
 )
-from app.user.service import user_service
+from app.user.service import UserService
 from fastapi import APIRouter, Depends, HTTPException, status
 
 router = APIRouter(prefix="/users", tags=["User"])
@@ -15,6 +16,7 @@ router = APIRouter(prefix="/users", tags=["User"])
 @router.get("/me", response_model=UserProfileResponse)
 async def get_current_user_profile(
     current_user: Dict[str, Any] = Depends(get_current_user),
+    user_service: UserService = Depends(get_user_service),
 ):
     user = await user_service.get_user_by_id(current_user["_id"])
     if not user:
@@ -28,6 +30,7 @@ async def get_current_user_profile(
 async def update_user_profile(
     updates: UserProfileUpdateRequest,
     current_user: Dict[str, Any] = Depends(get_current_user),
+    user_service: UserService = Depends(get_user_service),
 ):
     update_data = updates.model_dump(exclude_unset=True)
     if not update_data:
@@ -46,7 +49,10 @@ async def update_user_profile(
 
 
 @router.delete("/me", response_model=DeleteUserResponse)
-async def delete_user_account(current_user: Dict[str, Any] = Depends(get_current_user)):
+async def delete_user_account(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    user_service: UserService = Depends(get_user_service),
+):
     deleted = await user_service.delete_user(current_user["_id"])
     if not deleted:
         raise HTTPException(
