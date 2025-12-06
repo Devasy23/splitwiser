@@ -400,9 +400,28 @@ balance_router = APIRouter(prefix="/users/me", tags=["User Balance"])
 async def get_cross_group_friend_balances(
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
-    """Retrieve the current user's aggregated balances with all friends"""
+    """Retrieve the current user's aggregated balances with all friends (OPTIMIZED)"""
     try:
         result = await expense_service.get_friends_balance_summary(current_user["_id"])
+        return FriendsBalanceResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to fetch friends balance")
+
+
+@balance_router.get("/friends-balance/legacy", response_model=FriendsBalanceResponse)
+async def get_cross_group_friend_balances_legacy(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    """
+    LEGACY: Retrieve the current user's aggregated balances with all friends.
+
+    This endpoint uses the UNOPTIMIZED N×M query pattern for comparison.
+    Use /friends-balance for production - this is for benchmarking only.
+    """
+    try:
+        result = await expense_service.get_friends_balance_summary_legacy(
+            current_user["_id"]
+        )
         return FriendsBalanceResponse(**result)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to fetch friends balance")
@@ -412,9 +431,28 @@ async def get_cross_group_friend_balances(
 async def get_overall_user_balance_summary(
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
-    """Retrieve an overall balance summary for the current user"""
+    """Retrieve an overall balance summary for the current user (OPTIMIZED)"""
     try:
         result = await expense_service.get_overall_balance_summary(current_user["_id"])
+        return BalanceSummaryResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to fetch balance summary")
+
+
+@balance_router.get("/balance-summary/legacy", response_model=BalanceSummaryResponse)
+async def get_overall_user_balance_summary_legacy(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    """
+    LEGACY: Retrieve an overall balance summary for the current user.
+
+    This endpoint uses the UNOPTIMIZED N query pattern for comparison.
+    Use /balance-summary for production - this is for benchmarking only.
+    """
+    try:
+        result = await expense_service.get_overall_balance_summary_legacy(
+            current_user["_id"]
+        )
         return BalanceSummaryResponse(**result)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to fetch balance summary")

@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 30
+
+    # Google OAuth (optional)
+    google_client_id: Optional[str] = None
+    google_client_secret: Optional[str] = None
+
     # Firebase
     firebase_project_id: Optional[str] = None
     firebase_service_account_path: str = "./firebase-service-account.json"
@@ -44,6 +49,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore"  # Ignore extra fields in .env that aren't defined here
 
 
 settings = Settings()
