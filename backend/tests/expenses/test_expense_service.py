@@ -2109,5 +2109,122 @@ async def test_get_group_analytics_group_not_found(expense_service):
         mock_db.users.find_one.assert_not_called()
 
 
+@pytest.mark.asyncio
+async def test_get_friends_balance_summary_aggregation_error(expense_service):
+    """Test friends balance summary when aggregation fails"""
+    user_id_str = str(ObjectId())
+
+    with patch("app.expenses.service.mongodb") as mock_mongodb:
+        mock_db = MagicMock()
+        mock_mongodb.database = mock_db
+
+        # Mock groups
+        mock_groups = [
+            {
+                "_id": ObjectId(),
+                "name": "Test Group",
+                "members": [{"userId": user_id_str}, {"userId": str(ObjectId())}],
+            }
+        ]
+        mock_groups_cursor = AsyncMock()
+        mock_groups_cursor.to_list.return_value = mock_groups
+        mock_db.groups.find.return_value = mock_groups_cursor
+
+        # Mock aggregation failure
+        mock_agg_cursor = AsyncMock()
+        mock_agg_cursor.to_list.side_effect = Exception("Aggregation failed")
+        mock_db.settlements.aggregate.return_value = mock_agg_cursor
+
+        result = await expense_service.get_friends_balance_summary(user_id_str)
+
+        # Should return empty results on error
+        assert len(result["friendsBalance"]) == 0
+        assert result["summary"]["totalOwedToYou"] == 0
+        assert result["summary"]["totalYouOwe"] == 0
+        assert result["summary"]["friendCount"] == 0
+
+
+@pytest.mark.asyncio
+async def test_get_friends_balance_summary_user_fetch_error(expense_service):
+    """Test friends balance summary when fetching user details fails"""
+    user_id_str = str(ObjectId())
+    friend_id_str = str(ObjectId())
+
+    with patch("app.expenses.service.mongodb") as mock_mongodb:
+        mock_db = MagicMock()
+        mock_mongodb.database = mock_db
+
+        # Mock groups
+        mock_groups = [
+            {
+                "_id": ObjectId(),
+                "name": "Test Group",
+                "members": [{"userId": user_id_str}, {"userId": friend_id_str}],
+            }
+        ]
+        mock_groups_cursor = AsyncMock()
+        mock_groups_cursor.to_list.return_value = mock_groups
+        mock_db.groups.find.return_value = mock_groups_cursor
+
+        # Mock aggregation success
+        mock_agg_cursor = AsyncMock()
+        mock_agg_cursor.to_list.return_value = [
+            {
+                "_id": friend_id_str,
+                "totalBalance": 50.0,
+                "groups": [{"groupId": str(mock_groups[0]["_id"]), "balance": 50.0}],
+            }
+        ]
+        mock_db.settlements.aggregate.return_value = mock_agg_cursor
+
+        # Mock user fetch failure
+        mock_users_cursor = AsyncMock()
+        mock_users_cursor.to_list.side_effect = Exception("User fetch failed")
+        mock_db.users.find.return_value = mock_users_cursor
+
+        result = await expense_service.get_friends_balance_summary(user_id_str)
+
+        # Should still return results but with "Unknown" for user names
+        assert len(result["friendsBalance"]) == 1
+        assert result["friendsBalance"][0]["userName"] == "Unknown"
+        assert result["friendsBalance"][0]["netBalance"] == 50.0
+
+
+@pytest.mark.asyncio
+async def test_get_friends_balance_summary_zero_balance_filtering(expense_service):
+    """Test that friends with zero balance are filtered out"""
+    user_id_str = str(ObjectId())
+
+    with patch("app.expenses.service.mongodb") as mock_mongodb:
+        mock_db = MagicMock()
+        mock_mongodb.database = mock_db
+
+        # Mock groups
+        mock_groups = [
+            {
+                "_id": ObjectId(),
+                "name": "Test Group",
+                "members": [{"userId": user_id_str}],
+            }
+        ]
+        mock_groups_cursor = AsyncMock()
+        mock_groups_cursor.to_list.return_value = mock_groups
+        mock_db.groups.find.return_value = mock_groups_cursor
+
+        # Mock aggregation returns no results (all filtered by zero balance)
+        mock_agg_cursor = AsyncMock()
+        mock_agg_cursor.to_list.return_value = []
+        mock_db.settlements.aggregate.return_value = mock_agg_cursor
+
+        result = await expense_service.get_friends_balance_summary(user_id_str)
+
+        # Should return empty friend balance
+        assert len(result["friendsBalance"]) == 0
+        assert result["summary"]["totalOwedToYou"] == 0
+        assert result["summary"]["totalYouOwe"] == 0
+        assert result["summary"]["friendCount"] == 0
+        assert result["summary"]["activeGroups"] == 1
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
