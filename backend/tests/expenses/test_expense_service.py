@@ -1602,53 +1602,45 @@ async def test_get_friends_balance_summary_success(expense_service):
         },
     ]
 
-    # Mocking settlement aggregations for each friend in each group
+    # Mocking the OPTIMIZED settlement aggregation
+    # The new optimized version makes ONE aggregation call that returns all friends' balances
     # Friend 1:
-    #   Group Alpha: Main owes Friend1 50 (net -50 for Main)
-    #   Group Beta: Friend1 owes Main 30 (net +30 for Main)
-    #   Total for Friend1: Main is owed 50, owes 30. Net: Main is owed 20 by Friend1.
+    #   Group Alpha: Main owes Friend1 50 (balance: -50 for Main)
+    #   Group Beta: Friend1 owes Main 30 (balance: +30 for Main)
+    #   Total for Friend1: -50 + 30 = -20 (Main owes Friend1 20)
     # Friend 2:
-    #   Group Beta: Main owes Friend2 70 (net -70 for Main)
-    #   Total for Friend2: Main owes 70 to Friend2.
+    #   Group Beta: Main owes Friend2 70 (balance: -70 for Main)
+    #   Total for Friend2: -70 (Main owes Friend2 70)
 
-    # This is the side_effect for the .aggregate() call. It must be a sync function
-    # that returns a cursor mock (AsyncMock).
     def sync_mock_settlements_aggregate_cursor_factory(pipeline, *args, **kwargs):
-        match_clause = pipeline[0]["$match"]
-        group_id_pipeline = match_clause["groupId"]
-        or_conditions = match_clause["$or"]
-
-        # Determine which friend is being processed based on payer/payee in OR condition
-        # This is a simplification; real queries are more complex
-        pipeline_friend_id = None
-        for cond in or_conditions:
-            if cond["payerId"] == user_id_str and cond["payeeId"] != user_id_str:
-                pipeline_friend_id = cond["payeeId"]
-                break
-            elif cond["payeeId"] == user_id_str and cond["payerId"] != user_id_str:
-                pipeline_friend_id = cond["payerId"]
-                break
-
+        # The optimized version returns aggregated results for all friends in one go
         mock_agg_cursor = AsyncMock()
-        if group_id_pipeline == group1_id and pipeline_friend_id == friend1_id_str:
-            # Main owes Friend1 50 in Group Alpha
-            mock_agg_cursor.to_list.return_value = [
-                {"_id": None, "userOwes": 50.0, "friendOwes": 0.0}
-            ]
-        elif group_id_pipeline == group2_id and pipeline_friend_id == friend1_id_str:
-            # Friend1 owes Main 30 in Group Beta
-            mock_agg_cursor.to_list.return_value = [
-                {"_id": None, "userOwes": 0.0, "friendOwes": 30.0}
-            ]
-        elif group_id_pipeline == group2_id and pipeline_friend_id == friend2_id_str:
-            # Main owes Friend2 70 in Group Beta
-            mock_agg_cursor.to_list.return_value = [
-                {"_id": None, "userOwes": 70.0, "friendOwes": 0.0}
-            ]
-        else:
-            mock_agg_cursor.to_list.return_value = [
-                {"_id": None, "userOwes": 0.0, "friendOwes": 0.0}
-            ]  # Default empty
+        mock_agg_cursor.to_list.return_value = [
+            {
+                "_id": friend1_id_str,  # Friend 1
+                "totalBalance": -20.0,  # Main owes Friend1 20 (net: -50 from G1, +30 from G2)
+                "groups": [
+                    {
+                        "groupId": group1_id,
+                        "balance": -50.0,
+                    },  # Main owes 50 in Group Alpha
+                    {
+                        "groupId": group2_id,
+                        "balance": 30.0,
+                    },  # Friend1 owes 30 in Group Beta
+                ],
+            },
+            {
+                "_id": friend2_id_str,  # Friend 2
+                "totalBalance": -70.0,  # Main owes Friend2 70
+                "groups": [
+                    {
+                        "groupId": group2_id,
+                        "balance": -70.0,
+                    },  # Main owes 70 in Group Beta
+                ],
+            },
+        ]
         return mock_agg_cursor
 
     with patch("app.expenses.service.mongodb") as mock_mongodb:
@@ -1678,7 +1670,7 @@ async def test_get_friends_balance_summary_success(expense_service):
 
         mock_db.users.find = MagicMock(side_effect=mock_user_find_cursor_side_effect)
 
-        # Mock settlement aggregation logic
+        # Mock the optimized settlement aggregation logic
         # .aggregate() is sync, returns an async cursor.
         mock_db.settlements.aggregate = MagicMock(
             side_effect=sync_mock_settlements_aggregate_cursor_factory
@@ -1739,9 +1731,9 @@ async def test_get_friends_balance_summary_success(expense_service):
 
         # Verify mocks
         mock_db.groups.find.assert_called_once_with({"members.userId": user_id_str})
-        # settlements.aggregate is called for each friend in each group they share with user_id_str
-        # Friend1 is in 2 groups with user_id_str, Friend2 is in 1 group with user_id_str. Total 3 calls.
-        assert mock_db.settlements.aggregate.call_count == 3
+        # OPTIMIZED: settlements.aggregate is called ONCE (not per friend/group)
+        # The optimized version uses a single aggregation pipeline to get all friends' balances
+        assert mock_db.settlements.aggregate.call_count == 1
 
 
 @pytest.mark.asyncio
