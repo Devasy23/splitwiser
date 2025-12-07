@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from app.config import logger
@@ -1093,7 +1093,7 @@ class ExpenseService:
 
         for result in results:
             friend_id = result["_id"]
-            total_balance = result["totalBalance"]
+            total_balance = result.get("totalBalance", 0)
 
             # Get friend details from map
             friend_details = friends_map.get(friend_id)
@@ -1129,7 +1129,9 @@ class ExpenseService:
                 "netBalance": round(total_balance, 2),
                 "owesYou": total_balance > 0,
                 "breakdown": breakdown,
-                "lastActivity": datetime.utcnow(),  # TODO: Calculate actual last activity
+                "lastActivity": datetime.now(
+                    timezone.utc
+                ),  # TODO: Calculate actual last activity
             }
 
             friends_balance.append(friend_data)

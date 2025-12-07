@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -1612,7 +1613,9 @@ async def test_get_friends_balance_summary_success(expense_service):
     #   Group Beta: Main owes Friend2 70 (balance: -70 for Main)
     #   Total for Friend2: -70 (Main owes Friend2 70)
 
-    def sync_mock_settlements_aggregate_cursor_factory(pipeline, *args, **kwargs):
+    def sync_mock_settlements_aggregate_cursor_factory(
+        _pipeline: Any, *_args: Any, **_kwargs: Any
+    ) -> AsyncMock:
         # The optimized version returns aggregated results for all friends in one go
         mock_agg_cursor = AsyncMock()
         mock_agg_cursor.to_list.return_value = [
