@@ -83,7 +83,7 @@ class TestEnrichMembersOptimized:
 
     @pytest.mark.asyncio
     async def test_enrich_members_invalid_object_ids(self):
-        """Test enrichment with invalid ObjectIds - covers lines 46-47"""
+        """Test enrichment with invalid ObjectIds - covers lines 47, 52, 108-109"""
         members = [
             {"userId": "invalid_id_123", "role": "admin", "joinedAt": "2023-01-01"},
             {"userId": "also_invalid", "role": "member", "joinedAt": "2023-01-02"},
@@ -92,12 +92,20 @@ class TestEnrichMembersOptimized:
         mock_db = MagicMock()
 
         with patch.object(self.service, "get_db", return_value=mock_db):
-            enriched = await self.service._enrich_members_with_user_details(members)
+            # Patch logger to verify warning is called (covers line 47)
+            with patch("app.groups.service.logger") as mock_logger:
+                enriched = await self.service._enrich_members_with_user_details(members)
+                # Verify logger.warning was called for invalid ObjectIds (line 47)
+                assert mock_logger.warning.call_count == 2
 
-        # Should return fallback members since no valid ObjectIds - covers line 52
+        # Should return fallback members since no valid ObjectIds (line 52)
         assert len(enriched) == 2
+        # Verify _create_fallback_member output (lines 108-109)
+        assert enriched[0]["userId"] == "invalid_id_123"
         assert "User" in enriched[0]["user"]["name"]
         assert enriched[0]["role"] == "admin"
+        assert enriched[0]["user"]["email"] == "invalid_id_123@example.com"
+        assert enriched[0]["joinedAt"] == "2023-01-01"
 
     @pytest.mark.asyncio
     async def test_enrich_members_member_without_userId(self):
@@ -262,3 +270,41 @@ class TestEnrichMembersOptimized:
         assert len(enriched) == 10
         for i, member in enumerate(enriched):
             assert member["user"]["name"] == f"User {i}"
+
+    def test_create_fallback_member_short_user_id(self):
+        """Test _create_fallback_member with short user ID - covers lines 108-109"""
+        member = {"userId": "ab", "role": "member", "joinedAt": "2023-01-01"}
+
+        result = self.service._create_fallback_member(member)
+
+        # Verify fallback member structure (lines 108-109)
+        assert result["userId"] == "ab"
+        assert result["role"] == "member"
+        assert result["joinedAt"] == "2023-01-01"
+        assert result["user"]["name"] == "User ab"  # Uses the short ID since len < 4
+        assert result["user"]["email"] == "ab@example.com"
+        assert result["user"]["imageUrl"] is None
+
+    def test_create_fallback_member_long_user_id(self):
+        """Test _create_fallback_member with long user ID - covers lines 108-109"""
+        long_id = "abcdefghijklmnop"
+        member = {"userId": long_id, "role": "admin", "joinedAt": "2023-01-01"}
+
+        result = self.service._create_fallback_member(member)
+
+        # Verify fallback member structure with last 4 chars
+        assert result["userId"] == long_id
+        assert result["role"] == "admin"
+        assert result["user"]["name"] == "User mnop"  # Uses last 4 chars
+        assert result["user"]["email"] == "abcdefghijklmnop@example.com"
+        assert result["user"]["imageUrl"] is None
+
+    def test_create_fallback_member_no_user_id(self):
+        """Test _create_fallback_member when userId is missing"""
+        member = {"role": "member", "joinedAt": "2023-01-01"}  # No userId
+
+        result = self.service._create_fallback_member(member)
+
+        # Should use "unknown" as fallback
+        assert result["userId"] == "unknown"
+        assert result["user"]["name"] == "User nown"  # Last 4 chars of "unknown"
