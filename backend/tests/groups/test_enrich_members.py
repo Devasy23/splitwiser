@@ -71,7 +71,7 @@ class TestEnrichMembersOptimized:
 
     @pytest.mark.asyncio
     async def test_enrich_members_empty_list(self):
-        """Test enrichment with empty members list"""
+        """Test enrichment with empty members list - covers line 35"""
         mock_db = MagicMock()
 
         with patch.object(self.service, "get_db", return_value=mock_db):
@@ -80,6 +80,55 @@ class TestEnrichMembersOptimized:
         assert enriched == []
         # Verify no database call was made
         mock_db.users.find.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_enrich_members_invalid_object_ids(self):
+        """Test enrichment with invalid ObjectIds - covers lines 46-47"""
+        members = [
+            {"userId": "invalid_id_123", "role": "admin", "joinedAt": "2023-01-01"},
+            {"userId": "also_invalid", "role": "member", "joinedAt": "2023-01-02"},
+        ]
+
+        mock_db = MagicMock()
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            enriched = await self.service._enrich_members_with_user_details(members)
+
+        # Should return fallback members since no valid ObjectIds - covers line 52
+        assert len(enriched) == 2
+        assert "User" in enriched[0]["user"]["name"]
+        assert enriched[0]["role"] == "admin"
+
+    @pytest.mark.asyncio
+    async def test_enrich_members_member_without_userId(self):
+        """Test enrichment when member has no userId - covers line 99"""
+        user_id_1 = str(ObjectId())
+
+        members = [
+            {"userId": user_id_1, "role": "admin", "joinedAt": "2023-01-01"},
+            {"role": "member", "joinedAt": "2023-01-02"},  # No userId
+        ]
+
+        mock_users = [
+            {"_id": ObjectId(user_id_1), "name": "Admin User", "imageUrl": "admin.jpg"},
+        ]
+
+        mock_db = MagicMock()
+        mock_users_collection = MagicMock()
+        mock_db.users = mock_users_collection
+
+        mock_cursor = AsyncMock()
+        mock_cursor.to_list.return_value = mock_users
+        mock_users_collection.find.return_value = mock_cursor
+
+        with patch.object(self.service, "get_db", return_value=mock_db):
+            enriched = await self.service._enrich_members_with_user_details(members)
+
+        assert len(enriched) == 2
+        assert enriched[0]["user"]["name"] == "Admin User"
+        # Second member should be returned as-is since no userId
+        assert enriched[1]["role"] == "member"
+        assert "user" not in enriched[1] or enriched[1] == members[1]
 
     @pytest.mark.asyncio
     async def test_enrich_members_missing_user_data(self):
