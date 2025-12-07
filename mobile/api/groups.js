@@ -8,9 +8,8 @@ export const getOptimizedSettlements = (groupId) =>
 export const createExpense = (groupId, expenseData) =>
   apiClient.post(`/groups/${groupId}/expenses`, expenseData);
 
-export const getGroupDetails = (groupId) => {
-  return Promise.all([getGroupMembers(groupId), getGroupExpenses(groupId)]);
-};
+export const getGroupDetails = (groupId) =>
+  apiClient.get(`/groups/${groupId}`);
 
 export const getGroupMembers = (groupId) =>
   apiClient.get(`/groups/${groupId}/members`);

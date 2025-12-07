@@ -16,7 +16,6 @@ import {
     deleteGroup,
     getExpenses,
     getGroupDetails,
-    getGroupMembers,
     getOptimizedSettlements,
     leaveGroup, removeMember,
     updateExpense,
@@ -104,15 +103,15 @@ export const GroupDetails = () => {
         if (!id) return;
         setLoading(true);
         try {
-            const [groupRes, expRes, memRes, setRes] = await Promise.all([
+            const [groupRes, expRes, setRes] = await Promise.all([
                 getGroupDetails(id),
                 getExpenses(id),
-                getGroupMembers(id),
                 getOptimizedSettlements(id)
             ]);
             setGroup(groupRes.data);
             setExpenses(expRes.data.expenses);
-            setMembers(memRes.data);
+            // Use members from group details instead of separate API call
+            setMembers(groupRes.data.members || []);
             setSettlements(setRes.data.optimizedSettlements);
             setEditGroupName(groupRes.data.name);
         } catch (err) {

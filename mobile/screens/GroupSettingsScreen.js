@@ -30,7 +30,6 @@ import {
   removeMember as apiRemoveMember,
   updateGroup as apiUpdateGroup,
   getGroupById,
-  getGroupMembers,
   getOptimizedSettlements,
 } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
@@ -56,14 +55,12 @@ const GroupSettingsScreen = ({ route, navigation }) => {
   const load = async () => {
     try {
       setLoading(true);
-      const [gRes, mRes] = await Promise.all([
-        getGroupById(groupId),
-        getGroupMembers(groupId),
-      ]);
+      const gRes = await getGroupById(groupId);
       setGroup(gRes.data);
       setName(gRes.data.name);
       setIcon(gRes.data.imageUrl || gRes.data.icon || "");
-      setMembers(mRes.data);
+      // Use members from group details instead of separate API call
+      setMembers(gRes.data.members || []);
     } catch (e) {
       console.error("Failed to load group settings", e);
       Alert.alert("Error", "Failed to load group settings.");

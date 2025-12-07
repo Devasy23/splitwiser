@@ -1590,11 +1590,13 @@ async def test_get_friends_balance_summary_success(expense_service):
         {
             "_id": ObjectId(group1_id),
             "name": "Group Alpha",
+            "imageUrl": "https://example.com/group1.jpg",
             "members": [{"userId": user_id_str}, {"userId": friend1_id_str}],
         },
         {
             "_id": ObjectId(group2_id),
             "name": "Group Beta",
+            "imageUrl": "https://example.com/group2.jpg",
             "members": [
                 {"userId": user_id_str},
                 {"userId": friend1_id_str},
@@ -1722,6 +1724,28 @@ async def test_get_friends_balance_summary_success(expense_service):
         assert len(friend2_summary["breakdown"]) == 1
         assert friend2_summary["breakdown"][0]["groupName"] == "Group Beta"
         assert abs(friend2_summary["breakdown"][0]["balance"] - (-70.0)) < 0.01
+        assert (
+            friend2_summary["breakdown"][0]["imageUrl"]
+            == "https://example.com/group2.jpg"
+        )
+
+        # Verify imageUrl is included in breakdown for Friend1
+        group_alpha_breakdown = next(
+            (
+                b
+                for b in friend1_summary["breakdown"]
+                if b["groupName"] == "Group Alpha"
+            ),
+            None,
+        )
+        group_beta_breakdown = next(
+            (b for b in friend1_summary["breakdown"] if b["groupName"] == "Group Beta"),
+            None,
+        )
+        assert group_alpha_breakdown is not None
+        assert group_alpha_breakdown["imageUrl"] == "https://example.com/group1.jpg"
+        assert group_beta_breakdown is not None
+        assert group_beta_breakdown["imageUrl"] == "https://example.com/group2.jpg"
 
         # Summary: Main owes Friend1 20, Main owes Friend2 70.
         # totalOwedToYou = 0
@@ -1810,27 +1834,19 @@ async def test_get_overall_balance_summary_success(expense_service):
     # Group Two: User paid 50, was owed 150. Net balance = -100 (owes 100 to group)
     # Group Three: User paid 50, was owed 50. Net balance = 0
 
-    # This side effect will be for the aggregate() call. It needs to return a cursor mock.
+    # OPTIMIZED: Single aggregation call returns all group balances at once
     def mock_aggregate_cursor_side_effect(pipeline, *args, **kwargs):
-        group_id_pipeline = pipeline[0]["$match"]["groupId"]
-
-        # Create a new AsyncMock for the cursor each time aggregate is called
+        # Create a new AsyncMock for the cursor
         cursor_mock = AsyncMock()
 
-        if group_id_pipeline == group1_id:
-            cursor_mock.to_list = AsyncMock(
-                return_value=[{"_id": None, "totalPaid": 100.0, "totalOwed": 20.0}]
-            )
-        elif group_id_pipeline == group2_id:
-            cursor_mock.to_list = AsyncMock(
-                return_value=[{"_id": None, "totalPaid": 50.0, "totalOwed": 150.0}]
-            )
-        elif group_id_pipeline == group3_id:  # Zero balance
-            cursor_mock.to_list = AsyncMock(
-                return_value=[{"_id": None, "totalPaid": 50.0, "totalOwed": 50.0}]
-            )
-        else:  # Should not happen in this test
-            cursor_mock.to_list = AsyncMock(return_value=[])
+        # The optimized version groups by groupId
+        cursor_mock.to_list = AsyncMock(
+            return_value=[
+                {"_id": group1_id, "totalPaid": 100.0, "totalOwed": 20.0},
+                {"_id": group2_id, "totalPaid": 50.0, "totalOwed": 150.0},
+                {"_id": group3_id, "totalPaid": 50.0, "totalOwed": 50.0},
+            ]
+        )
         return cursor_mock
 
     with patch("app.expenses.service.mongodb") as mock_mongodb:
@@ -1865,21 +1881,22 @@ async def test_get_overall_balance_summary_success(expense_service):
         assert len(result["groupsSummary"]) == 2
 
         group1_summary = next(
-            g for g in result["groupsSummary"] if g["group_id"] == group1_id
+            g for g in result["groupsSummary"] if g["groupId"] == group1_id
         )
         group2_summary = next(
-            g for g in result["groupsSummary"] if g["group_id"] == group2_id
+            g for g in result["groupsSummary"] if g["groupId"] == group2_id
         )
 
-        assert group1_summary["group_name"] == "Group One"
-        assert abs(group1_summary["yourBalanceInGroup"] - 80.0) < 0.01
+        assert group1_summary["groupName"] == "Group One"
+        assert abs(group1_summary["amount"] - 80.0) < 0.01
 
-        assert group2_summary["group_name"] == "Group Two"
-        assert abs(group2_summary["yourBalanceInGroup"] - (-100.0)) < 0.01
+        assert group2_summary["groupName"] == "Group Two"
+        assert abs(group2_summary["amount"] - (-100.0)) < 0.01
 
         # Verify mocks
         mock_db.groups.find.assert_called_once_with({"members.userId": user_id})
-        assert mock_db.settlements.aggregate.call_count == 3  # Called for each group
+        # OPTIMIZED: aggregate is called ONCE instead of per group
+        assert mock_db.settlements.aggregate.call_count == 1
 
 
 @pytest.mark.asyncio

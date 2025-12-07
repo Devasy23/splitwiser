@@ -9,8 +9,8 @@ import {
   Title,
 } from "react-native-paper";
 import {
+  getGroupDetails,
   getGroupExpenses,
-  getGroupMembers,
   getOptimizedSettlements,
 } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
@@ -32,14 +32,15 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      // Fetch members, expenses, and settlements in parallel
-      const [membersResponse, expensesResponse, settlementsResponse] =
+      // Fetch group details, expenses, and settlements in parallel
+      const [groupResponse, expensesResponse, settlementsResponse] =
         await Promise.all([
-          getGroupMembers(groupId),
+          getGroupDetails(groupId),
           getGroupExpenses(groupId),
           getOptimizedSettlements(groupId),
         ]);
-      setMembers(membersResponse.data);
+      // Use members from group details instead of separate API call
+      setMembers(groupResponse.data.members || []);
       setExpenses(expensesResponse.data.expenses);
       setSettlements(settlementsResponse.data.optimizedSettlements || []);
     } catch (error) {

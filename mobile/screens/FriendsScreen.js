@@ -9,7 +9,7 @@ import {
   List,
   Text,
 } from "react-native-paper";
-import { getFriendsBalance, getGroups } from "../api/groups";
+import { getFriendsBalance } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 import { formatCurrency } from "../utils/currency";
 
@@ -24,14 +24,9 @@ const FriendsScreen = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch friends balance + groups concurrently for group icons
+        // Fetch friends balance with group imageUrl included
         const friendsResponse = await getFriendsBalance();
         const friendsData = friendsResponse.data.friendsBalance || [];
-        const groupsResponse = await getGroups();
-        const groups = groupsResponse?.data?.groups || [];
-        const groupMeta = new Map(
-          groups.map((g) => [g._id, { name: g.name, imageUrl: g.imageUrl }])
-        );
 
         const transformedFriends = friendsData.map((friend) => ({
           id: friend.userId,
@@ -42,7 +37,7 @@ const FriendsScreen = () => {
             id: group.groupId,
             name: group.groupName,
             balance: group.balance,
-            imageUrl: groupMeta.get(group.groupId)?.imageUrl || null,
+            imageUrl: group.imageUrl || null,
           })),
         }));
 

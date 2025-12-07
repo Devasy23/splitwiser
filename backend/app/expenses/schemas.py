@@ -185,6 +185,7 @@ class FriendBalanceBreakdown(BaseModel):
     groupName: str
     balance: float
     owesYou: bool
+    imageUrl: Optional[str] = None
 
 
 class FriendBalance(BaseModel):

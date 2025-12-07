@@ -3,7 +3,7 @@ import { ArrowRight, Search, TrendingDown, TrendingUp, Users } from 'lucide-reac
 import { useEffect, useState } from 'react';
 import { THEMES } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
-import { getFriendsBalance, getGroups } from '../services/api';
+import { getFriendsBalance } from '../services/api';
 
 interface GroupBreakdown {
   groupId: string;
@@ -33,24 +33,16 @@ export const Friends = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [friendsRes, groupsRes] = await Promise.all([
-          getFriendsBalance(),
-          getGroups()
-        ]);
+        const friendsRes = await getFriendsBalance();
 
         const friendsData = friendsRes.data.friendsBalance || [];
-        const groups = groupsRes.data.groups || [];
-
-        const gMap = new Map<string, { name: string; imageUrl?: string }>(
-          groups.map((g: { _id: string; name: string; imageUrl?: string }) => [g._id, { name: g.name, imageUrl: g.imageUrl }])
-        );
 
         interface FriendBalanceData {
           userId: string;
           userName: string;
           userImageUrl?: string;
           netBalance: number;
-          breakdown?: { groupId: string; groupName: string; balance: number }[];
+          breakdown?: { groupId: string; groupName: string; balance: number; imageUrl?: string }[];
         }
 
         const transformedFriends = friendsData.map((friend: FriendBalanceData) => ({
@@ -59,11 +51,11 @@ export const Friends = () => {
           userName: friend.userName,
           userImageUrl: friend.userImageUrl,
           netBalance: friend.netBalance,
-          breakdown: (friend.breakdown || []).map((group: { groupId: string; groupName: string; balance: number }) => ({
+          breakdown: (friend.breakdown || []).map((group: { groupId: string; groupName: string; balance: number; imageUrl?: string }) => ({
             groupId: group.groupId,
             groupName: group.groupName,
             balance: group.balance,
-            imageUrl: gMap.get(group.groupId)?.imageUrl
+            imageUrl: group.imageUrl
           }))
         }));
 

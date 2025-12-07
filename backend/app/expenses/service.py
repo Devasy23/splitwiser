@@ -1072,8 +1072,14 @@ class ExpenseService:
         # Extract unique friend IDs for batch fetching
         friend_ids = list({result["_id"] for result in results})
 
-        # Build group map from groups we already fetched
-        groups_map = {str(g["_id"]): g.get("name", "Unknown Group") for g in groups}
+        # Build group map from groups we already fetched - include imageUrl
+        groups_map = {
+            str(g["_id"]): {
+                "name": g.get("name", "Unknown Group"),
+                "imageUrl": g.get("imageUrl"),
+            }
+            for g in groups
+        }
 
         # OPTIMIZATION: Batch fetch all friend details in one query
         try:
@@ -1106,12 +1112,24 @@ class ExpenseService:
 
                 # Only include groups with significant balance
                 if abs(group_balance) > 0.01:
+                    group_info = groups_map.get(
+                        group_id, {"name": "Unknown Group", "imageUrl": None}
+                    )
                     breakdown.append(
                         {
                             "groupId": group_id,
-                            "groupName": groups_map.get(group_id, "Unknown Group"),
+                            "groupName": (
+                                group_info["name"]
+                                if isinstance(group_info, dict)
+                                else group_info
+                            ),
                             "balance": round(group_balance, 2),
                             "owesYou": group_balance > 0,
+                            "imageUrl": (
+                                group_info.get("imageUrl")
+                                if isinstance(group_info, dict)
+                                else None
+                            ),
                         }
                     )
 
@@ -1156,48 +1174,84 @@ class ExpenseService:
         }
 
     async def get_overall_balance_summary(self, user_id: str) -> Dict[str, Any]:
-        """Get overall balance summary for a user"""
+        """
+        Get overall balance summary for a user.
+
+        Performance: Optimized to use single aggregation query instead of N queries.
+        Example: 10 groups = 2 queries total (vs 11 with naive approach).
+
+        Uses MongoDB aggregation to calculate all group balances at once.
+        """
 
         # Get all groups user belongs to
         groups = await self.groups_collection.find({"members.userId": user_id}).to_list(
             None
         )
 
+        if not groups:
+            return {
+                "totalOwedToYou": 0,
+                "totalYouOwe": 0,
+                "netBalance": 0,
+                "currency": "USD",
+                "groupsSummary": [],
+            }
+
+        # Extract group IDs for aggregation
+        group_ids = [str(g["_id"]) for g in groups]
+
+        # Build group name map for O(1) lookups
+        groups_map = {str(g["_id"]): g.get("name", "Unknown Group") for g in groups}
+
+        # OPTIMIZATION: Single aggregation to calculate balances for ALL groups at once
+        pipeline = [
+            {
+                "$match": {
+                    "groupId": {"$in": group_ids},
+                    "$or": [{"payerId": user_id}, {"payeeId": user_id}],
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$groupId",
+                    "totalPaid": {
+                        "$sum": {
+                            "$cond": [{"$eq": ["$payerId", user_id]}, "$amount", 0]
+                        }
+                    },
+                    "totalOwed": {
+                        "$sum": {
+                            "$cond": [{"$eq": ["$payeeId", user_id]}, "$amount", 0]
+                        }
+                    },
+                }
+            },
+        ]
+
+        try:
+            results = await self.settlements_collection.aggregate(pipeline).to_list(
+                None
+            )
+        except Exception as e:
+            logger.error(f"Error in balance summary aggregation: {e}")
+            results = []
+
+        # Build results map for O(1) lookups
+        balance_map = {
+            result["_id"]: {
+                "totalPaid": result.get("totalPaid", 0),
+                "totalOwed": result.get("totalOwed", 0),
+            }
+            for result in results
+        }
+
         total_owed_to_you = 0
         total_you_owe = 0
         groups_summary = []
 
-        for group in groups:
-            group_id = str(group["_id"])
-
-            # Calculate user's balance in this group
-            pipeline = [
-                {
-                    "$match": {
-                        "groupId": group_id,
-                        "$or": [{"payerId": user_id}, {"payeeId": user_id}],
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": None,
-                        "totalPaid": {
-                            "$sum": {
-                                "$cond": [{"$eq": ["$payerId", user_id]}, "$amount", 0]
-                            }
-                        },
-                        "totalOwed": {
-                            "$sum": {
-                                "$cond": [{"$eq": ["$payeeId", user_id]}, "$amount", 0]
-                            }
-                        },
-                    }
-                },
-            ]
-
-            result = await self.settlements_collection.aggregate(pipeline).to_list(None)
-            balance_data = result[0] if result else {"totalPaid": 0, "totalOwed": 0}
-
+        # Process all groups using the aggregation results
+        for group_id in group_ids:
+            balance_data = balance_map.get(group_id, {"totalPaid": 0, "totalOwed": 0})
             group_balance = balance_data["totalPaid"] - balance_data["totalOwed"]
 
             if (
@@ -1205,9 +1259,9 @@ class ExpenseService:
             ):  # Only include groups with significant balance
                 groups_summary.append(
                     {
-                        "group_id": group_id,
-                        "group_name": group["name"],
-                        "yourBalanceInGroup": group_balance,
+                        "groupId": group_id,
+                        "groupName": groups_map.get(group_id, "Unknown Group"),
+                        "amount": round(group_balance, 2),
                     }
                 )
 
@@ -1217,9 +1271,9 @@ class ExpenseService:
                     total_you_owe += abs(group_balance)
 
         return {
-            "totalOwedToYou": total_owed_to_you,
-            "totalYouOwe": total_you_owe,
-            "netBalance": total_owed_to_you - total_you_owe,
+            "totalOwedToYou": round(total_owed_to_you, 2),
+            "totalYouOwe": round(total_you_owe, 2),
+            "netBalance": round(total_owed_to_you - total_you_owe, 2),
             "currency": "USD",
             "groupsSummary": groups_summary,
         }
