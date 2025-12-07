@@ -953,141 +953,201 @@ class ExpenseService:
         }
 
     async def get_friends_balance_summary(self, user_id: str) -> Dict[str, Any]:
-        """Get cross-group friend balances for a user"""
+        """
+        Get cross-group friend balances using optimized aggregation pipeline.
 
-        # Get all groups user belongs to
+        Performance: Optimized to use single aggregation query instead of N×M queries.
+        Example: 20 friends × 5 groups = 3 queries total (vs 100+ with naive approach).
+
+        Uses MongoDB aggregation to calculate all balances at once, then batch enriches
+        with user and group details for optimal performance.
+        """
+
+        # First, get all groups user belongs to (need this to filter friends properly)
         groups = await self.groups_collection.find({"members.userId": user_id}).to_list(
-            None
+            length=500
         )
 
-        friends_balance = []
-        user_totals = {"totalOwedToYou": 0, "totalYouOwe": 0}
+        if not groups:
+            return {
+                "friendsBalance": [],
+                "summary": {
+                    "totalOwedToYou": 0,
+                    "totalYouOwe": 0,
+                    "netBalance": 0,
+                    "friendCount": 0,
+                    "activeGroups": 0,
+                },
+            }
 
-        # Get all unique friends across groups
-        friend_ids = set()
+        # Extract group IDs and friend IDs (only from user's groups)
+        group_ids = [str(g["_id"]) for g in groups]
+        friend_ids_in_groups = set()
         for group in groups:
             for member in group["members"]:
                 if member["userId"] != user_id:
-                    friend_ids.add(member["userId"])
+                    friend_ids_in_groups.add(member["userId"])
 
-        # Get user names & images
-        users = await self.users_collection.find(
-            {"_id": {"$in": [ObjectId(uid) for uid in friend_ids]}}
-        ).to_list(None)
-        user_names = {str(user["_id"]): user.get("name", "Unknown") for user in users}
-        user_images = {str(user["_id"]): user.get("imageUrl") for user in users}
+        # OPTIMIZATION: Single aggregation to calculate all friend balances at once
+        # Only for friends in user's groups and groups user belongs to
+        pipeline = [
+            # Step 1: Match settlements in user's groups involving the user
+            {
+                "$match": {
+                    "groupId": {"$in": group_ids},
+                    "$or": [
+                        {
+                            "payerId": user_id,
+                            "payeeId": {"$in": list(friend_ids_in_groups)},
+                        },
+                        {
+                            "payeeId": user_id,
+                            "payerId": {"$in": list(friend_ids_in_groups)},
+                        },
+                    ],
+                }
+            },
+            # Step 2: Calculate net balance per friend per group
+            {
+                "$group": {
+                    "_id": {
+                        "friendId": {
+                            "$cond": [
+                                {"$eq": ["$payerId", user_id]},
+                                "$payeeId",
+                                "$payerId",
+                            ]
+                        },
+                        "groupId": "$groupId",
+                    },
+                    "balance": {
+                        "$sum": {
+                            "$cond": [
+                                # If user is payer, friend owes user (positive)
+                                {"$eq": ["$payerId", user_id]},
+                                "$amount",
+                                # If user is payee, user owes friend (negative)
+                                {"$multiply": ["$amount", -1]},
+                            ]
+                        }
+                    },
+                }
+            },
+            # Step 3: Group by friend to get total balance across all groups
+            {
+                "$group": {
+                    "_id": "$_id.friendId",
+                    "totalBalance": {"$sum": "$balance"},
+                    "groups": {
+                        "$push": {"groupId": "$_id.groupId", "balance": "$balance"}
+                    },
+                }
+            },
+            # Step 4: Filter out friends with zero balance
+            {"$match": {"$expr": {"$gt": [{"$abs": "$totalBalance"}, 0.01]}}},
+        ]
 
-        for friend_id in friend_ids:
-            friend_balance_data = {
-                "userId": friend_id,
-                "userName": user_names.get(friend_id, "Unknown"),
-                # Populate image directly from users collection to avoid extra client round-trips
-                "userImageUrl": user_images.get(friend_id),
-                "netBalance": 0,
-                "owesYou": False,
-                "breakdown": [],
-                "lastActivity": datetime.utcnow(),
+        # Execute aggregation - Single query for all friend balances
+        try:
+            results = await self.settlements_collection.aggregate(pipeline).to_list(
+                length=500
+            )
+        except Exception as e:
+            logger.error(f"Error in optimized friends balance aggregation: {e}")
+            results = []
+
+        if not results:
+            # No balances found
+            return {
+                "friendsBalance": [],
+                "summary": {
+                    "totalOwedToYou": 0,
+                    "totalYouOwe": 0,
+                    "netBalance": 0,
+                    "friendCount": 0,
+                    "activeGroups": len(groups),
+                },
             }
 
-            total_friend_balance = 0
+        # Extract unique friend IDs for batch fetching
+        friend_ids = list(set(result["_id"] for result in results))
 
-            # Calculate balance for each group
-            for group in groups:
-                group_id = str(group["_id"])
+        # Build group map from groups we already fetched
+        groups_map = {str(g["_id"]): g.get("name", "Unknown Group") for g in groups}
 
-                # Check if friend is in this group
-                friend_in_group = any(
-                    member["userId"] == friend_id for member in group["members"]
-                )
-                if not friend_in_group:
-                    continue
+        # OPTIMIZATION: Batch fetch all friend details in one query
+        try:
+            friends_cursor = self.users_collection.find(
+                {"_id": {"$in": [ObjectId(fid) for fid in friend_ids]}},
+                {"_id": 1, "name": 1, "imageUrl": 1},
+            )
+            friends_list = await friends_cursor.to_list(length=500)
+            friends_map = {str(f["_id"]): f for f in friends_list}
+        except Exception as e:
+            logger.error(f"Error batch fetching friend details: {e}")
+            friends_map = {}
 
-                # Calculate net balance between user and friend in this group
-                pipeline = [
-                    {
-                        "$match": {
-                            "groupId": group_id,
-                            "$or": [
-                                {"payerId": user_id, "payeeId": friend_id},
-                                {"payerId": friend_id, "payeeId": user_id},
-                            ],
-                        }
-                    },
-                    {
-                        "$group": {
-                            "_id": None,
-                            "userOwes": {
-                                "$sum": {
-                                    "$cond": [
-                                        {
-                                            "$and": [
-                                                {"$eq": ["$payerId", friend_id]},
-                                                {"$eq": ["$payeeId", user_id]},
-                                            ]
-                                        },
-                                        "$amount",
-                                        0,
-                                    ]
-                                }
-                            },
-                            "friendOwes": {
-                                "$sum": {
-                                    "$cond": [
-                                        {
-                                            "$and": [
-                                                {"$eq": ["$payerId", user_id]},
-                                                {"$eq": ["$payeeId", friend_id]},
-                                            ]
-                                        },
-                                        "$amount",
-                                        0,
-                                    ]
-                                }
-                            },
-                        }
-                    },
-                ]
+        # Post-process results to build final response
+        friends_balance = []
+        user_totals = {"totalOwedToYou": 0, "totalYouOwe": 0}
 
-                result = await self.settlements_collection.aggregate(pipeline).to_list(
-                    None
-                )
-                balance_data = result[0] if result else {"userOwes": 0, "friendOwes": 0}
+        for result in results:
+            friend_id = result["_id"]
+            total_balance = result["totalBalance"]
 
-                group_balance = balance_data["friendOwes"] - balance_data["userOwes"]
-                total_friend_balance += group_balance
+            # Get friend details from map
+            friend_details = friends_map.get(friend_id)
 
-                if (
-                    abs(group_balance) > 0.01
-                ):  # Only include if there's a significant balance
-                    friend_balance_data["breakdown"].append(
+            # Build breakdown by group
+            breakdown = []
+            for group_item in result.get("groups", []):
+                group_id = group_item["groupId"]
+                group_balance = group_item["balance"]
+
+                # Only include groups with significant balance
+                if abs(group_balance) > 0.01:
+                    breakdown.append(
                         {
                             "groupId": group_id,
-                            "groupName": group["name"],
-                            "balance": group_balance,
+                            "groupName": groups_map.get(group_id, "Unknown Group"),
+                            "balance": round(group_balance, 2),
                             "owesYou": group_balance > 0,
                         }
                     )
 
-            if (
-                abs(total_friend_balance) > 0.01
-            ):  # Only include friends with non-zero balance
-                friend_balance_data["netBalance"] = total_friend_balance
-                friend_balance_data["owesYou"] = total_friend_balance > 0
+            # Build friend balance object
+            friend_data = {
+                "userId": friend_id,
+                "userName": (
+                    friend_details.get("name", "Unknown")
+                    if friend_details
+                    else "Unknown"
+                ),
+                "userImageUrl": (
+                    friend_details.get("imageUrl") if friend_details else None
+                ),
+                "netBalance": round(total_balance, 2),
+                "owesYou": total_balance > 0,
+                "breakdown": breakdown,
+                "lastActivity": datetime.utcnow(),  # TODO: Calculate actual last activity
+            }
 
-                if total_friend_balance > 0:
-                    user_totals["totalOwedToYou"] += total_friend_balance
-                else:
-                    user_totals["totalYouOwe"] += abs(total_friend_balance)
+            friends_balance.append(friend_data)
 
-                friends_balance.append(friend_balance_data)
+            # Update totals
+            if total_balance > 0:
+                user_totals["totalOwedToYou"] += total_balance
+            else:
+                user_totals["totalYouOwe"] += abs(total_balance)
 
         return {
             "friendsBalance": friends_balance,
             "summary": {
-                "totalOwedToYou": user_totals["totalOwedToYou"],
-                "totalYouOwe": user_totals["totalYouOwe"],
-                "netBalance": user_totals["totalOwedToYou"]
-                - user_totals["totalYouOwe"],
+                "totalOwedToYou": round(user_totals["totalOwedToYou"], 2),
+                "totalYouOwe": round(user_totals["totalYouOwe"], 2),
+                "netBalance": round(
+                    user_totals["totalOwedToYou"] - user_totals["totalYouOwe"], 2
+                ),
                 "friendCount": len(friends_balance),
                 "activeGroups": len(groups),
             },

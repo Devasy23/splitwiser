@@ -24,81 +24,98 @@ class GroupService:
     async def _enrich_members_with_user_details(
         self, members: List[dict]
     ) -> List[dict]:
-        """Private method to enrich member data with user details from users collection"""
+        """
+        Enrich member data with user details from the users collection.
+        Uses batch fetching for optimal performance (single query for all members).
+
+        Performance: O(1) database queries regardless of member count.
+        Example: 10 members = 1 query instead of 10 separate queries.
+        """
+        if not members:
+            return []
+
         db = self.get_db()
         enriched_members = []
 
+        # Extract all unique user IDs
+        user_ids = []
         for member in members:
             member_user_id = member.get("userId")
             if member_user_id:
                 try:
-                    # Fetch user details from users collection
-                    user_obj_id = ObjectId(member_user_id)
-                    user = await db.users.find_one({"_id": user_obj_id})
-
-                    # Create enriched member object
-                    enriched_member = {
-                        "userId": member_user_id,
-                        "role": member.get("role", "member"),
-                        "joinedAt": member.get("joinedAt"),
-                        "user": (
-                            {
-                                "name": (
-                                    user.get("name", f"User {member_user_id[-4:]}")
-                                    if user
-                                    else f"User {member_user_id[-4:]}"
-                                ),
-                                "email": (
-                                    user.get("email", f"{member_user_id}@example.com")
-                                    if user
-                                    else f"{member_user_id}@example.com"
-                                ),
-                                "imageUrl": (user.get("imageUrl") if user else None),
-                            }
-                            if user
-                            else {
-                                "name": f"User {member_user_id[-4:]}",
-                                "email": f"{member_user_id}@example.com",
-                                "imageUrl": None,
-                            }
-                        ),
-                    }
-                    enriched_members.append(enriched_member)
-                except errors.InvalidId:  # exception for invalid ObjectId
+                    user_ids.append(ObjectId(member_user_id))
+                except errors.InvalidId:
                     logger.warning(f"Invalid ObjectId for userId: {member_user_id}")
-                    enriched_members.append(
-                        {
-                            "userId": member_user_id,
-                            "role": member.get("role", "member"),
-                            "joinedAt": member.get("joinedAt"),
-                            "user": {
-                                "name": f"User {member_user_id[-4:]}",
-                                "email": f"{member_user_id}@example.com",
-                                "avatar": None,
-                            },
-                        }
-                    )
-                except Exception as e:
-                    logger.error(f"Error enriching userId {member_user_id}: {e}")
-                    # If user lookup fails, add member with basic info
-                    enriched_members.append(
-                        {
-                            "userId": member_user_id,
-                            "role": member.get("role", "member"),
-                            "joinedAt": member.get("joinedAt"),
-                            "user": {
-                                "name": f"User {member_user_id[-4:]}",
-                                "email": f"{member_user_id}@example.com",
-                                "imageUrl": None,
-                            },
-                        }
-                    )
 
+        if not user_ids:
+            # No valid user IDs, return members with fallback data
+            return [self._create_fallback_member(m) for m in members]
+
+        # OPTIMIZATION: Single query to fetch ALL users at once using $in
+        try:
+            users_cursor = db.users.find(
+                {"_id": {"$in": user_ids}},
+                {
+                    "_id": 1,
+                    "name": 1,
+                    "email": 1,
+                    "imageUrl": 1,
+                },  # Project only needed fields
+            )
+            users_list = await users_cursor.to_list(length=100)
+
+            # Create fast lookup dictionary: O(1) access per member
+            users_map = {str(user["_id"]): user for user in users_list}
+
+        except Exception as e:
+            logger.error(f"Error batch fetching users: {e}")
+            # Fallback to empty map if query fails
+            users_map = {}
+
+        # Enrich members using the lookup map
+        for member in members:
+            member_user_id = member.get("userId")
+            if member_user_id:
+                user = users_map.get(member_user_id)
+
+                enriched_member = {
+                    "userId": member_user_id,
+                    "role": member.get("role", "member"),
+                    "joinedAt": member.get("joinedAt"),
+                    "user": {
+                        "name": (
+                            user.get("name", f"User {member_user_id[-4:]}")
+                            if user
+                            else f"User {member_user_id[-4:]}"
+                        ),
+                        "email": (
+                            user.get("email", f"{member_user_id}@example.com")
+                            if user
+                            else f"{member_user_id}@example.com"
+                        ),
+                        "imageUrl": user.get("imageUrl") if user else None,
+                    },
+                }
+                enriched_members.append(enriched_member)
             else:
                 # Add member without user details if userId is missing
                 enriched_members.append(member)
 
         return enriched_members
+
+    def _create_fallback_member(self, member: dict) -> dict:
+        """Helper to create fallback member data when user lookup fails"""
+        user_id = member.get("userId", "unknown")
+        return {
+            "userId": user_id,
+            "role": member.get("role", "member"),
+            "joinedAt": member.get("joinedAt"),
+            "user": {
+                "name": f"User {user_id[-4:] if len(user_id) >= 4 else user_id}",
+                "email": f"{user_id}@example.com",
+                "imageUrl": None,
+            },
+        }
 
     def transform_group_document(self, group: dict) -> dict:
         """Transform MongoDB group document to API response format"""
