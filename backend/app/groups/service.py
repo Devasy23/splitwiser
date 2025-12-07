@@ -62,7 +62,7 @@ class GroupService:
                     "imageUrl": 1,
                 },  # Project only needed fields
             )
-            users_list = await users_cursor.to_list(length=100)
+            users_list = await users_cursor.to_list(length=len(user_ids))
 
             # Create fast lookup dictionary: O(1) access per member
             users_map = {str(user["_id"]): user for user in users_list}
