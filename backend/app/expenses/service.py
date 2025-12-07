@@ -1070,7 +1070,7 @@ class ExpenseService:
             }
 
         # Extract unique friend IDs for batch fetching
-        friend_ids = list(set(result["_id"] for result in results))
+        friend_ids = list({result["_id"] for result in results})
 
         # Build group map from groups we already fetched
         groups_map = {str(g["_id"]): g.get("name", "Unknown Group") for g in groups}
