@@ -123,3 +123,8 @@
 - `.jules/todo.md`
 - `.jules/knowledge.md`
 - `.jules/changelog.md`
+
+### 2026-03-08
+- Added generic `Skeleton` component and `GroupListSkeleton` component to mobile app
+- Replaced basic ActivityIndicator loading screen with `GroupListSkeleton` on mobile `HomeScreen`
+- Refactored `FriendsScreen` inline skeleton logic to use the new generic `Skeleton` component

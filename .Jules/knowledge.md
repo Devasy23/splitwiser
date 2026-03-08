@@ -756,3 +756,8 @@ _Document errors and their solutions here as you encounter them._
 - react-native-paper: UI components
 - axios: API calls (via api/client.js)
 - expo: Platform SDK
+
+### Development Workflows
+- The mobile project is configured with `react-native-web`. You can test it in a browser using `npx expo start --web`.
+- Use `AsyncStorage` values (`auth_token`, `refresh_token`, `user_data`) directly into Playwright's `window.localStorage` to bypass login flows for Playwright testing via react-native-web.
+- When creating files in new subdirectories inside `/mobile/`, use `mkdir -p` before the write operation to ensure the path exists.
