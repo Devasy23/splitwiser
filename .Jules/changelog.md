@@ -16,6 +16,14 @@
     - Accessible ARIA live region for screen readers.
   - **Technical:** Created `web/components/ui/PasswordStrength.tsx`. Integrated into `web/pages/Auth.tsx`.
 
+- **Mobile Skeleton Loading:** Complete skeleton loading for HomeScreen groups.
+  - **Features:**
+    - Replaced native `ActivityIndicator` with modern skeleton cards
+    - Created reusable `Skeleton` primitive using `Animated.loop`
+    - Created `GroupListSkeleton` specifically for `HomeScreen` group layout
+    - Improved perceived loading time and overall user experience
+  - **Technical:** Created `mobile/components/ui/Skeleton.js`, `mobile/components/skeletons/GroupListSkeleton.js`. Integrated into `mobile/screens/HomeScreen.js`.
+
 - **Mobile Haptics:** Implemented system-wide haptic feedback for all interactive elements.
   - **Features:**
     - Created `HapticButton`, `HapticIconButton`, `HapticFAB`, `HapticCard`, `HapticList`, `HapticCheckbox`, `HapticMenu`, `HapticSegmentedButtons`, `HapticAppbar` (including `HapticAppbarAction`, `HapticAppbarBackAction`) wrappers.
