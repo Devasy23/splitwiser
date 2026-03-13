@@ -37,7 +37,7 @@ export const Sidebar = () => {
 
       <nav className="flex-1 flex flex-col gap-4">
         {navItems.map((item) => (
-          <Link to={item.path} key={item.path}>
+          <Link to={item.path} key={item.path} className={`block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${style === THEMES.NEOBRUTALISM ? 'focus-visible:ring-black dark:focus-visible:ring-white rounded-none' : 'focus-visible:ring-blue-500 rounded-xl'}`}>
             <div className={`flex items-center gap-3 px-4 py-3 transition-all ${
               isActive(item.path) 
                 ? (style === THEMES.NEOBRUTALISM 
