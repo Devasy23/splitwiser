@@ -78,10 +78,11 @@
 
 ### Web
 
-- [ ] **[style]** Consistent hover/focus states across all buttons
-  - Files: `web/components/ui/Button.tsx`, usage across pages
-  - Context: Ensure all buttons have proper hover + focus-visible styles
-  - Impact: Professional feel, keyboard users know where they are
+- [x] **[style]** Consistent hover/focus states across all buttons
+  - Completed: 2026-03-17
+  - Files: `web/components/ui/Button.tsx`
+  - Context: Added dynamic, theme-aware focus rings for both Glassmorphism and Neobrutalism (light/dark)
+  - Impact: Professional feel, precise keyboard navigation cues
   - Size: ~35 lines
   - Added: 2026-01-01
 
