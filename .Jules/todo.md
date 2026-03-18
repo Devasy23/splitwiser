@@ -57,12 +57,13 @@
   - Impact: Native feel, users can easily refresh data
   - Size: ~150 lines
 
-- [ ] **[ux]** Complete skeleton loading for HomeScreen groups
+- [x] **[ux]** Complete skeleton loading for HomeScreen groups
   - File: `mobile/screens/HomeScreen.js`
   - Context: Replace ActivityIndicator with skeleton group cards
   - Impact: Better loading experience, less jarring
   - Size: ~40 lines
   - Added: 2026-01-01
+  - Completed: 2026-03-18
 
 - [x] **[a11y]** Complete accessibility labels for all screens
   - Completed: 2026-01-29
