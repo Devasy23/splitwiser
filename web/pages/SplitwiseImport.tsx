@@ -57,7 +57,7 @@ export const SplitwiseImport = () => {
           <button
             onClick={handleOAuthImport}
             disabled={loading}
-            className={`w-full py-4 px-6 flex items-center justify-center gap-3 transition-all ${isNeo
+            className={`w-full py-4 px-6 flex items-center justify-center gap-3 transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 ${isNeo ? "focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-zinc-900" : "focus-visible:ring-blue-500 focus-visible:ring-offset-transparent"} ${isNeo
               ? 'bg-blue-500 border-2 border-black text-white font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] rounded-none'
               : 'bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl'
               } disabled:opacity-50 disabled:cursor-not-allowed mb-6`}

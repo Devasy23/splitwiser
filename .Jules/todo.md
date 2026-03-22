@@ -78,11 +78,12 @@
 
 ### Web
 
-- [ ] **[style]** Consistent hover/focus states across all buttons
-  - Files: `web/components/ui/Button.tsx`, usage across pages
-  - Context: Ensure all buttons have proper hover + focus-visible styles
-  - Impact: Professional feel, keyboard users know where they are
-  - Size: ~35 lines
+- [x] **[style]** Consistent hover/focus states across all buttons
+  - Completed: 2026-02-12
+  - Files: `web/components/ui/Button.tsx`, usage across pages (`web/pages/Dashboard.tsx`, `web/pages/Friends.tsx`, `web/pages/GroupDetails.tsx`, `web/pages/Profile.tsx`, `web/pages/Auth.tsx`, etc)
+  - Context: Added focus-visible styles (ring and ring-offset) supporting both NEOBRUTALISM and GLASSMORPHISM themes, including dark mode support.
+  - Impact: Professional feel, clear visual feedback for keyboard users making the app more accessible.
+  - Size: ~35 lines modified across multiple files.
   - Added: 2026-01-01
 
 ### Mobile

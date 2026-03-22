@@ -124,7 +124,7 @@ export const SplitwiseGroupSelection = () => {
         <button
           type="button"
           onClick={() => navigate('/import/splitwise')}
-          className={`flex items-center gap-1 mb-4 text-sm font-medium transition-colors ${isNeo
+          className={`flex items-center gap-1 mb-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 ${isNeo ? "focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-zinc-900" : "focus-visible:ring-blue-500 focus-visible:ring-offset-transparent"} ${isNeo
             ? 'text-black hover:text-gray-700'
             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
@@ -161,7 +161,7 @@ export const SplitwiseGroupSelection = () => {
           <button
             type="button"
             onClick={handleSelectAll}
-            className={`text-sm font-medium transition-colors ${isNeo
+            className={`text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 ${isNeo ? "focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-zinc-900" : "focus-visible:ring-blue-500 focus-visible:ring-offset-transparent"} ${isNeo
               ? 'text-black hover:text-gray-700'
               : 'text-blue-500 hover:text-blue-600'
               }`}
@@ -259,7 +259,7 @@ export const SplitwiseGroupSelection = () => {
             type="button"
             onClick={handleStartImport}
             disabled={importing || selectedGroupIds.size === 0}
-            className={`w-full py-4 px-6 flex items-center justify-center gap-3 transition-all ${isNeo
+            className={`w-full py-4 px-6 flex items-center justify-center gap-3 transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 ${isNeo ? "focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-zinc-900" : "focus-visible:ring-blue-500 focus-visible:ring-offset-transparent"} ${isNeo
               ? 'bg-blue-500 border-2 border-black text-white font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] rounded-none'
               : 'bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl'
               } disabled:opacity-50 disabled:cursor-not-allowed`}

@@ -297,9 +297,9 @@ export const Dashboard = () => {
                 key={group._id}
                 type="button"
                 onClick={() => navigate(`/groups/${group._id}`)}
-                className={`w-full p-4 flex items-center justify-between transition-all ${style === THEMES.NEOBRUTALISM
-                    ? 'bg-white border-2 border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1'
-                    : 'bg-white/50 backdrop-blur-sm rounded-lg hover:bg-white/80'
+                className={`w-full p-4 flex items-center justify-between transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 ${style === THEMES.NEOBRUTALISM
+                    ? 'bg-white border-2 border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-zinc-900'
+                    : 'bg-white/50 backdrop-blur-sm rounded-lg hover:bg-white/80 focus-visible:ring-blue-500 focus-visible:ring-offset-transparent'
                   }`}
               >
                 <div className="text-left">
@@ -338,9 +338,9 @@ export const Dashboard = () => {
                   key={groupSum.group_id}
                   type="button"
                   onClick={() => navigate(`/groups/${groupSum.group_id}`)}
-                  className={`p-4 text-left transition-all ${style === THEMES.NEOBRUTALISM
-                      ? 'bg-white border-2 border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1'
-                      : 'bg-white/50 backdrop-blur-sm rounded-lg hover:bg-white/80'
+                  className={`p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 ${style === THEMES.NEOBRUTALISM
+                      ? 'bg-white border-2 border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-zinc-900'
+                      : 'bg-white/50 backdrop-blur-sm rounded-lg hover:bg-white/80 focus-visible:ring-blue-500 focus-visible:ring-offset-transparent'
                     }`}
                 >
                   <p className="font-bold text-sm truncate">{groupSum.group_name}</p>
