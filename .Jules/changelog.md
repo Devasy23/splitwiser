@@ -7,6 +7,7 @@
 ## [Unreleased]
 
 ### Added
+- **Web App:** Added `canvas-confetti` and `framer-motion` animations to the "All Settled Up" state in `GroupDetails.tsx` to provide a delightful user experience when all debts are paid.
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).

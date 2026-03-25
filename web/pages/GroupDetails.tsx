@@ -28,6 +28,7 @@ import {
 } from '../services/api';
 import { Expense, Group, GroupAnalytics, GroupMember, SplitType } from '../types';
 import { formatCurrency } from '../utils/formatters';
+import confetti from 'canvas-confetti';
 
 type UnequalMode = 'amount' | 'percentage' | 'shares';
 
@@ -87,6 +88,7 @@ export const GroupDetails = () => {
     const [paymentPayerId, setPaymentPayerId] = useState('');
     const [paymentPayeeId, setPaymentPayeeId] = useState('');
     const [paymentAmount, setPaymentAmount] = useState('');
+    const [hasCelebrated, setHasCelebrated] = useState(false);
 
     // Group Settings State
     const [editGroupName, setEditGroupName] = useState('');
@@ -246,6 +248,40 @@ export const GroupDetails = () => {
             fetchAnalytics();
         }
     }, [activeTab]);
+
+    // Trigger celebration when all settled up
+    useEffect(() => {
+        let interval: any;
+
+        if (activeTab === 'settlements' && !loading && settlements.length === 0 && !hasCelebrated && expenses.length > 0) {
+            setHasCelebrated(true);
+
+            const duration = 3 * 1000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+            const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+            interval = setInterval(function() {
+                const timeLeft = animationEnd - Date.now();
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+
+                const particleCount = 50 * (timeLeft / duration);
+
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+            }, 250);
+        }
+
+        return () => {
+            if (interval) {
+                clearInterval(interval);
+            }
+        };
+    }, [activeTab, loading, settlements.length, hasCelebrated, expenses.length]);
 
     // Refetch analytics when timeframe, year, or month changes
     useEffect(() => {
@@ -847,13 +883,37 @@ export const GroupDetails = () => {
                             </motion.div>
                         ))}
                         {!loading && settlements.length === 0 && (
-                            <div className="col-span-full text-center py-20">
-                                <div className={`w-24 h-24 flex items-center justify-center mx-auto mb-6 ${style === THEMES.NEOBRUTALISM ? 'bg-emerald-100 border-2 border-black rounded-none' : 'bg-emerald-100 dark:bg-emerald-900/20 rounded-full'}`}>
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: 0.2 }}
+                                className="col-span-full text-center py-20"
+                            >
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1, rotate: [0, -10, 10, -10, 10, 0] }}
+                                    transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.4 }}
+                                    className={`w-24 h-24 flex items-center justify-center mx-auto mb-6 ${style === THEMES.NEOBRUTALISM ? 'bg-emerald-100 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none' : 'bg-emerald-100 dark:bg-emerald-900/20 rounded-full shadow-lg shadow-emerald-500/20'}`}
+                                >
                                     <Check size={48} className={style === THEMES.NEOBRUTALISM ? 'text-black' : 'text-emerald-500'} />
-                                </div>
-                                <h3 className={`text-2xl font-black ${style === THEMES.NEOBRUTALISM ? 'text-black' : 'text-emerald-500'}`}>All Settled Up!</h3>
-                                <p className="opacity-60">No outstanding balances in this group.</p>
-                            </div>
+                                </motion.div>
+                                <motion.h3
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.7 }}
+                                    className={`text-2xl font-black ${style === THEMES.NEOBRUTALISM ? 'text-black' : 'text-emerald-500 drop-shadow-sm'}`}
+                                >
+                                    All Settled Up!
+                                </motion.h3>
+                                <motion.p
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.9 }}
+                                    className="opacity-60 mt-2"
+                                >
+                                    No outstanding balances in this group.
+                                </motion.p>
+                            </motion.div>
                         )}
                     </motion.div>
                 )}
