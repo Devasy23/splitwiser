@@ -8,7 +8,8 @@ const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useContext(AuthContext);
+  const [isBiometricLoading, setIsBiometricLoading] = useState(false);
+  const { login, isBiometricSupported, isBiometricEnabled, loginWithBiometrics } = useContext(AuthContext);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -48,12 +49,34 @@ const LoginScreen = ({ navigation }) => {
         onPress={handleLogin}
         style={styles.button}
         loading={isLoading}
-        disabled={isLoading}
+        disabled={isLoading || isBiometricLoading}
         accessibilityLabel="Login to your account"
         accessibilityRole="button"
       >
         Login
       </HapticButton>
+
+      {isBiometricSupported && isBiometricEnabled && (
+        <HapticButton
+          mode="outlined"
+          onPress={async () => {
+            setIsBiometricLoading(true);
+            const success = await loginWithBiometrics();
+            setIsBiometricLoading(false);
+            if (!success) {
+              Alert.alert('Login Failed', 'Biometric login failed or was canceled.');
+            }
+          }}
+          style={styles.button}
+          loading={isBiometricLoading}
+          disabled={isLoading || isBiometricLoading}
+          accessibilityLabel="Login with FaceID or TouchID"
+          accessibilityRole="button"
+        >
+          Login with Biometrics
+        </HapticButton>
+      )}
+
       <HapticButton
         onPress={() => navigation.navigate("Signup")}
         style={styles.button}

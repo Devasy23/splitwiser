@@ -2,7 +2,11 @@
   "expo": {
     "name": "frontend",
     "slug": "frontend",
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,7 +20,8 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Allow Splitwiser to select a group icon from your photo library."
+        "NSPhotoLibraryUsageDescription": "Allow Splitwiser to select a group icon from your photo library.",
+        "NSFaceIDUsageDescription": "Allow Splitwiser to authenticate you with Face ID."
       }
     },
     "android": {
@@ -25,7 +30,9 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": ["READ_MEDIA_IMAGES"]
+      "permissions": [
+        "READ_MEDIA_IMAGES"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -35,6 +42,9 @@
         "projectId": "afe97159-52c4-425a-9ce3-c56d4f2cb568"
       }
     },
-    "owner": "devasy23"
+    "owner": "devasy23",
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }

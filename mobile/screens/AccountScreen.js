@@ -1,11 +1,19 @@
 import { useContext } from "react";
 import { Alert, StyleSheet, View } from "react-native";
-import { Appbar, Avatar, Divider, List, Text } from "react-native-paper";
+import { Appbar, Avatar, Divider, List, Text, Switch } from "react-native-paper";
 import { HapticListItem } from '../components/ui/HapticList';
 import { AuthContext } from "../context/AuthContext";
 
 const AccountScreen = ({ navigation }) => {
-  const { user, logout } = useContext(AuthContext);
+  const {
+    user,
+    logout,
+    isBiometricSupported,
+    isBiometricEnabled,
+    enableBiometrics,
+    disableBiometrics,
+    lastPassword
+  } = useContext(AuthContext);
 
   const handleLogout = () => {
     logout();
@@ -36,6 +44,36 @@ const AccountScreen = ({ navigation }) => {
         </View>
 
         <List.Section>
+          {isBiometricSupported && (
+            <>
+              <HapticListItem
+                title="Enable Biometric Login"
+                left={() => <List.Icon icon="fingerprint" />}
+                right={() => (
+                  <Switch
+                    value={isBiometricEnabled}
+                    onValueChange={(value) => {
+                      if (value) {
+                        if (lastPassword && user?.email) {
+                          enableBiometrics(user.email, lastPassword);
+                        } else {
+                          Alert.alert(
+                            "Cannot Enable Biometrics",
+                            "Please logout and login again with your password to enable biometric login."
+                          );
+                        }
+                      } else {
+                        disableBiometrics();
+                      }
+                    }}
+                    accessibilityRole="switch"
+                  />
+                )}
+                accessibilityLabel="Enable Biometric Login"
+              />
+              <Divider />
+            </>
+          )}
           <HapticListItem
             title="Edit Profile"
             left={() => <List.Icon icon="account-edit" />}

@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Added
+- **Biometric Authentication:** Added biometric authentication option (FaceID/TouchID) for mobile login.
+  - **Features:**
+    - Seamlessly login returning users without a password.
+    - Opt-in via a new toggle in the Account Screen.
+    - Security check: disables biometrics automatically if a different user logs in manually.
+  - **Technical:** Integrated `expo-local-authentication` and `expo-secure-store` into `AuthContext` to persist securely. Added `NSFaceIDUsageDescription` to iOS app.json.
+
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).
