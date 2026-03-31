@@ -31,6 +31,13 @@
     - Covered Auth, Dashboard, Groups, and Utility screens.
   - **Technical:** Updated all files in `mobile/screens/` to compliant with React Native accessibility standards.
 
+- **Web App Accessibility:** Completed keyboard navigation system for Dashboard and Friends pages.
+  - **Features:**
+    - Added theme-aware `focus-visible` states to all interactive elements, matching both Glassmorphism and Neobrutalism designs.
+    - Improved ARIA properties on `Friends` page to correctly announce expandable containers (`aria-controls`, `aria-expanded`).
+    - Made Quick Action lists, individual/group comparison balances, error states, and search components accessible.
+  - **Technical:** Modified `web/pages/Dashboard.tsx` and `web/pages/Friends.tsx` inline classes.
+
 - **Mobile Pull-to-Refresh:** Implemented native pull-to-refresh interactions with haptic feedback for key lists.
   - **Features:**
     - Integrated `RefreshControl` into `HomeScreen`, `FriendsScreen`, and `GroupDetailsScreen`.

@@ -150,8 +150,8 @@ export const Friends = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={`pl-12 pr-4 py-4 outline-none transition-all w-full md:w-80 font-bold ${isNeo
-                ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none placeholder:text-black/40'
-                : 'bg-white/10 border border-white/20 focus:bg-white/20 focus:border-white/30 backdrop-blur-md rounded-2xl text-white placeholder:text-white/40'
+                ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white rounded-none placeholder:text-black/40'
+                : 'bg-white/10 border border-white/20 focus:bg-white/20 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/50 backdrop-blur-md rounded-2xl text-white placeholder:text-white/40'
                 }`}
             />
           </div>
@@ -211,9 +211,9 @@ export const Friends = () => {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className={`px-4 py-2 font-bold text-sm ${isNeo
-              ? 'bg-black text-white hover:bg-gray-800 rounded-none'
-              : 'bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg'
+            className={`px-4 py-2 font-bold text-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${isNeo
+              ? 'bg-black text-white hover:bg-gray-800 rounded-none focus-visible:ring-black dark:focus-visible:ring-white'
+              : 'bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg focus-visible:ring-red-400'
               }`}
           >
             Retry
@@ -252,8 +252,9 @@ export const Friends = () => {
                   type="button"
                   onClick={() => toggleExpand(friend.id)}
                   aria-expanded={expandedId === friend.id}
+                  aria-controls={`friend-details-${friend.id}`}
                   aria-label={`${friend.userName}, ${friend.netBalance > 0 ? 'owes you' : friend.netBalance < 0 ? 'you owe' : 'settled'} ${formatPrice(friend.netBalance)}`}
-                  className="w-full p-6 text-left cursor-pointer">
+                  className={`w-full p-6 text-left cursor-pointer outline-none focus-visible:z-10 focus-visible:ring-4 focus-visible:ring-inset ${isNeo ? 'focus-visible:ring-black dark:focus-visible:ring-white' : 'focus-visible:ring-blue-500/50 rounded-3xl'}`}>
 
                   <div className="flex items-start justify-between mb-4">
                     {getAvatarContent(friend.userImageUrl, friend.userName, 'lg')}
@@ -281,6 +282,7 @@ export const Friends = () => {
                 <AnimatePresence>
                   {expandedId === friend.id && (
                     <motion.div
+                      id={`friend-details-${friend.id}`}
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
@@ -302,9 +304,9 @@ export const Friends = () => {
                         {friend.breakdown.length === 0 && (
                           <p className="text-sm opacity-50 italic">No active groups</p>
                         )}
-                        <button type="button" className={`w-full mt-4 py-2 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${isNeo
-                          ? 'bg-black text-white hover:bg-gray-800 rounded-none'
-                          : 'bg-white/10 hover:bg-white/20 rounded-xl'
+                        <button type="button" className={`w-full mt-4 py-2 text-sm font-bold flex items-center justify-center gap-2 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${isNeo
+                          ? 'bg-black text-white hover:bg-gray-800 rounded-none focus-visible:ring-black dark:focus-visible:ring-white'
+                          : 'bg-white/10 hover:bg-white/20 rounded-xl focus-visible:ring-white/50'
                           }`}>
                           View Details <ArrowRight size={14} />
                         </button>

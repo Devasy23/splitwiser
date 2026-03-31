@@ -27,6 +27,13 @@
   - Impact: Full keyboard accessibility for power users
   - Size: ~50 lines
 
+- [x] **[a11y]** Complete keyboard navigation for Dashboard and Friends pages
+  - Completed: 2026-03-31
+  - Files: `web/pages/Dashboard.tsx`, `web/pages/Friends.tsx`
+  - Context: Add keyboard handling and focus-visible rings to interactive elements (group lists, expand buttons, search, actions)
+  - Impact: Full keyboard accessibility for core application views across both UI themes
+  - Size: ~30 lines
+
 - [x] **[ux]** Comprehensive empty states with illustrations
   - Completed: 2026-01-01
   - Files: `web/pages/Groups.tsx`, `web/pages/Friends.tsx`
