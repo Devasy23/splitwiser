@@ -1,6 +1,6 @@
 import { useIsFocused } from "@react-navigation/native";
-import { useContext, useEffect, useRef, useState } from "react";
-import { Alert, Animated, FlatList, RefreshControl, StyleSheet, View } from "react-native";
+import { useContext, useEffect, useState } from "react";
+import { Alert, FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import {
   Appbar,
   Avatar,
@@ -13,6 +13,7 @@ import HapticIconButton from '../components/ui/HapticIconButton';
 import { HapticListAccordion } from '../components/ui/HapticList';
 import { triggerPullRefreshHaptic } from '../components/ui/hapticUtils';
 import { getFriendsBalance, getGroups } from "../api/groups";
+import Skeleton from "../components/ui/Skeleton";
 import { AuthContext } from "../context/AuthContext";
 import { formatCurrency } from "../utils/currency";
 
@@ -167,42 +168,12 @@ const FriendsScreen = () => {
     );
   };
 
-  // Shimmer skeleton components
-  const opacityAnim = useRef(new Animated.Value(0.3)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0.3,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [opacityAnim]);
-
   const SkeletonRow = () => (
     <View style={styles.skeletonRow}>
-      <Animated.View
-        style={[styles.skeletonAvatar, { opacity: opacityAnim }]}
-      />
+      <Skeleton width={48} height={48} borderRadius={24} />
       <View style={{ flex: 1, marginLeft: 12 }}>
-        <Animated.View
-          style={[styles.skeletonLine, { width: "60%", opacity: opacityAnim }]}
-        />
-        <Animated.View
-          style={[
-            styles.skeletonLineSmall,
-            { width: "40%", opacity: opacityAnim },
-          ]}
-        />
+        <Skeleton width="60%" height={14} borderRadius={6} style={{ marginBottom: 6 }} />
+        <Skeleton width="40%" height={12} borderRadius={6} />
       </View>
     </View>
   );
@@ -314,23 +285,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 14,
-  },
-  skeletonAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#e0e0e0",
-  },
-  skeletonLine: {
-    height: 14,
-    backgroundColor: "#e0e0e0",
-    borderRadius: 6,
-    marginBottom: 6,
-  },
-  skeletonLineSmall: {
-    height: 12,
-    backgroundColor: "#e0e0e0",
-    borderRadius: 6,
   },
 });
 
