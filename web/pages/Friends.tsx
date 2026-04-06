@@ -211,7 +211,7 @@ export const Friends = () => {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className={`px-4 py-2 font-bold text-sm ${isNeo
+            className={`px-4 py-2 font-bold text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500 ${isNeo
               ? 'bg-black text-white hover:bg-gray-800 rounded-none'
               : 'bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg'
               }`}
@@ -243,7 +243,7 @@ export const Friends = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ delay: index * 0.05 }}
-                className={`group relative overflow-hidden flex flex-col transition-all duration-300 ${isNeo
+                className={`group relative overflow-hidden flex flex-col transition-all duration-300 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500 ${isNeo
                   ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-none'
                   : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 backdrop-blur-sm rounded-3xl'
                   }`}
@@ -253,7 +253,7 @@ export const Friends = () => {
                   onClick={() => toggleExpand(friend.id)}
                   aria-expanded={expandedId === friend.id}
                   aria-label={`${friend.userName}, ${friend.netBalance > 0 ? 'owes you' : friend.netBalance < 0 ? 'you owe' : 'settled'} ${formatPrice(friend.netBalance)}`}
-                  className="w-full p-6 text-left cursor-pointer">
+                  className="w-full p-6 text-left cursor-pointer focus:outline-none">
 
                   <div className="flex items-start justify-between mb-4">
                     {getAvatarContent(friend.userImageUrl, friend.userName, 'lg')}
@@ -302,7 +302,7 @@ export const Friends = () => {
                         {friend.breakdown.length === 0 && (
                           <p className="text-sm opacity-50 italic">No active groups</p>
                         )}
-                        <button type="button" className={`w-full mt-4 py-2 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${isNeo
+                        <button type="button" className={`w-full mt-4 py-2 text-sm font-bold flex items-center justify-center gap-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 ${isNeo
                           ? 'bg-black text-white hover:bg-gray-800 rounded-none'
                           : 'bg-white/10 hover:bg-white/20 rounded-xl'
                           }`}>

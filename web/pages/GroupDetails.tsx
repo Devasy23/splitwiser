@@ -581,7 +581,7 @@ export const GroupDetails = () => {
                             <span className={`px-3 py-1 text-xs font-black uppercase tracking-widest ${style === THEMES.NEOBRUTALISM ? 'bg-black text-white rounded-none' : 'bg-white/20 text-white backdrop-blur-md rounded-full'}`}>
                                 Group
                             </span>
-                            <button type="button" onClick={copyToClipboard} className="flex items-center gap-1 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">
+                            <button type="button" onClick={copyToClipboard} className="flex items-center gap-1 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-white/50 rounded p-1 -m-1">
                                 <Copy size={12} /> {group.joinCode} {copied && <Check size={12} />}
                             </button>
                         </div>
@@ -605,7 +605,7 @@ export const GroupDetails = () => {
                             <button
                                 type="button"
                                 onClick={() => setIsSettingsModalOpen(true)}
-                                className={`w-12 h-12 flex items-center justify-center border-4 hover:scale-110 transition-transform ${style === THEMES.NEOBRUTALISM ? 'border-black bg-black text-white rounded-none' : 'border-indigo-600 bg-white/20 text-white backdrop-blur-md rounded-full'}`}
+                                className={`w-12 h-12 flex items-center justify-center border-4 hover:scale-110 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white/50 ${style === THEMES.NEOBRUTALISM ? 'border-black bg-black text-white rounded-none' : 'border-indigo-600 bg-white/20 text-white backdrop-blur-md rounded-full'}`}
                             >
                                 <Settings size={20} />
                             </button>
@@ -656,21 +656,21 @@ export const GroupDetails = () => {
                     <button
                         type="button"
                         onClick={() => setActiveTab('expenses')}
-                        className={`px-6 py-2 font-bold transition-all flex items-center gap-2 ${activeTab === 'expenses' ? (style === THEMES.NEOBRUTALISM ? 'bg-black text-white rounded-none' : 'bg-white/20 text-white shadow-sm rounded-xl') : 'opacity-60 hover:opacity-100'}`}
+                        className={`px-6 py-2 font-bold transition-all flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 ${activeTab === 'expenses' ? (style === THEMES.NEOBRUTALISM ? 'bg-black text-white rounded-none' : 'bg-white/20 text-white shadow-sm rounded-xl') : 'opacity-60 hover:opacity-100'}`}
                     >
                         <Receipt size={18} /> Expenses
                     </button>
                     <button
                         type="button"
                         onClick={() => setActiveTab('settlements')}
-                        className={`px-6 py-2 font-bold transition-all flex items-center gap-2 ${activeTab === 'settlements' ? (style === THEMES.NEOBRUTALISM ? 'bg-emerald-500 text-white rounded-none' : 'bg-emerald-500/20 text-emerald-400 shadow-sm rounded-xl') : 'opacity-60 hover:opacity-100'}`}
+                        className={`px-6 py-2 font-bold transition-all flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 ${activeTab === 'settlements' ? (style === THEMES.NEOBRUTALISM ? 'bg-emerald-500 text-white rounded-none' : 'bg-emerald-500/20 text-emerald-400 shadow-sm rounded-xl') : 'opacity-60 hover:opacity-100'}`}
                     >
                         <ScaleIcon /> Balances
                     </button>
                     <button
                         type="button"
                         onClick={() => setActiveTab('analytics')}
-                        className={`px-6 py-2 font-bold transition-all flex items-center gap-2 ${activeTab === 'analytics' ? (style === THEMES.NEOBRUTALISM ? 'bg-purple-500 text-white rounded-none' : 'bg-purple-500/20 text-purple-400 shadow-sm rounded-xl') : 'opacity-60 hover:opacity-100'}`}
+                        className={`px-6 py-2 font-bold transition-all flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 ${activeTab === 'analytics' ? (style === THEMES.NEOBRUTALISM ? 'bg-purple-500 text-white rounded-none' : 'bg-purple-500/20 text-purple-400 shadow-sm rounded-xl') : 'opacity-60 hover:opacity-100'}`}
                     >
                         <PieChart size={18} /> Analytics
                     </button>
@@ -704,7 +704,7 @@ export const GroupDetails = () => {
                                 <button
                                     type="button"
                                     onClick={() => setSearchQuery('')}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded"
                                 >
                                     ✕
                                 </button>
@@ -920,7 +920,7 @@ export const GroupDetails = () => {
                                     key={m.userId}
                                     type="button"
                                     onClick={() => setPayerId(m.userId)}
-                                    className={`px-4 py-2 text-sm font-bold transition-all border ${payerId === m.userId
+                                    className={`px-4 py-2 text-sm font-bold transition-all border focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${payerId === m.userId
                                         ? (style === THEMES.NEOBRUTALISM ? 'bg-black text-white border-black rounded-none' : 'bg-blue-600 border-blue-500 text-white rounded-full')
                                         : (style === THEMES.NEOBRUTALISM ? 'bg-white text-black border-black hover:bg-gray-100 rounded-none' : 'bg-transparent border-gray-600 text-gray-400 hover:border-gray-400 rounded-full')
                                         }`}
@@ -936,7 +936,7 @@ export const GroupDetails = () => {
                             <button
                                 type="button"
                                 onClick={() => setSplitType(SplitType.EQUAL)}
-                                className={`flex items-center gap-2 font-bold ${splitType === SplitType.EQUAL ? 'text-blue-500' : 'opacity-50 hover:opacity-100'}`}
+                                className={`flex items-center gap-2 font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded ${splitType === SplitType.EQUAL ? 'text-blue-500' : 'opacity-50 hover:opacity-100'}`}
                             >
                                 <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${splitType === SplitType.EQUAL ? 'border-blue-500' : 'border-gray-500'}`}>
                                     {splitType === SplitType.EQUAL && <div className="w-2 h-2 rounded-full bg-blue-500" />}
@@ -946,7 +946,7 @@ export const GroupDetails = () => {
                             <button
                                 type="button"
                                 onClick={() => setSplitType(SplitType.UNEQUAL)}
-                                className={`flex items-center gap-2 font-bold ${splitType === SplitType.UNEQUAL ? 'text-blue-500' : 'opacity-50 hover:opacity-100'}`}
+                                className={`flex items-center gap-2 font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded ${splitType === SplitType.UNEQUAL ? 'text-blue-500' : 'opacity-50 hover:opacity-100'}`}
                             >
                                 <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${splitType === SplitType.UNEQUAL ? 'border-blue-500' : 'border-gray-500'}`}>
                                     {splitType === SplitType.UNEQUAL && <div className="w-2 h-2 rounded-full bg-blue-500" />}
@@ -965,7 +965,7 @@ export const GroupDetails = () => {
                                             if (selectedUsers.size === members.length) setSelectedUsers(new Set());
                                             else setSelectedUsers(new Set(members.map(m => m.userId)));
                                         }}
-                                        className="text-xs font-bold text-blue-500 hover:underline"
+                                        className="text-xs font-bold text-blue-500 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
                                     >
                                         {selectedUsers.size === members.length ? 'Deselect All' : 'Select All'}
                                     </button>
@@ -1008,7 +1008,7 @@ export const GroupDetails = () => {
                                             key={mode.id}
                                             type="button"
                                             onClick={() => setUnequalMode(mode.id as UnequalMode)}
-                                            className={`flex-1 py-1.5 px-2 text-sm font-bold flex items-center justify-center gap-1 transition-all ${unequalMode === mode.id
+                                            className={`flex-1 py-1.5 px-2 text-sm font-bold flex items-center justify-center gap-1 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${unequalMode === mode.id
                                                 ? (style === THEMES.NEOBRUTALISM ? 'bg-black text-white rounded-none' : 'bg-blue-600 text-white shadow-md rounded')
                                                 : (style === THEMES.NEOBRUTALISM ? 'bg-gray-200 text-black rounded-none' : 'bg-gray-200 dark:bg-gray-800 opacity-70 hover:opacity-100 dark:text-gray-300 rounded')
                                                 }`}
@@ -1109,21 +1109,21 @@ export const GroupDetails = () => {
                         <button
                             type="button"
                             onClick={() => setSettingsTab('info')}
-                            className={`flex-1 px-3 py-2 text-sm font-bold transition-all ${settingsTab === 'info' ? (style === THEMES.NEOBRUTALISM ? 'bg-white border-2 border-black rounded-none' : 'bg-white/20 rounded-md') : 'opacity-60 hover:opacity-100'}`}
+                            className={`flex-1 px-3 py-2 text-sm font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded ${settingsTab === 'info' ? (style === THEMES.NEOBRUTALISM ? 'bg-white border-2 border-black rounded-none' : 'bg-white/20 rounded-md') : 'opacity-60 hover:opacity-100'}`}
                         >
                             Info
                         </button>
                         <button
                             type="button"
                             onClick={() => setSettingsTab('members')}
-                            className={`flex-1 px-3 py-2 text-sm font-bold transition-all ${settingsTab === 'members' ? (style === THEMES.NEOBRUTALISM ? 'bg-white border-2 border-black rounded-none' : 'bg-white/20 rounded-md') : 'opacity-60 hover:opacity-100'}`}
+                            className={`flex-1 px-3 py-2 text-sm font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded ${settingsTab === 'members' ? (style === THEMES.NEOBRUTALISM ? 'bg-white border-2 border-black rounded-none' : 'bg-white/20 rounded-md') : 'opacity-60 hover:opacity-100'}`}
                         >
                             Members
                         </button>
                         <button
                             type="button"
                             onClick={() => setSettingsTab('danger')}
-                            className={`flex-1 px-3 py-2 text-sm font-bold transition-all ${settingsTab === 'danger' ? (style === THEMES.NEOBRUTALISM ? 'bg-red-100 border-2 border-black text-red-600 rounded-none' : 'bg-red-500/20 text-red-400 rounded-md') : 'opacity-60 hover:opacity-100'}`}
+                            className={`flex-1 px-3 py-2 text-sm font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded ${settingsTab === 'danger' ? (style === THEMES.NEOBRUTALISM ? 'bg-red-100 border-2 border-black text-red-600 rounded-none' : 'bg-red-500/20 text-red-400 rounded-md') : 'opacity-60 hover:opacity-100'}`}
                         >
                             Danger
                         </button>
@@ -1196,7 +1196,7 @@ export const GroupDetails = () => {
                                         <button
                                             type="button"
                                             onClick={() => handleKickMember(m.userId, m.user?.name)}
-                                            className={`text-red-500 hover:bg-red-500/10 p-2 transition-colors ${style === THEMES.NEOBRUTALISM ? 'rounded-none' : 'rounded'}`}
+                                            className={`text-red-500 hover:bg-red-500/10 p-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${style === THEMES.NEOBRUTALISM ? 'rounded-none' : 'rounded'}`}
                                             title="Remove member"
                                         >
                                             <UserMinus size={16} />
