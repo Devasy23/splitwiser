@@ -143,6 +143,11 @@
 
 ## ✅ Completed Tasks
 
+- [x] **[ux]** Global Toast Notification System for Mobile
+  - Completed: 2026-04-15
+  - Files modified: `mobile/context/ToastContext.js`, `mobile/App.js`, `mobile/screens/LoginScreen.js`, `mobile/screens/SignupScreen.js`, `mobile/screens/HomeScreen.js`
+  - Impact: Replaces intrusive Alert.alert with non-blocking modern snackbar notifications for form validation and success/error messages.
+
 - [x] **[ux]** Comprehensive empty states with illustrations
   - Completed: 2026-01-01
   - Files modified: `web/components/ui/EmptyState.tsx`, `web/pages/Groups.tsx`, `web/pages/Friends.tsx`

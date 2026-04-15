@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile Toast Notifications:** Added a global Toast context for non-blocking feedback messages.
+  - **Features:**
+    - Uses React Native Paper `Snackbar` component.
+    - Replaces intrusive `Alert.alert` calls.
+    - Themed according to message type ('success', 'error', 'info').
+  - **Technical:** Created `mobile/context/ToastContext.js` and wrapped App. Integrated into Auth and Home screens.
+
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).

@@ -1,25 +1,29 @@
 import React, { useState, useContext } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 import HapticButton from '../components/ui/HapticButton';
 import { AuthContext } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useContext(AuthContext);
+  const { showToast } = useToast();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password.');
+      showToast('Please enter both email and password.', 'error');
       return;
     }
     setIsLoading(true);
     const success = await login(email, password);
     setIsLoading(false);
     if (!success) {
-      Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+      showToast('Invalid email or password. Please try again.', 'error');
+    } else {
+      showToast('Logged in successfully!', 'success');
     }
   };
 
