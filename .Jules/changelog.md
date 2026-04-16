@@ -1,5 +1,15 @@
 # Splitwiser UI/UX Changelog
 
+
+## [Unreleased]
+
+### Added
+- Created reusable `Skeleton` UI primitive in `mobile/components/ui/Skeleton.js` with pulsing animation.
+- Created `GroupListSkeleton` in `mobile/components/skeletons/GroupListSkeleton.js` using the new `Skeleton` component.
+
+### Changed
+- Replaced `ActivityIndicator` with `GroupListSkeleton` in `mobile/screens/HomeScreen.js` for a better loading experience.
+
 > All UI/UX changes made by Jules automated enhancement agent.
 
 ---
