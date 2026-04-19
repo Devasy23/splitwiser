@@ -1,14 +1,30 @@
 import { useContext } from "react";
 import { Alert, StyleSheet, View } from "react-native";
-import { Appbar, Avatar, Divider, List, Text } from "react-native-paper";
+import { Appbar, Avatar, Divider, List, Switch, Text } from "react-native-paper";
 import { HapticListItem } from '../components/ui/HapticList';
 import { AuthContext } from "../context/AuthContext";
 
 const AccountScreen = ({ navigation }) => {
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, isBiometricEnabled, enableBiometric, disableBiometric } = useContext(AuthContext);
 
   const handleLogout = () => {
     logout();
+  };
+
+  const handleBiometricToggle = async () => {
+    if (isBiometricEnabled) {
+      const result = await disableBiometric();
+      if (!result.success) {
+        Alert.alert("Error", result.error || "Failed to disable biometric login.");
+      }
+    } else {
+      const result = await enableBiometric();
+      if (result.success) {
+        Alert.alert("Success", "Biometric login enabled.");
+      } else {
+        Alert.alert("Error", result.error || "Failed to enable biometric login.");
+      }
+    }
   };
 
   const handleComingSoon = () => {
@@ -36,6 +52,16 @@ const AccountScreen = ({ navigation }) => {
         </View>
 
         <List.Section>
+          <List.Item
+            title="Enable Biometric Login"
+            description="Use FaceID/TouchID to login"
+            left={() => <List.Icon icon="fingerprint" />}
+            right={() => <Switch value={isBiometricEnabled} onValueChange={handleBiometricToggle} />}
+            accessibilityLabel="Toggle Biometric Login"
+            accessibilityRole="switch"
+            accessibilityState={{ checked: isBiometricEnabled }}
+          />
+          <Divider />
           <HapticListItem
             title="Edit Profile"
             left={() => <List.Icon icon="account-edit" />}

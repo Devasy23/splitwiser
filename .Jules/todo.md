@@ -124,12 +124,12 @@
 
 ### Mobile
 
-- [ ] **[ux]** Biometric authentication option
-  - Files: `mobile/context/AuthContext.js`, add local auth
+- [x] **[ux]** Biometric authentication option
+  - Completed: 2026-04-19
+  - Files: `mobile/context/AuthContext.js`, `mobile/screens/AccountScreen.js`, `mobile/screens/LoginScreen.js`
   - Context: FaceID/TouchID for quick login
   - Impact: Faster, more secure login
-  - Size: ~70 lines
-  - Added: 2026-01-01
+  - Size: ~100 lines
 
 ---
 
