@@ -123,3 +123,8 @@
 - `.jules/todo.md`
 - `.jules/knowledge.md`
 - `.jules/changelog.md`
+
+### Mobile
+- Added reusable animated `Skeleton` primitive component in `mobile/components/ui/Skeleton.js`.
+- Created `HomeScreenSkeleton` loading view for groups list.
+- Replaced basic `ActivityIndicator` in `HomeScreen.js` with new skeleton loading experience.
