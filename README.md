@@ -244,4 +244,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Made with ❤️ for splitting expenses the smart way!**
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions
+- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
