@@ -245,3 +245,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## Contributors
+- Yashika Panwar - CSE AIML, DCE Gurugram | GSSoC Aspirant
