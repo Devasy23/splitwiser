@@ -10,7 +10,9 @@ This is the FastAPI backend for the Splitwiser expense tracking application.
    ```
 
 2. **Environment Configuration:**
-   - Copy `.env.example` to `.env`
+   - Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
    - Update the environment variables:
      - `MONGODB_URL`: Your MongoDB connection string
      - `SECRET_KEY`: A secure secret key for JWT tokens
