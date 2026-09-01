@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile Skeleton Loading:** Added generic animated skeleton placeholders to reduce perceived load times.
+  - **Features:**
+    - Replaced blank screens and `ActivityIndicator` with native-feeling skeleton placeholders.
+    - Added `GroupListSkeleton` to `HomeScreen` to mirror the eventual shape of `HapticCard`s.
+    - Refactored `FriendsScreen` to reuse the generic `Skeleton` primitive.
+  - **Technical:** Created reusable `mobile/components/ui/Skeleton.js` utilizing `Animated.loop`. Created `mobile/components/skeletons/GroupListSkeleton.js`.
+
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).
