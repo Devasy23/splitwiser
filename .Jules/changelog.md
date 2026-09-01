@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile HomeScreen Skeleton Loading:** Replaced basic loading spinner with a skeleton loading state for groups on the mobile home screen.
+  - **Features:**
+    - Created generic animated `Skeleton` component (`mobile/components/ui/Skeleton.js`) using React Native's `Animated` library.
+    - Created composite `GroupListSkeleton` component matching the layout of `HapticCard`.
+    - Integrated smoothly into `HomeScreen` during the initial data fetch.
+  - **Technical:** Leverages theme colors for backgrounds and uses `useNativeDriver: true` for optimized pulse animations.
+
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).
