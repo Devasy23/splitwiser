@@ -756,3 +756,6 @@ _Document errors and their solutions here as you encounter them._
 - react-native-paper: UI components
 - axios: API calls (via api/client.js)
 - expo: Platform SDK
+- When using `Animated.loop` within a `useEffect` hook in React Native components, assign the loop to a variable and explicitly call `.stop()` on it in the cleanup function to prevent memory leaks.
+- Playwright in the testing environment cannot be run with `headless=False`; attempting to do so will result in an 'Executable doesn't support UI mode' error.
+- Always clean up temporary Playwright verification scripts, logs, and generated screenshots before committing changes to maintain repository hygiene.
