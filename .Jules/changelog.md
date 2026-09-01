@@ -23,6 +23,14 @@
     - Uses `expo-haptics` with `Light` impact style for subtle feedback.
   - **Technical:** Centralized haptic logic in `mobile/components/ui/` to ensure consistency and maintainability.
 
+- **Consistent Focus/Hover States:** Added comprehensive `focus-visible` styles across key interactive web components to improve keyboard navigation accessibility.
+  - **Features:**
+    - Updated `Button` component with theme-specific (Neo/Glass) focus rings.
+    - Updated `Input` password visibility toggle to use `focus-visible` to prevent ugly rings for mouse users while supporting keyboard users.
+    - Added focus rings to `Modal` and `Toast` close buttons.
+    - Added focus rings to `Sidebar` navigation links.
+  - **Technical:** Modified `web/components/ui/Button.tsx`, `web/components/ui/Input.tsx`, `web/components/ui/Modal.tsx`, `web/components/ui/Toast.tsx`, and `web/components/layout/Sidebar.tsx`.
+
 - **Mobile Accessibility:** Completed accessibility audit for all mobile screens.
   - **Features:**
     - Added `accessibilityLabel` to all interactive elements (buttons, inputs, list items).
