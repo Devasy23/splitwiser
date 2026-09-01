@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Alert, FlatList, RefreshControl, StyleSheet, View } from "react-native";
+import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import {
   ActivityIndicator,
   Appbar,
@@ -17,10 +17,12 @@ import * as Haptics from "expo-haptics";
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 import { formatCurrency, getCurrencySymbol } from "../utils/currency";
+import { useToast } from "../context/ToastContext";
 
 const HomeScreen = ({ navigation }) => {
   const { token, logout, user } = useContext(AuthContext);
   const theme = useTheme();
+  const { showToast } = useToast();
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -94,7 +96,7 @@ const HomeScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error("Failed to fetch groups:", error);
-      Alert.alert("Error", "Failed to fetch groups.");
+      showToast("Failed to fetch groups.", "error");
     } finally {
       if (showLoading) setIsLoading(false);
     }
@@ -115,7 +117,7 @@ const HomeScreen = ({ navigation }) => {
 
   const handleCreateGroup = async () => {
     if (!newGroupName) {
-      Alert.alert("Error", "Please enter a group name.");
+      showToast("Please enter a group name.", "error");
       return;
     }
     setIsCreatingGroup(true);
@@ -123,10 +125,11 @@ const HomeScreen = ({ navigation }) => {
       await createGroup(newGroupName);
       hideModal();
       setNewGroupName("");
+      showToast("Group created successfully!", "success");
       await fetchGroups(); // Refresh the groups list
     } catch (error) {
       console.error("Failed to create group:", error);
-      Alert.alert("Error", "Failed to create group.");
+      showToast("Failed to create group.", "error");
     } finally {
       setIsCreatingGroup(false);
     }

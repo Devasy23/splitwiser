@@ -1,8 +1,9 @@
 import React, { useState, useContext } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 import HapticButton from '../components/ui/HapticButton';
 import { AuthContext } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 const SignupScreen = ({ navigation }) => {
   const [name, setName] = useState('');
@@ -11,27 +12,25 @@ const SignupScreen = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { signup } = useContext(AuthContext);
+  const { showToast } = useToast();
 
   const handleSignup = async () => {
     if (!name || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields.');
+      showToast('Please fill in all fields.', 'error');
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Error', "Passwords don't match!");
+      showToast("Passwords don't match!", 'error');
       return;
     }
     setIsLoading(true);
     const success = await signup(name, email, password);
     setIsLoading(false);
     if (success) {
-      Alert.alert(
-        'Success',
-        'Your account has been created successfully. Please log in.',
-        [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
-      );
+      showToast('Account created successfully! Please login.', 'success');
+      navigation.navigate('Login');
     } else {
-      Alert.alert('Signup Failed', 'An error occurred. Please try again.');
+      showToast('Signup failed. An error occurred. Please try again.', 'error');
     }
   };
 
