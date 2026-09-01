@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Added
+- **Consistent Hover & Focus States:** Added cohesive `focus-visible` states across main interactive web components for better keyboard accessibility.
+  - **Features:**
+    - Explicit dual-theme ring styling (e.g. `focus-visible:ring-black` vs `focus-visible:ring-white/50`).
+    - Handled target elements: `Button`, `Input` (password toggle), `Modal` (close icon), `Toast` (close icon).
+    - Ensures mouse clicks do not trigger focus rings, preserving visual elegance while fully supporting keyboard power users.
+  - **Technical:** Modified `Button.tsx`, `Input.tsx`, `Modal.tsx`, `Toast.tsx` with specific tailwind states (`focus-visible:ring-2`, `focus-visible:ring-offset-2`, etc).
+
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).
