@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- **Button Focus States:** Implemented consistent, theme-aware hover and focus states across all buttons globally.
+  - **Features:**
+    - Distinct focus rings for keyboard navigation (`focus-visible`).
+    - Full support for Glassmorphism (e.g., `ring-white`, `ring-blue-500`) and Neobrutalism (e.g., `ring-black`, `ring-white`).
+    - Adjusts correctly based on light and dark mode variations.
+    - Added base semantic `focus:outline-none` style and offsets.
+  - **Technical:** Modified `web/components/ui/Button.tsx` and leveraged the `useTheme` hook to dynamically set `focus-visible` ring classes based on the active theme mode and style.
+
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).
