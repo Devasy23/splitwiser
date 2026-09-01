@@ -1,11 +1,13 @@
-import { useContext, useEffect, useState } from "react";
-import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { useContext, useEffect, useState, useRef } from "react";
+import { Alert, FlatList, RefreshControl, StyleSheet, Text, View, Animated } from "react-native";
 import {
   ActivityIndicator,
   Paragraph,
   Title,
   useTheme,
+  Snackbar,
 } from "react-native-paper";
+import { Swipeable } from "react-native-gesture-handler";
 import HapticCard from '../components/ui/HapticCard';
 import HapticFAB from '../components/ui/HapticFAB';
 import HapticIconButton from '../components/ui/HapticIconButton';
@@ -14,6 +16,7 @@ import {
   getGroupExpenses,
   getGroupMembers,
   getOptimizedSettlements,
+  deleteExpense,
 } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 
@@ -26,6 +29,10 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   const [settlements, setSettlements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [hiddenExpenses, setHiddenExpenses] = useState([]);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const deleteTimeouts = useRef({});
 
   // Currency configuration - can be made configurable later
   const currency = "₹"; // Default to INR, can be changed to '$' for USD
@@ -102,23 +109,81 @@ const GroupDetailsScreen = ({ route, navigation }) => {
       balanceText = "You are settled for this expense.";
     }
 
+    if (hiddenExpenses.includes(item._id)) {
+      return null;
+    }
+
+    const handleDeleteSwipe = () => {
+      // Optimistic delete
+      setHiddenExpenses((prev) => [...prev, item._id]);
+      setSnackbarMessage(`Deleted "${item.description}"`);
+      setSnackbarVisible(true);
+
+      const timeoutId = setTimeout(async () => {
+        try {
+          await deleteExpense(groupId, item._id);
+          setExpenses((prev) => prev.filter((exp) => exp._id !== item._id));
+        } catch (error) {
+          console.error("Failed to delete expense:", error);
+          setHiddenExpenses((prev) => prev.filter((id) => id !== item._id));
+          Alert.alert("Error", "Failed to delete expense.");
+        }
+        setHiddenExpenses((prev) => prev.filter((id) => id !== item._id));
+        delete deleteTimeouts.current[item._id];
+      }, 5000); // 5 seconds to undo
+
+      deleteTimeouts.current[item._id] = { timeoutId, item };
+    };
+
+    const renderRightActions = (progress, dragX) => {
+      const trans = dragX.interpolate({
+        inputRange: [-100, 0],
+        outputRange: [1, 0],
+        extrapolate: 'clamp',
+      });
+      return (
+        <View style={styles.deleteAction}>
+          <Animated.Text
+            style={[
+              styles.deleteActionText,
+              {
+                transform: [{ scale: trans }],
+              },
+            ]}
+          >
+            Delete
+          </Animated.Text>
+        </View>
+      );
+    };
+
     return (
-      <HapticCard
-        style={styles.card}
-        accessibilityRole="button"
-        accessibilityLabel={`Expense: ${item.description}, Amount: ${formatCurrency(
-          item.amount
-        )}. Paid by ${getMemberName(item.paidBy || item.createdBy)}. ${balanceText}`}
+      <Swipeable
+        renderRightActions={paidByMe ? renderRightActions : null}
+        onSwipeableRightOpen={() => {
+          if (paidByMe) {
+            handleDeleteSwipe();
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          }
+        }}
       >
-        <HapticCard.Content>
-          <Title>{item.description}</Title>
-          <Paragraph>Amount: {formatCurrency(item.amount)}</Paragraph>
-          <Paragraph>
-            Paid by: {getMemberName(item.paidBy || item.createdBy)}
-          </Paragraph>
-          <Paragraph style={{ color: balanceColor }}>{balanceText}</Paragraph>
-        </HapticCard.Content>
-      </HapticCard>
+        <HapticCard
+          style={styles.card}
+          accessibilityRole="button"
+          accessibilityLabel={`Expense: ${item.description}, Amount: ${formatCurrency(
+            item.amount
+          )}. Paid by ${getMemberName(item.paidBy || item.createdBy)}. ${balanceText}`}
+        >
+          <HapticCard.Content>
+            <Title>{item.description}</Title>
+            <Paragraph>Amount: {formatCurrency(item.amount)}</Paragraph>
+            <Paragraph>
+              Paid by: {getMemberName(item.paidBy || item.createdBy)}
+            </Paragraph>
+            <Paragraph style={{ color: balanceColor }}>{balanceText}</Paragraph>
+          </HapticCard.Content>
+        </HapticCard>
+      </Swipeable>
     );
   };
 
@@ -209,6 +274,19 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     </>
   );
 
+  const handleUndoGlobal = () => {
+    Object.keys(deleteTimeouts.current).forEach(id => {
+      clearTimeout(deleteTimeouts.current[id].timeoutId);
+      setHiddenExpenses((prev) => prev.filter((expId) => expId !== id));
+    });
+    deleteTimeouts.current = {};
+    setSnackbarVisible(false);
+  };
+
+  const handleSnackbarDismiss = () => {
+    setSnackbarVisible(false);
+  };
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -238,6 +316,18 @@ const GroupDetailsScreen = ({ route, navigation }) => {
         accessibilityLabel="Add expense"
         accessibilityRole="button"
       />
+
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={handleSnackbarDismiss}
+        duration={5000}
+        action={{
+          label: "Undo",
+          onPress: handleUndoGlobal,
+        }}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </View>
   );
 };
@@ -337,6 +427,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     paddingVertical: 8,
+  },
+  deleteAction: {
+    backgroundColor: '#d32f2f',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    marginBottom: 16,
+    borderRadius: 8,
+    flex: 1,
+    paddingRight: 20,
+  },
+  deleteActionText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 

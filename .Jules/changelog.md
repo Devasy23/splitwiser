@@ -31,6 +31,15 @@
     - Covered Auth, Dashboard, Groups, and Utility screens.
   - **Technical:** Updated all files in `mobile/screens/` to compliant with React Native accessibility standards.
 
+- **Mobile Swipe-to-Delete Expenses:** Implemented swipe-to-delete functionality for expenses in Group Details.
+  - **Features:**
+    - Right-to-left swipe reveals a Delete action on user-paid expenses.
+    - Uses `react-native-gesture-handler/Swipeable` and `react-native-reanimated`.
+    - Optimistic UI updates to hide the expense immediately.
+    - Snackbar notification with "Undo" button (5-second timeout) before finalizing the API call.
+    - Implemented a ref-based timeout dictionary to prevent state mismatch during rapid deletion and undo operations.
+  - **Technical:** Modified `mobile/screens/GroupDetailsScreen.js` and added `deleteExpense` to `mobile/api/groups.js`. Modified `mobile/babel.config.js` to support Reanimated plugin.
+
 - **Mobile Pull-to-Refresh:** Implemented native pull-to-refresh interactions with haptic feedback for key lists.
   - **Features:**
     - Integrated `RefreshControl` into `HomeScreen`, `FriendsScreen`, and `GroupDetailsScreen`.
