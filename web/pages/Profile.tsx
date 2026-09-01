@@ -214,7 +214,7 @@ export const Profile = () => {
                                         type="button"
                                         key={item.label}
                                         onClick={item.onClick}
-                                        className={`w-full flex items-center gap-4 p-4 transition-all hover:bg-black/5 dark:hover:bg-white/5 ${itemIdx !== section.items.length - 1 ? 'border-b border-gray-200/50 dark:border-gray-700/50' : ''
+                                        className={`w-full flex items-center gap-4 p-4 transition-all hover:bg-black/5 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 ${isNeo ? "focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-zinc-900" : "focus-visible:ring-blue-500 focus-visible:ring-offset-transparent"} ${itemIdx !== section.items.length - 1 ? 'border-b border-gray-200/50 dark:border-gray-700/50' : ''
                                             }`}
                                     >
                                         <div className={`w-10 h-10 flex items-center justify-center ${isNeo ? 'bg-black text-white rounded-none' : 'bg-white/10 rounded-full'

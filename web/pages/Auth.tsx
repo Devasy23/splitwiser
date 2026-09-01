@@ -211,7 +211,7 @@ export const Auth = () => {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={googleLoading}
-              className={`w-full flex items-center justify-center gap-3 p-3 font-bold transition-all ${isNeo
+              className={`w-full flex items-center justify-center gap-3 p-3 font-bold transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 ${isNeo ? "focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-zinc-900" : "focus-visible:ring-blue-500 focus-visible:ring-offset-transparent"} ${isNeo
                 ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none'
                 : 'bg-white text-black hover:bg-gray-50 border border-gray-200 shadow-sm rounded-xl'
                 }`}
@@ -330,7 +330,7 @@ export const Auth = () => {
                   setFieldErrors({});
                   setError('');
                 }}
-                className="text-sm font-bold hover:underline opacity-70 hover:opacity-100 transition-opacity"
+                className="text-sm font-bold hover:underline opacity-70 hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
               >
                 {isLogin
                   ? "Don't have an account? Sign Up"

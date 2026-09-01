@@ -704,7 +704,7 @@ export const GroupDetails = () => {
                                 <button
                                     type="button"
                                     onClick={() => setSearchQuery('')}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white"
                                 >
                                     ✕
                                 </button>
@@ -936,7 +936,7 @@ export const GroupDetails = () => {
                             <button
                                 type="button"
                                 onClick={() => setSplitType(SplitType.EQUAL)}
-                                className={`flex items-center gap-2 font-bold ${splitType === SplitType.EQUAL ? 'text-blue-500' : 'opacity-50 hover:opacity-100'}`}
+                                className={`flex items-center gap-2 font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 ${splitType === SplitType.EQUAL ? 'text-blue-500' : 'opacity-50 hover:opacity-100'}`}
                             >
                                 <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${splitType === SplitType.EQUAL ? 'border-blue-500' : 'border-gray-500'}`}>
                                     {splitType === SplitType.EQUAL && <div className="w-2 h-2 rounded-full bg-blue-500" />}
@@ -946,7 +946,7 @@ export const GroupDetails = () => {
                             <button
                                 type="button"
                                 onClick={() => setSplitType(SplitType.UNEQUAL)}
-                                className={`flex items-center gap-2 font-bold ${splitType === SplitType.UNEQUAL ? 'text-blue-500' : 'opacity-50 hover:opacity-100'}`}
+                                className={`flex items-center gap-2 font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 ${splitType === SplitType.UNEQUAL ? 'text-blue-500' : 'opacity-50 hover:opacity-100'}`}
                             >
                                 <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${splitType === SplitType.UNEQUAL ? 'border-blue-500' : 'border-gray-500'}`}>
                                     {splitType === SplitType.UNEQUAL && <div className="w-2 h-2 rounded-full bg-blue-500" />}
@@ -965,7 +965,7 @@ export const GroupDetails = () => {
                                             if (selectedUsers.size === members.length) setSelectedUsers(new Set());
                                             else setSelectedUsers(new Set(members.map(m => m.userId)));
                                         }}
-                                        className="text-xs font-bold text-blue-500 hover:underline"
+                                        className="text-xs font-bold text-blue-500 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
                                     >
                                         {selectedUsers.size === members.length ? 'Deselect All' : 'Select All'}
                                     </button>

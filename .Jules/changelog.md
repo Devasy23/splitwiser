@@ -123,3 +123,4 @@
 - `.jules/todo.md`
 - `.jules/knowledge.md`
 - `.jules/changelog.md`
+\n- **2026-02-12:** `[style]` Added consistent focus-visible states to all buttons across web app, supporting NEOBRUTALISM, GLASSMORPHISM, and dark mode. Modified `Button.tsx` and raw button elements.

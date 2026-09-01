@@ -211,9 +211,9 @@ export const Friends = () => {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className={`px-4 py-2 font-bold text-sm ${isNeo
-              ? 'bg-black text-white hover:bg-gray-800 rounded-none'
-              : 'bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg'
+            className={`px-4 py-2 font-bold text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 ${isNeo
+              ? 'bg-black text-white hover:bg-gray-800 rounded-none focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-zinc-900'
+              : 'bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg focus-visible:ring-red-500 focus-visible:ring-offset-transparent'
               }`}
           >
             Retry
@@ -253,7 +253,7 @@ export const Friends = () => {
                   onClick={() => toggleExpand(friend.id)}
                   aria-expanded={expandedId === friend.id}
                   aria-label={`${friend.userName}, ${friend.netBalance > 0 ? 'owes you' : friend.netBalance < 0 ? 'you owe' : 'settled'} ${formatPrice(friend.netBalance)}`}
-                  className="w-full p-6 text-left cursor-pointer">
+                  className={`w-full p-6 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 ${isNeo ? 'focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-zinc-900' : 'focus-visible:ring-blue-500 focus-visible:ring-offset-transparent'}`}>
 
                   <div className="flex items-start justify-between mb-4">
                     {getAvatarContent(friend.userImageUrl, friend.userName, 'lg')}
@@ -302,9 +302,9 @@ export const Friends = () => {
                         {friend.breakdown.length === 0 && (
                           <p className="text-sm opacity-50 italic">No active groups</p>
                         )}
-                        <button type="button" className={`w-full mt-4 py-2 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${isNeo
-                          ? 'bg-black text-white hover:bg-gray-800 rounded-none'
-                          : 'bg-white/10 hover:bg-white/20 rounded-xl'
+                        <button type="button" className={`w-full mt-4 py-2 text-sm font-bold flex items-center justify-center gap-2 transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 ${isNeo
+                          ? 'bg-black text-white hover:bg-gray-800 rounded-none focus-visible:ring-black dark:focus-visible:ring-white dark:focus-visible:ring-offset-zinc-900'
+                          : 'bg-white/10 hover:bg-white/20 rounded-xl focus-visible:ring-white/50 focus-visible:ring-offset-transparent'
                           }`}>
                           View Details <ArrowRight size={14} />
                         </button>
