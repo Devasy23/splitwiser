@@ -57,8 +57,9 @@
   - Impact: Native feel, users can easily refresh data
   - Size: ~150 lines
 
-- [ ] **[ux]** Complete skeleton loading for HomeScreen groups
-  - File: `mobile/screens/HomeScreen.js`
+- [x] **[ux]** Complete skeleton loading for HomeScreen groups
+  - Completed: 2026-03-08
+  - File: `mobile/screens/HomeScreen.js`, `mobile/components/ui/Skeleton.js`, `mobile/components/skeletons/GroupListSkeleton.js`
   - Context: Replace ActivityIndicator with skeleton group cards
   - Impact: Better loading experience, less jarring
   - Size: ~40 lines
@@ -168,3 +169,7 @@
   - Completed: 2026-02-08
   - Files modified: `web/components/ui/PasswordStrength.tsx`, `web/pages/Auth.tsx`
   - Impact: Provides visual feedback on password complexity during signup
+- [x] **[ux]** Complete skeleton loading for HomeScreen groups
+  - Completed: 2026-03-08
+  - Files modified: `mobile/screens/HomeScreen.js`, `mobile/screens/FriendsScreen.js`, `mobile/components/ui/Skeleton.js`, `mobile/components/skeletons/GroupListSkeleton.js`
+  - Impact: Better loading experience across the mobile app via generic skeleton components.
