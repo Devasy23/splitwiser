@@ -108,9 +108,10 @@
 
 ### Web
 
-- [ ] **[ux]** Animated success celebration when settled up
-  - File: `web/pages/GroupDetails.tsx`
-  - Context: Show confetti or checkmark animation when no debts
+- [x] **[ux]** Animated success celebration when settled up
+  - Completed: 2026-03-01
+  - Files: `web/pages/GroupDetails.tsx`
+  - Context: Installed `canvas-confetti` and added animated pop-in and confetti when settlements equal 0.
   - Impact: Delightful moment, positive reinforcement
   - Size: ~45 lines
   - Added: 2026-01-01
