@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useEffect, useState } from "react";
+import * as LocalAuthentication from "expo-local-authentication";
 import * as authApi from "../api/auth";
 import {
   clearAuthTokens,
@@ -14,6 +15,8 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [refresh, setRefresh] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
+  const [storedCredentials, setStoredCredentials] = useState(null);
 
   // Load token and user data from AsyncStorage on app start
   useEffect(() => {
@@ -21,23 +24,51 @@ export const AuthProvider = ({ children }) => {
       try {
         const storedToken = await AsyncStorage.getItem("auth_token");
         const storedRefresh = await AsyncStorage.getItem("refresh_token");
-  const storedUser = await AsyncStorage.getItem("user_data");
+        const storedUser = await AsyncStorage.getItem("user_data");
+        const biometricPref = await AsyncStorage.getItem("biometric_enabled");
+
+        const isBiometric = biometricPref === "true";
+        setIsBiometricEnabled(isBiometric);
 
         if (storedToken && storedUser) {
-          setToken(storedToken);
-          setRefresh(storedRefresh);
-          await setAuthTokens({
-            newAccessToken: storedToken,
-            newRefreshToken: storedRefresh,
-          });
-          // Normalize user id shape: ensure `_id` exists even if API stored `id`
+          // Normalize user id shape
           const parsed = JSON.parse(storedUser);
           const normalized = parsed?._id
             ? parsed
             : parsed?.id
             ? { ...parsed, _id: parsed.id }
             : parsed;
-          setUser(normalized);
+
+          setStoredCredentials({
+            token: storedToken,
+            refresh: storedRefresh,
+            user: normalized
+          });
+
+          if (isBiometric) {
+            const result = await LocalAuthentication.authenticateAsync({
+              promptMessage: "Authenticate to login",
+              fallbackLabel: "Use Password",
+            });
+
+            if (result.success) {
+              setToken(storedToken);
+              setRefresh(storedRefresh);
+              await setAuthTokens({
+                newAccessToken: storedToken,
+                newRefreshToken: storedRefresh,
+              });
+              setUser(normalized);
+            }
+          } else {
+            setToken(storedToken);
+            setRefresh(storedRefresh);
+            await setAuthTokens({
+              newAccessToken: storedToken,
+              newRefreshToken: storedRefresh,
+            });
+            setUser(normalized);
+          }
         }
       } catch (error) {
         console.error("Failed to load stored authentication:", error);
@@ -106,6 +137,69 @@ export const AuthProvider = ({ children }) => {
     saveUser();
   }, [user]);
 
+  const authenticateBiometric = async () => {
+    if (!storedCredentials) return false;
+
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: "Authenticate to login",
+        fallbackLabel: "Use Password",
+      });
+
+      if (result.success) {
+        setToken(storedCredentials.token);
+        setRefresh(storedCredentials.refresh);
+        await setAuthTokens({
+          newAccessToken: storedCredentials.token,
+          newRefreshToken: storedCredentials.refresh,
+        });
+        setUser(storedCredentials.user);
+        return true;
+      }
+    } catch (error) {
+      console.error("Biometric authentication failed:", error);
+    }
+    return false;
+  };
+
+  const enableBiometric = async () => {
+    try {
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      if (!isEnrolled) {
+        return { success: false, error: "No biometrics enrolled on this device." };
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: "Authenticate to enable biometric login",
+      });
+
+      if (result.success) {
+        await AsyncStorage.setItem("biometric_enabled", "true");
+        setIsBiometricEnabled(true);
+        // Also save current credentials if not already stored
+        if (token && user) {
+          setStoredCredentials({ token, refresh, user });
+        }
+        return { success: true };
+      }
+      return { success: false, error: "Authentication failed." };
+    } catch (error) {
+      console.error("Failed to enable biometrics:", error);
+      return { success: false, error: "An error occurred." };
+    }
+  };
+
+  const disableBiometric = async () => {
+    try {
+      await AsyncStorage.setItem("biometric_enabled", "false");
+      setIsBiometricEnabled(false);
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to disable biometrics:", error);
+      return { success: false, error: "An error occurred." };
+    }
+  };
+
   const login = async (email, password) => {
     try {
       const response = await authApi.login(email, password);
@@ -159,6 +253,9 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setRefresh(null);
     setUser(null);
+    setStoredCredentials(null);
+    await AsyncStorage.removeItem("biometric_enabled");
+    setIsBiometricEnabled(false);
     await clearAuthTokens();
   };
 
@@ -182,6 +279,11 @@ export const AuthProvider = ({ children }) => {
         signup,
         logout,
         updateUserInContext,
+        isBiometricEnabled,
+        enableBiometric,
+        disableBiometric,
+        authenticateBiometric,
+        storedCredentials,
       }}
     >
       {children}

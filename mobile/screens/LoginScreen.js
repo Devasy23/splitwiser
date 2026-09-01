@@ -8,7 +8,7 @@ const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useContext(AuthContext);
+  const { login, isBiometricEnabled, authenticateBiometric, storedCredentials } = useContext(AuthContext);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -63,6 +63,18 @@ const LoginScreen = ({ navigation }) => {
       >
         Don't have an account? Sign Up
       </HapticButton>
+      {isBiometricEnabled && storedCredentials && (
+        <HapticButton
+          mode="outlined"
+          onPress={authenticateBiometric}
+          style={styles.biometricButton}
+          accessibilityLabel="Login with FaceID or TouchID"
+          accessibilityRole="button"
+          icon="fingerprint"
+        >
+          Login with FaceID / TouchID
+        </HapticButton>
+      )}
     </View>
   );
 };
@@ -82,6 +94,9 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 8,
+  },
+  biometricButton: {
+    marginTop: 16,
   },
 });
 
