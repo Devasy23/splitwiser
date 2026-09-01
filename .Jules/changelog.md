@@ -55,6 +55,13 @@
     - Captures errors in `AppRoutes` and displays a user-friendly message instead of a white screen.
   - **Technical:** Created `web/components/ErrorBoundary.tsx` using a hybrid Class+Functional approach to support Hooks in the fallback UI. Integrated into `web/App.tsx`.
 
+- **Mobile Skeleton Loading:** Replaced generic ActivityIndicator with `GroupListSkeleton` for smoother and more professional loading state.
+  - **Features:**
+    - Custom animated `Skeleton` primitive utilizing `Animated.loop` to mimic content layout.
+    - Added comprehensive skeleton list container component mirroring actual data appearance.
+    - Ensured screen reader compatibility with appropriate progressbar ARIA equivalents (`accessible=true`, `accessibilityRole=progressbar`, `accessibilityLabel="Loading groups"`).
+  - **Technical:** Created `mobile/components/ui/Skeleton.js` and `mobile/components/skeletons/GroupListSkeleton.js`. Integrated into `mobile/screens/HomeScreen.js`.
+
 - Inline form validation in Auth page with real-time feedback and proper ARIA accessibility support (`aria-invalid`, `aria-describedby`, `role="alert"`).
 - Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
