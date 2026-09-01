@@ -57,7 +57,11 @@
   - Impact: Native feel, users can easily refresh data
   - Size: ~150 lines
 
-- [ ] **[ux]** Complete skeleton loading for HomeScreen groups
+- [x] **[ux]** Complete skeleton loading for HomeScreen groups
+  - Completed: 2026-04-04
+  - Files: `mobile/components/ui/Skeleton.js`, `mobile/components/skeletons/GroupListSkeleton.js`, `mobile/screens/HomeScreen.js`
+  - Context: Replaced ActivityIndicator with pulsing skeleton group cards
+  - Impact: Better loading experience, less jarring
   - File: `mobile/screens/HomeScreen.js`
   - Context: Replace ActivityIndicator with skeleton group cards
   - Impact: Better loading experience, less jarring
