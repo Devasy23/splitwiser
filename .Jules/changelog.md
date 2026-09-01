@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile Error Boundary System:** Implemented a global React Error Boundary to catch render errors gracefully in the mobile app.
+  - **Features:**
+    - Fallback UI using `react-native-paper` components.
+    - Full theme support natively accessed through the parent `PaperProvider`.
+    - "Try Again" button to reset the error state and re-render the app.
+  - **Technical:** Created `mobile/components/ErrorBoundary.js` using a hybrid Class+Functional approach to support React hooks (like `useTheme`) in the fallback UI. Integrated into `mobile/App.js` wrapping the `AppNavigator`.
+
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).

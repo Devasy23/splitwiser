@@ -50,6 +50,13 @@
 
 ### Mobile
 
+- [x] **[ux]** Error boundary with retry for API failures
+  - Completed: 2026-04-13
+  - Files: Created `mobile/components/ErrorBoundary.js`, wrapped app in `mobile/App.js`
+  - Context: Catch rendering errors gracefully with a fallback UI and retry button using `react-native-paper`
+  - Impact: App doesn't crash to a white screen, users can recover
+  - Size: ~80 lines
+
 - [x] **[ux]** Pull-to-refresh with haptic feedback on all list screens
   - Completed: 2026-01-21
   - Files: `mobile/screens/HomeScreen.js`, `mobile/screens/GroupDetailsScreen.js`, `mobile/screens/FriendsScreen.js`
