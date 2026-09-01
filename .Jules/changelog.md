@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Added
+- **Consistent Focus States:** Added `focus-visible` styles to all buttons in the web application.
+  - **Features:**
+    - Modified `Button` component to support explicit keyboard focus rings for both Glassmorphism and Neobrutalism themes.
+    - Updated generic components (Inputs, Toasts, Modals) with visible focus indicators.
+    - Updated interactive elements across pages (Auth, Dashboard, Friends, GroupDetails, Profile, SplitwiseImport, SplitwiseGroupSelection).
+  - **Technical:** Used Tailwind's `focus-visible:` pseudo-class to ensure focus rings are only shown for keyboard navigation, maintaining a clean visual UI for mouse users.
+
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).
