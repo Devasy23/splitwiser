@@ -124,12 +124,11 @@
 
 ### Mobile
 
-- [ ] **[ux]** Biometric authentication option
-  - Files: `mobile/context/AuthContext.js`, add local auth
-  - Context: FaceID/TouchID for quick login
-  - Impact: Faster, more secure login
-  - Size: ~70 lines
-  - Added: 2026-01-01
+- [x] **[ux]** Biometric authentication option
+  - Completed: 2026-04-12
+  - Files modified: `mobile/app.json`, `mobile/context/AuthContext.js`, `mobile/screens/LoginScreen.js`, `mobile/screens/AccountScreen.js`
+  - Context: Added local biometric authentication (FaceID/TouchID) flow using `expo-local-authentication` and `expo-secure-store`.
+  - Impact: Faster, more secure login for returning mobile users
 
 ---
 
