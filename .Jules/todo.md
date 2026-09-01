@@ -115,11 +115,12 @@
   - Size: ~45 lines
   - Added: 2026-01-01
 
-- [ ] **[perf]** Lazy loading + code splitting for routes
-  - File: `web/App.tsx`
+- [x] **[perf]** Lazy loading + code splitting for routes
+  - Completed: 2026-02-09
+  - File: `web/App.tsx`, `web/components/ui/PageLoader.tsx`
   - Context: Use React.lazy for page imports
   - Impact: Faster initial load
-  - Size: ~30 lines
+  - Size: ~45 lines
   - Added: 2026-01-01
 
 ### Mobile

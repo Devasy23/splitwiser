@@ -55,6 +55,12 @@
     - Captures errors in `AppRoutes` and displays a user-friendly message instead of a white screen.
   - **Technical:** Created `web/components/ErrorBoundary.tsx` using a hybrid Class+Functional approach to support Hooks in the fallback UI. Integrated into `web/App.tsx`.
 
+- **Lazy Loading + Code Splitting:** Implemented lazy loading for application routes to improve perceived initial loading time.
+  - **Features:**
+    - Modified routing using React `Suspense` and `lazy` functionality.
+    - Implemented a standard fallback loading state with a new dual-themed `PageLoader` component that wraps the `Spinner`.
+  - **Technical:** Modified `web/App.tsx` and created `web/components/ui/PageLoader.tsx`.
+
 - Inline form validation in Auth page with real-time feedback and proper ARIA accessibility support (`aria-invalid`, `aria-describedby`, `role="alert"`).
 - Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
